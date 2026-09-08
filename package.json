@@ -1,0 +1,15 @@
+{
+  "name": "cclu-api",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "~4.16.1",
+    "mongoose": "^9.9.5",
+    "morgan": "~1.9.1"
+  }
+}
