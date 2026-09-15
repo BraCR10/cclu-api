@@ -1,0 +1,9 @@
+node_modules
+coverage
+package-lock.json
+
+# gentle stack (no son del proyecto)
+.atl
+.codegraph
+.gentle-ai
+openspec
