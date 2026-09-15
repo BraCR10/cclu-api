@@ -2,6 +2,9 @@
   "name": "cclu-api",
   "version": "0.0.0",
   "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js"
