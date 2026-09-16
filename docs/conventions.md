@@ -121,10 +121,10 @@ without reconstructing requests from the source.
 - **The collection never stores a value.** Hosts, tokens and identifiers are
   written as `{{variable}}` and resolved from a Postman environment.
 
-`postman.environment.example.json` is the template: import it as an environment,
-fill it in, and keep your copy out of the repository. `.gitignore` covers
-`postman.environment*.json` with an exception for the example, the same shape
-used for `.env`.
+Each person creates their own Postman environment and sets the variables the
+collection declares. Environments are not versioned: `.gitignore` covers the
+names Postman exports them under, so an exported environment cannot reach the
+repository by accident.
 
 This repository is public. A collection is where an access token leaks, because
 unlike `.env` it is a file you are meant to commit. Paste a token into your

@@ -1,13 +1,13 @@
 {
   "info": {
     "name": "cclu-api",
-    "description": "Manual testing collection for the CCLU API. Every endpoint lives in the folder of the module that owns it. Values are never stored here: import postman.environment.example.json as a Postman environment and fill it in locally.",
+    "description": "Manual testing collection for the CCLU API. Every endpoint lives in the folder of the module that owns it. The collection stores no credentials: create a Postman environment of your own and set the variables this collection declares.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
-      "value": ""
+      "value": "http://localhost:4000"
     },
     {
       "key": "token",

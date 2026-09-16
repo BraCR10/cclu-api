@@ -2,6 +2,6 @@ node_modules/
 .env*
 !.env.example
 postman.environment*.json
-!postman.environment.example.json
+*.postman_environment.json
 npm-debug.log
 coverage/
