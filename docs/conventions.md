@@ -9,7 +9,7 @@ here needs to change, change it deliberately and tell the team.
 | ----------------------------- | -------- |
 | Code, identifiers, file names | English  |
 | Documentation                 | English  |
-| Commit messages               | Spanish  |
+| Commit messages               | English  |
 | Content shown to end users    | Spanish  |
 
 The source requirement documents (ERS, SAD) are in Spanish. Translating a
@@ -39,8 +39,11 @@ Rules:
   the code they describe, not in a follow-up commit.
 - Never commit generated credentials, `.env` files, co-author trailers, or AI
   attribution lines.
-- Subject line in the imperative mood: `agrega busqueda de agremiado`, not
-  `agregado`.
+- Subject line in the imperative mood: `add agremiado lookup`, not `added`.
+
+Commits made up to 15 September 2026 are written in Spanish. They stay that
+way: the history is public and rewriting it costs more than the inconsistency.
+Everything from that point on is English.
 
 Branching and pull request rules are defined by CCLU-116 and will be added here
 once that ticket lands.
