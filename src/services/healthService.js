@@ -7,14 +7,18 @@ const DATABASE_STATES = {
   3: 'disconnecting',
 };
 
-function getHealthStatus() {
-  const databaseState = DATABASE_STATES[mongoose.connection.readyState] ?? 'unknown';
+function describeDatabaseState(readyState) {
+  return DATABASE_STATES[readyState] ?? 'unknown';
+}
+
+function getHealthStatus(readyState = mongoose.connection.readyState) {
+  const database = describeDatabaseState(readyState);
 
   return {
-    status: databaseState === 'connected' ? 'ok' : 'degraded',
-    database: databaseState,
+    status: database === 'connected' ? 'ok' : 'degraded',
+    database,
     uptimeSeconds: Math.floor(process.uptime()),
   };
 }
 
-module.exports = { getHealthStatus };
+module.exports = { getHealthStatus, describeDatabaseState };
