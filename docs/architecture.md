@@ -71,6 +71,9 @@ because there is no health entity to store. A module backed by real data adds a
 app.use('/api/<module>', <module>Routes);
 ```
 
+6. Add the module's endpoints to `postman.json`, in a folder named after the
+   module. See [conventions.md](conventions.md).
+
 Domain modules mount under `/api`. `/health` sits at the root because
 infrastructure checks it and it is not part of the domain.
 

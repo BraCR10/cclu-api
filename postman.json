@@ -1,0 +1,39 @@
+{
+  "info": {
+    "name": "cclu-api",
+    "description": "Manual testing collection for the CCLU API. Every endpoint lives in the folder of the module that owns it. Values are never stored here: import postman.environment.example.json as a Postman environment and fill it in locally.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": ""
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "description": "Service and database reachability. Not part of the domain.",
+      "item": [
+        {
+          "name": "Get service health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Returns 200 with \"database\": \"connected\" when the API reached MongoDB, and 503 with \"database\": \"disconnected\" when the process started but the connection is down."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

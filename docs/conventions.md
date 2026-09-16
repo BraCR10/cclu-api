@@ -106,3 +106,30 @@ async function getMember(request, response) {
 
 Errors with a status of 500 or above are logged and returned with a generic
 message. Internal failure detail never reaches the client.
+
+## Manual testing collection
+
+`postman.json` in the repository root is a Postman collection covering every
+endpoint the API exposes. It exists so a person can exercise the API by hand
+without reconstructing requests from the source.
+
+- **Every new endpoint is added to `postman.json` in the same commit that
+  creates it.** A collection updated later is a collection that is already
+  wrong.
+- Requests are grouped in a folder named after the module that owns them, the
+  same grouping [architecture.md](architecture.md) applies to the code.
+- **The collection never stores a value.** Hosts, tokens and identifiers are
+  written as `{{variable}}` and resolved from a Postman environment.
+
+`postman.environment.example.json` is the template: import it as an environment,
+fill it in, and keep your copy out of the repository. `.gitignore` covers
+`postman.environment*.json` with an exception for the example, the same shape
+used for `.env`.
+
+This repository is public. A collection is where an access token leaks, because
+unlike `.env` it is a file you are meant to commit. Paste a token into your
+environment, never into `postman.json`.
+
+If you edit the collection inside Postman and export it again, the export adds
+an `_postman_id` and reorders keys, which turns a one-line change into a large
+diff. Prefer editing the file directly.
