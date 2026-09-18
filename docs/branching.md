@@ -47,30 +47,20 @@ itself; a red check blocks the merge.
 Once merged, delete the branch. A branch that outlives its pull request only
 makes `git branch` harder to read.
 
-## Pull request description
+## Pull request and issue templates
 
-`.github/pull_request_template.md` fills every new pull request with the
-sections below. Keep the ones the change needs and delete the rest.
+GitHub fills every pull request from `.github/pull_request_template.md` and every
+issue from `.github/issue_template.md`. Keep the sections the change needs and
+delete the rest.
 
-| Section               | Holds                                           |
-| --------------------- | ----------------------------------------------- |
-| `Summary`             | What changes and why, in one or two sentences   |
-| `Ticket`              | `Closes CCLU-<n>`, so Jira links the work       |
-| `Decisions`           | Choices a reviewer cannot recover from the diff |
-| `Manual verification` | Only what continuous integration does not run   |
+Two rules keep them short.
 
-Two rules keep a description short enough to be read.
-
-**The description addresses the reviewer; the ticket holds the record.** A
-decision belongs in the pull request when it changes how the diff should be
-read, and in Jira when someone will need it in six months. Writing it in both
-places means maintaining it in both, and the copy nobody updates is the one
-that misleads.
+**The description addresses the reviewer; Jira holds the record.** A decision
+belongs in the pull request when it changes how the diff should be read, and in
+the ticket when someone will need it in six months.
 
 **Never restate what a check already proves.** The QA workflow reports lint,
-formatting and unit tests on the pull request itself. Pasting their output adds
-length without adding evidence. `Manual verification` is for what the workflow
-cannot reach, such as a request exercised by hand against a running database.
+formatting and unit tests on the pull request itself.
 
 ## Why `main` stays behind
 
