@@ -1,20 +1,5 @@
 const tokenService = require('../services/tokenService');
-
-const BEARER_SCHEME = 'Bearer';
-
-function readBearerToken(authorizationHeader) {
-  if (typeof authorizationHeader !== 'string') {
-    return null;
-  }
-
-  const [scheme, token, ...extra] = authorizationHeader.split(' ');
-
-  if (scheme !== BEARER_SCHEME || !token || extra.length > 0) {
-    return null;
-  }
-
-  return token;
-}
+const { SESSION_COOKIE_NAME } = require('../config/sessionCookie');
 
 function unauthorized() {
   const error = new Error('Authentication required.');
@@ -25,9 +10,9 @@ function unauthorized() {
 }
 
 function authenticate(request, response, next) {
-  const token = readBearerToken(request.headers.authorization);
+  const token = request.cookies?.[SESSION_COOKIE_NAME];
 
-  if (token === null) {
+  if (!token) {
     throw unauthorized();
   }
 
@@ -42,4 +27,4 @@ function authenticate(request, response, next) {
   next();
 }
 
-module.exports = { authenticate, readBearerToken };
+module.exports = { authenticate };
