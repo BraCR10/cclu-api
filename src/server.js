@@ -3,7 +3,7 @@ require('dotenv').config();
 const app = require('./app');
 const connectDatabase = require('./config/database');
 
-const REQUIRED_ENV = ['MONGODB_URI'];
+const REQUIRED_ENV = ['MONGODB_URI', 'JWT_SECRET', 'JWT_EXPIRES_IN'];
 
 const missingEnv = REQUIRED_ENV.filter((name) => !process.env[name]);
 
