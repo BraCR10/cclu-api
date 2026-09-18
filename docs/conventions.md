@@ -84,6 +84,21 @@ routes -> controllers -> services -> models
 The full rules, including the boundary between modules, are in
 [architecture.md](architecture.md).
 
+## Data retention
+
+BD-003 of the ERS requires that agremiados, membresías, pagos and publicaciones
+be kept permanently. Historical records are never physically deleted.
+
+- Never call `deleteOne`, `deleteMany`, `findByIdAndDelete` or `drop` on a
+  domain collection.
+- A record that should stop being visible changes state. `applicationStatus`,
+  `status` and `accountStatus` already exist for that.
+- If an entity ever needs a removal its state fields cannot express, add an
+  explicit timestamp for it and document the rule here first.
+
+The requirement is traceability: an approval, a rejection and a payment must
+still be answerable a year later. A deleted row cannot answer anything.
+
 ## Asynchronous error handling
 
 Express 5 forwards a rejected promise from a route handler to the error
