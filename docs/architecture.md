@@ -77,6 +77,35 @@ app.use('/api/<module>', <module>Routes);
 Domain modules mount under `/api`. `/health` sits at the root because
 infrastructure checks it and it is not part of the domain.
 
+## Authentication and authorization
+
+Two middlewares protect a route, and they always appear in this order.
+
+```js
+const { authenticate } = require('../middlewares/authenticate');
+const { authorize } = require('../middlewares/authorize');
+const { ROLES } = require('../config/roles');
+
+router.get('/solicitudes', authenticate, authorize(ROLES.ADMINISTRADOR), listSolicitudes);
+```
+
+`authenticate` reads the `Authorization: Bearer <token>` header, verifies the
+signature and attaches `request.identity` as `{ id, role }`. `authorize` reads
+that identity and refuses a role it was not given.
+
+A public route mounts neither. There is no public role: a visitor holds no
+token, and a role nobody is ever issued is a value that can only ever be wrong.
+
+The token carries the identifier and the role, and nothing else. It is signed,
+not encrypted, so whoever holds it can read its payload. Personal data stays in
+the database, behind a request that proves who is asking.
+
+Whether a given account may sign in at all is a rule of the module that owns it,
+not of these middlewares. An agremiado whose registration is still pending
+cannot log in, and that decision belongs to the service that authenticates them;
+teaching the middleware about registration states would tie every role in the
+system to the agremiado model.
+
 ## Presentation boundary
 
 `cclu-web` reaches this API over HTTP and by no other means. It holds no
