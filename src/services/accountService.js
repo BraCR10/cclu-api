@@ -9,7 +9,7 @@ function isActive(account) {
 
 // Two independent gates for an agremiado. The application is history and stops
 // changing once it is approved; the account status is the live switch an
-// administrator throws under CA-ADM-003-03.
+// administrator throws to suspend someone.
 const ACCOUNT_RULES = {
   [ROLES.AGREMIADO]: {
     find: (id) => Agremiado.findById(id).select('accountStatus applicationStatus').lean(),
