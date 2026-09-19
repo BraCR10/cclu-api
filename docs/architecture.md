@@ -158,6 +158,37 @@ whether the API answers through a proxy. Left false behind one, every caller
 shares the proxy's address and therefore one bucket, and they lock each other
 out. Set true without one, a caller can forge the address being counted.
 
+## Registering
+
+`POST /api/members` is public, since nobody has an account yet, and answers 201
+with the new identifier and nothing else. The registration is pending review, so
+there is nothing yet that anyone is entitled to read back.
+
+**The document is built field by field and the request body is never spread into
+it.** Each accepted field is named in the service, and anything else in the body
+is not so much rejected as never looked at. The account status and the
+application status come from the schema's defaults, so a registration that
+arrives claiming to be approved is stored pending like any other.
+
+That is the single most valuable thing on this route. Administrative approval is
+the gate the whole system rests on, and a registration that could set its own
+status would walk past it and collect a member code and a card on the way.
+
+Anything that must be text is checked before it reaches a query, because
+MongoDB reads `$` and `.` as operators and an unchecked value stops being data.
+References are checked for shape first and looked up second, and the password is
+read before either, so a body that was never going to be accepted costs no
+lookups.
+
+**A repeated identifier is caught by the unique index, not by looking first.**
+Checking and then inserting leaves a gap two simultaneous registrations can both
+pass through, so the duplicate is treated as an expected answer rather than a
+failure. What comes back names nothing: saying which identifier collided would
+confirm to a stranger that a particular card belongs to a member of the chamber.
+
+`GET /api/cantons` and `GET /api/sectors` are public for the same reason the
+registration is. A form cannot offer a closed list without knowing what is in it.
+
 ## Deny by default
 
 `app.js` mounts the public routes, then the gate, then everything else.
