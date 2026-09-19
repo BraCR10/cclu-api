@@ -121,6 +121,17 @@ const memberSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    // Who decided and when. The whole system rests on this decision, so it does
+    // not get to be anonymous.
+    reviewedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin',
+      default: null,
+    },
+    reviewedAt: {
+      type: Date,
+      default: null,
+    },
     memberCode: {
       type: String,
       unique: true,

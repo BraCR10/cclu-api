@@ -3,6 +3,7 @@ const cors = require('cors');
 const healthRoutes = require('./routes/healthRoutes');
 const { publicAuthRoutes, privateAuthRoutes } = require('./routes/authRoutes');
 const { publicRoutes } = require('./routes/publicRoutes');
+const { adminRoutes } = require('./routes/adminRoutes');
 const { readCookies } = require('./middlewares/readCookies');
 const { verifyOrigin } = require('./middlewares/verifyOrigin');
 const { authenticate } = require('./middlewares/authenticate');
@@ -40,6 +41,7 @@ app.use('/api', publicRoutes);
 app.use('/api', authenticate, requireActiveAccount);
 
 app.use('/api/auth', privateAuthRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
