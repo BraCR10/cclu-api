@@ -16,6 +16,14 @@
     {
       "key": "adminPassword",
       "value": ""
+    },
+    {
+      "key": "cantonId",
+      "value": ""
+    },
+    {
+      "key": "sectorId",
+      "value": ""
     }
   ],
   "item": [
@@ -90,6 +98,67 @@
               "path": ["api", "auth", "logout"]
             },
             "description": "Clears the session cookie. Needs no authentication, so an expired session can still be closed."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Members",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"comercio@ejemplo.cr\",\n  \"phone\": \"22000000\",\n  \"canton\": \"{{cantonId}}\",\n  \"location\": \"Frente al parque\",\n  \"sector\": \"{{sectorId}}\",\n  \"memberType\": \"business\",\n  \"identificationType\": \"legal_entity_id\",\n  \"identificationNumber\": \"3101000000\",\n  \"businessName\": \"Nombre comercial\",\n  \"businessDescription\": \"Descripcion breve\",\n  \"password\": \"una-contrasena-larga\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members"]
+            },
+            "description": "Public, since nobody has an account yet. Answers 201 with the identifier alone. Role and application status are set by the server and ignored if sent. A repeated identifier answers 409 with a message that names nothing."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Catalogs",
+      "item": [
+        {
+          "name": "List cantons",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cantons",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cantons"]
+            },
+            "description": "Closed list the registration form offers. Public."
+          },
+          "response": []
+        },
+        {
+          "name": "List sectors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sectors",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sectors"]
+            },
+            "description": "Closed list the registration form offers. Public."
           },
           "response": []
         }

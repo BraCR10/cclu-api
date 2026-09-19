@@ -88,3 +88,17 @@ module.exports = {
   skipsAccountLimit,
   accountKeyFor,
 };
+
+// Registration counts every request, not only the failures. A registration that
+// succeeds is still a row created and a hash computed by a stranger.
+const REGISTRATIONS_PER_ADDRESS = 5;
+
+const limitRegistrations = rateLimit({
+  windowMs: WINDOW_MS,
+  limit: REGISTRATIONS_PER_ADDRESS,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: tooManyAttempts,
+});
+
+module.exports.limitRegistrations = limitRegistrations;

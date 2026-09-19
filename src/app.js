@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const healthRoutes = require('./routes/healthRoutes');
 const { publicAuthRoutes, privateAuthRoutes } = require('./routes/authRoutes');
+const { publicRoutes } = require('./routes/publicRoutes');
 const { readCookies } = require('./middlewares/readCookies');
 const { verifyOrigin } = require('./middlewares/verifyOrigin');
 const { authenticate } = require('./middlewares/authenticate');
@@ -30,6 +31,7 @@ app.use('/health', healthRoutes);
 // Everything deliberately open to the public is mounted above the gate, where
 // a reader can see the whole list at once.
 app.use('/api/auth', publicAuthRoutes);
+app.use('/api', publicRoutes);
 
 // The gate. Every route registered below it requires a valid session and an
 // account that still works, so forgetting to protect one leaves it protected

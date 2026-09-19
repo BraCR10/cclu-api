@@ -1,6 +1,6 @@
 const express = require('express');
 const authController = require('../controllers/authController');
-const { limitByAddress, limitByAccount } = require('../middlewares/limitLoginAttempts');
+const { limitByAddress, limitByAccount } = require('../middlewares/rateLimits');
 
 const publicAuthRoutes = express.Router();
 

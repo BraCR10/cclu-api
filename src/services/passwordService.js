@@ -1,8 +1,7 @@
 const bcrypt = require('bcrypt');
 
-// bcrypt ignores everything past the 72nd byte of a password. The registration
-// and password change forms cap length before reaching this service, so a
-// password is never silently shortened here.
+// bcrypt reads no further than the 72nd byte. Callers refuse anything longer,
+// so nothing is silently shortened here.
 const SALT_ROUNDS = 12;
 
 async function hashPassword(password) {
