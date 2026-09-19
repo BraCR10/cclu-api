@@ -1,6 +1,6 @@
 const ROLES = {
-  AGREMIADO: 'agremiado',
-  ADMINISTRADOR: 'administrador',
+  MEMBER: 'member',
+  ADMIN: 'admin',
 };
 
 // A public visitor holds no role. Public access is expressed by leaving the

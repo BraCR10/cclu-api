@@ -7,7 +7,7 @@ const { ROLES } = require('../../src/config/roles');
 
 process.env.JWT_SECRET = 'secret-for-tests';
 
-const IDENTITY = { id: '65f0c3a1b2c3d4e5f6a7b8c9', role: ROLES.ADMINISTRADOR };
+const IDENTITY = { id: '65f0c3a1b2c3d4e5f6a7b8c9', role: ROLES.ADMIN };
 
 function requestWith(cookies) {
   return { cookies };

@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { requireActiveAccount } = require('../../src/middlewares/requireActiveAccount');
 const { ROLES } = require('../../src/config/roles');
 
-const IDENTITY = { id: '65f0c3a1b2c3d4e5f6a7b8c9', role: ROLES.AGREMIADO };
+const IDENTITY = { id: '65f0c3a1b2c3d4e5f6a7b8c9', role: ROLES.MEMBER };
 
 test('requireActiveAccount continues when the account still works', async () => {
   let continued = false;

@@ -1,26 +1,28 @@
 const mongoose = require('mongoose');
 const { ACCOUNT_STATUSES } = require('../config/accountStatus');
 
-const AGREMIADO_TYPES = {
-  COMERCIO: 'comercio',
-  PROFESIONAL_INDEPENDIENTE: 'profesional independiente',
+const MEMBER_TYPES = {
+  BUSINESS: 'business',
+  INDEPENDENT_PROFESSIONAL: 'independent_professional',
 };
 
+// dimex keeps its own name. It is a Costa Rican document for foreign residents,
+// not a word with an English equivalent.
 const IDENTIFICATION_TYPES = {
-  CEDULA_FISICA: 'cédula física',
-  CEDULA_JURIDICA: 'cédula jurídica',
-  PASAPORTE: 'pasaporte',
+  NATIONAL_ID: 'national_id',
+  LEGAL_ENTITY_ID: 'legal_entity_id',
+  PASSPORT: 'passport',
   DIMEX: 'dimex',
 };
 
 const APPLICATION_STATUSES = {
-  PENDING_REVIEW: 'pendiente de revisión',
-  CHANGES_REQUESTED: 'cambios solicitados',
-  APPROVED: 'aprobada',
-  REJECTED: 'rechazada',
+  PENDING_REVIEW: 'pending_review',
+  CHANGES_REQUESTED: 'changes_requested',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
 };
 
-const agremiadoSchema = new mongoose.Schema(
+const memberSchema = new mongoose.Schema(
   {
     email: {
       type: String,
@@ -49,10 +51,10 @@ const agremiadoSchema = new mongoose.Schema(
       ref: 'Sector',
       required: true,
     },
-    agremiadoType: {
+    memberType: {
       type: String,
       required: true,
-      enum: Object.values(AGREMIADO_TYPES),
+      enum: Object.values(MEMBER_TYPES),
     },
     identificationType: {
       type: String,
@@ -107,7 +109,7 @@ const agremiadoSchema = new mongoose.Schema(
       type: String,
       required: true,
       enum: Object.values(ACCOUNT_STATUSES),
-      default: ACCOUNT_STATUSES.ACTIVA,
+      default: ACCOUNT_STATUSES.ACTIVE,
     },
     applicationStatus: {
       type: String,
@@ -119,7 +121,7 @@ const agremiadoSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    agremiadoCode: {
+    memberCode: {
       type: String,
       unique: true,
       sparse: true,
@@ -129,11 +131,11 @@ const agremiadoSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-const Agremiado = mongoose.model('Agremiado', agremiadoSchema);
+const Member = mongoose.model('Member', memberSchema);
 
 module.exports = {
-  Agremiado,
-  AGREMIADO_TYPES,
+  Member,
+  MEMBER_TYPES,
   IDENTIFICATION_TYPES,
   APPLICATION_STATUSES,
 };
