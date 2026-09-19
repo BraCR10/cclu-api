@@ -1,9 +1,5 @@
 const mongoose = require('mongoose');
-
-const ACCOUNT_STATUSES = {
-  ACTIVA: 'activa',
-  INACTIVA: 'inactiva',
-};
+const { ACCOUNT_STATUSES } = require('../config/accountStatus');
 
 const administradorSchema = new mongoose.Schema(
   {
@@ -30,4 +26,4 @@ const administradorSchema = new mongoose.Schema(
 
 const Administrador = mongoose.model('Administrador', administradorSchema);
 
-module.exports = { Administrador, ACCOUNT_STATUSES };
+module.exports = { Administrador };
