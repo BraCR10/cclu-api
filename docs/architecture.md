@@ -203,6 +203,31 @@ registration is. A form cannot offer a closed list without knowing what is in
 it, and that is also why the registration needs a limit: those listings hand
 anyone the two references a submission has to carry.
 
+## What a refusal may say
+
+A member is told their application is pending; an administrator is told nothing
+either way. The difference is not inconsistency, it is the reason there are two
+routes.
+
+Saying "your application is pending" is useful to the person waiting and useless
+to nobody else, right up until it can be obtained without knowing the password.
+Then the form becomes a way to ask the chamber who is affiliated with it, one
+address at a time.
+
+The order is what resolves it.
+
+1. The password is answered first, and on its own.
+2. Wrong password, or an address that is not an account: one message, the same
+   for both.
+3. Only once the password was right is the state of the registration explained.
+
+Someone who guessed the password already proved they own the account, so telling
+them costs nothing. Someone trying addresses learns the same thing every time.
+
+The refusal carries a `reason` alongside its message so a screen can say the
+right thing in its own words without matching on English text. It is only ever
+present on the 403, which is to say only after the password was correct.
+
 ## Deny by default
 
 `app.js` mounts the public routes, then the gate, then everything else.

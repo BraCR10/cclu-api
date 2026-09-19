@@ -14,6 +14,9 @@ function errorHandler(error, request, response, next) {
   response.status(statusCode).json({
     error: error.name ?? 'InternalServerError',
     message: isServerError ? 'Unexpected server error.' : error.message,
+    // Carried so a screen can say the right thing in its own language without
+    // matching on the message text.
+    ...(isServerError || error.reason === undefined ? {} : { reason: error.reason }),
   });
 }
 

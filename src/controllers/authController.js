@@ -1,6 +1,7 @@
 const { SESSION_COOKIE_NAME, sessionCookieOptions } = require('../config/sessionCookie');
 const { describeAttempt } = require('../middlewares/rateLimits');
 const adminAuthService = require('../services/adminAuthService');
+const memberAuthService = require('../services/memberAuthService');
 const tokenService = require('../services/tokenService');
 
 function invalidCredentials() {
@@ -36,6 +37,43 @@ async function signInAdmin(
   response.status(204).end();
 }
 
+// The state of the application is only ever explained to someone whose password
+// was already correct, which is what keeps this from telling strangers who is
+// affiliated with the chamber.
+function refusedForState(outcome) {
+  const error = new Error('The registration does not allow signing in yet.');
+  error.name = 'Forbidden';
+  error.statusCode = 403;
+  error.reason = outcome;
+
+  return error;
+}
+
+async function signInMember(
+  request,
+  response,
+  next,
+  authenticateMember = memberAuthService.authenticateMember,
+) {
+  const result = await authenticateMember(request.body);
+
+  if (result.outcome === memberAuthService.OUTCOMES.INVALID_CREDENTIALS) {
+    recordFailedSignIn(request);
+    throw invalidCredentials();
+  }
+
+  if (result.outcome !== memberAuthService.OUTCOMES.AUTHENTICATED) {
+    throw refusedForState(result.outcome);
+  }
+
+  response.cookie(
+    SESSION_COOKIE_NAME,
+    tokenService.issueToken(result.identity),
+    sessionCookieOptions(),
+  );
+  response.status(204).end();
+}
+
 async function getCurrentIdentity(request, response) {
   response.json(request.identity);
 }
@@ -45,4 +83,4 @@ async function signOut(request, response) {
   response.status(204).end();
 }
 
-module.exports = { signInAdmin, getCurrentIdentity, signOut };
+module.exports = { signInAdmin, signInMember, getCurrentIdentity, signOut };

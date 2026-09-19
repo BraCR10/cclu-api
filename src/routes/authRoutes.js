@@ -4,10 +4,11 @@ const { limitByAddress, limitByAccount } = require('../middlewares/rateLimits');
 
 const publicAuthRoutes = express.Router();
 
-// Members sign in through their own route, because what the answer may reveal
-// differs: a member is told their application is still pending once the
-// password is right, and an administrator is told nothing either way.
+// Two routes, because what the answer may reveal differs. A member is told
+// their application is pending once the password is right; an administrator is
+// told nothing either way.
 publicAuthRoutes.post('/admin/login', limitByAddress, limitByAccount, authController.signInAdmin);
+publicAuthRoutes.post('/member/login', limitByAddress, limitByAccount, authController.signInMember);
 
 // Signing out needs no proof of identity. Requiring it would refuse to clear
 // the cookie of an expired session, which is exactly when clearing it matters.
