@@ -8,10 +8,10 @@ function requestFor(role) {
 }
 
 test('authorize continues the request for a role it was given', () => {
-  const request = requestFor(ROLES.ADMINISTRADOR);
+  const request = requestFor(ROLES.ADMIN);
   let continued = false;
 
-  authorize(ROLES.ADMINISTRADOR)(request, {}, () => {
+  authorize(ROLES.ADMIN)(request, {}, () => {
     continued = true;
   });
 
@@ -20,12 +20,12 @@ test('authorize continues the request for a role it was given', () => {
 
 test('authorize accepts any one of several allowed roles', () => {
   let continued = 0;
-  const middleware = authorize(ROLES.AGREMIADO, ROLES.ADMINISTRADOR);
+  const middleware = authorize(ROLES.MEMBER, ROLES.ADMIN);
 
-  middleware(requestFor(ROLES.AGREMIADO), {}, () => {
+  middleware(requestFor(ROLES.MEMBER), {}, () => {
     continued += 1;
   });
-  middleware(requestFor(ROLES.ADMINISTRADOR), {}, () => {
+  middleware(requestFor(ROLES.ADMIN), {}, () => {
     continued += 1;
   });
 
@@ -33,20 +33,20 @@ test('authorize accepts any one of several allowed roles', () => {
 });
 
 test('authorize answers 403 when the role is not allowed', () => {
-  assert.throws(() => authorize(ROLES.ADMINISTRADOR)(requestFor(ROLES.AGREMIADO), {}, () => {}), {
+  assert.throws(() => authorize(ROLES.ADMIN)(requestFor(ROLES.MEMBER), {}, () => {}), {
     statusCode: 403,
   });
 });
 
 test('authorize answers 401 when the request was never authenticated', () => {
-  assert.throws(() => authorize(ROLES.ADMINISTRADOR)({}, {}, () => {}), { statusCode: 401 });
+  assert.throws(() => authorize(ROLES.ADMIN)({}, {}, () => {}), { statusCode: 401 });
 });
 
 test('authorize does not continue a request it rejects', () => {
   let continued = false;
 
   assert.throws(() =>
-    authorize(ROLES.ADMINISTRADOR)(requestFor(ROLES.AGREMIADO), {}, () => {
+    authorize(ROLES.ADMIN)(requestFor(ROLES.MEMBER), {}, () => {
       continued = true;
     }),
   );

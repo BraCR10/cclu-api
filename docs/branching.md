@@ -14,7 +14,7 @@ require the continuous integration check to pass before a merge.
 ## Naming a branch
 
 ```
-feat/CCLU-11-agremiado-registration
+feat/CCLU-11-member-registration
 fix/CCLU-58-atlas-connection
 docs/CCLU-52-testing-conventions
 ```
@@ -23,8 +23,8 @@ The prefix uses **the same types as commit messages**, listed in
 [conventions.md](conventions.md): `feat`, `fix`, `docs`, `refactor`, `test`,
 `chore`. One vocabulary for both, not two to remember.
 
-The description is written in English, like commit messages. Domain terms keep
-their Spanish form: a branch about agremiados says `agremiado`.
+The description is written in English, like commit messages and like everything
+else that is an identifier rather than something a person reads.
 
 The ticket key belongs in the name so Jira links the work automatically, and so
 anyone reading `git branch` knows what a branch is for without asking.
@@ -34,11 +34,11 @@ anyone reading `git branch` knows what a branch is for without asking.
 ```bash
 git switch develop
 git pull
-git switch -c feat/CCLU-11-registro-de-agremiados
+git switch -c feat/CCLU-11-member-registration
 
 # work, committing in units
 
-git push -u origin feat/CCLU-11-registro-de-agremiados
+git push -u origin feat/CCLU-11-member-registration
 ```
 
 Then open a pull request against `develop`. The checks run on the pull request

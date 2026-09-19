@@ -90,7 +90,7 @@ const { authenticate } = require('../middlewares/authenticate');
 const { authorize } = require('../middlewares/authorize');
 const { ROLES } = require('../config/roles');
 
-router.get('/solicitudes', authenticate, authorize(ROLES.ADMINISTRADOR), listSolicitudes);
+router.get('/applications', authenticate, authorize(ROLES.ADMIN), listApplications);
 ```
 
 `authenticate` reads the session cookie, verifies the signature and attaches
@@ -109,10 +109,10 @@ not encrypted, so whoever holds it can read its payload. Personal data stays in
 the database, behind a request that proves who is asking.
 
 Whether a given account may sign in at all is a rule of the module that owns it,
-not of these middlewares. An agremiado whose registration is still pending
+not of these middlewares. A member whose registration is still pending
 cannot log in, and that decision belongs to the service that authenticates them;
 teaching the middleware about registration states would tie every role in the
-system to the agremiado model.
+system to the member model.
 
 ## Deny by default
 
@@ -141,15 +141,15 @@ Access asks two things, and they are separate on purpose.
 | `applicationStatus` | Was the application accepted? | Only during the application       |
 | `accountStatus`     | Does the account work today?  | Whenever an administrator says so |
 
-An agremiado needs an approved application and an active account. An
-administrador has no application, so only the account is read.
+A member needs an approved application and an active account. An admin has no
+application, so only the account is read.
 
 Folding the two together would mean suspending someone by writing
 `applicationStatus: rechazada`, which records something that never happened and
 would offer them the resubmission RF-AG-009 gives a rejected applicant.
 
 `accountStatus` holds `activa` or `suspendida`, the same two values for every
-account in the system. CA-ADM-003-03 also names giving an agremiado their leave,
+account in the system. CA-ADM-003-03 also names giving a member their leave,
 which is suspending the account and ending the membership rather than a third
 state of its own.
 

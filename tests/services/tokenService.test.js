@@ -6,7 +6,7 @@ const { ROLES } = require('../../src/config/roles');
 
 const SECRET = 'secret-for-tests';
 const OTHER_SECRET = 'another-secret-for-tests';
-const IDENTITY = { id: '65f0c3a1b2c3d4e5f6a7b8c9', role: ROLES.AGREMIADO };
+const IDENTITY = { id: '65f0c3a1b2c3d4e5f6a7b8c9', role: ROLES.MEMBER };
 
 test('verifyToken returns the identity issueToken was given', () => {
   const token = issueToken(IDENTITY, SECRET, '1h');
@@ -15,11 +15,7 @@ test('verifyToken returns the identity issueToken was given', () => {
 });
 
 test('issueToken accepts an identifier that is not a string', () => {
-  const token = issueToken(
-    { id: { toString: () => 'abc123' }, role: ROLES.ADMINISTRADOR },
-    SECRET,
-    '1h',
-  );
+  const token = issueToken({ id: { toString: () => 'abc123' }, role: ROLES.ADMIN }, SECRET, '1h');
 
   assert.equal(verifyToken(token, SECRET).id, 'abc123');
 });
@@ -41,7 +37,7 @@ test('verifyToken rejects a token whose payload was edited', () => {
   const token = issueToken(IDENTITY, SECRET, '1h');
   const [header, , signature] = token.split('.');
   const forgedPayload = Buffer.from(
-    JSON.stringify({ sub: IDENTITY.id, role: ROLES.ADMINISTRADOR }),
+    JSON.stringify({ sub: IDENTITY.id, role: ROLES.ADMIN }),
   ).toString('base64url');
 
   assert.throws(() => verifyToken(`${header}.${forgedPayload}.${signature}`, SECRET));
@@ -56,15 +52,15 @@ test('issueToken names the algorithm in the header instead of leaving it to a de
 
 test('verifyToken rejects a token that asks for no signature at all', () => {
   const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
-  const payload = Buffer.from(
-    JSON.stringify({ sub: IDENTITY.id, role: ROLES.ADMINISTRADOR }),
-  ).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({ sub: IDENTITY.id, role: ROLES.ADMIN })).toString(
+    'base64url',
+  );
 
   assert.throws(() => verifyToken(`${header}.${payload}.`, SECRET));
 });
 
 test('verifyToken rejects a token signed with an algorithm this API does not use', () => {
-  const token = jwt.sign({ role: ROLES.ADMINISTRADOR }, SECRET, {
+  const token = jwt.sign({ role: ROLES.ADMIN }, SECRET, {
     algorithm: 'HS512',
     subject: IDENTITY.id,
     expiresIn: '1h',
