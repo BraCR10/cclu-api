@@ -1,4 +1,5 @@
 const { SESSION_COOKIE_NAME, sessionCookieOptions } = require('../config/sessionCookie');
+const { addressOf, emailFrom } = require('../middlewares/limitLoginAttempts');
 const adminAuthService = require('../services/adminAuthService');
 const tokenService = require('../services/tokenService');
 
@@ -10,15 +11,29 @@ function invalidCredentials() {
   return error;
 }
 
-async function signInAdmin(request, response) {
-  const identity = await adminAuthService.authenticateAdmin(request.body);
+// Recorded because an attempt that stays under the limits is invisible
+// otherwise, and a run of them is the only warning of an attack in progress.
+function recordFailedSignIn(request) {
+  console.warn(
+    `Failed sign in on ${request.originalUrl} from ${addressOf(request)} for ${emailFrom(request) ?? 'no account'}`,
+  );
+}
+
+async function signInAdmin(
+  request,
+  response,
+  next,
+  authenticateAdmin = adminAuthService.authenticateAdmin,
+) {
+  const identity = await authenticateAdmin(request.body);
 
   if (identity === null) {
+    recordFailedSignIn(request);
     throw invalidCredentials();
   }
 
   // The token never reaches the response body. Putting it there would hand it
-  // to any script on the page, which is the exact reach the cookie denies.
+  // to any script on the page, which is the reach the cookie denies.
   response.cookie(SESSION_COOKIE_NAME, tokenService.issueToken(identity), sessionCookieOptions());
   response.status(204).end();
 }

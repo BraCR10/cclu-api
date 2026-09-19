@@ -3,20 +3,30 @@ const rateLimit = require('express-rate-limit');
 const WINDOW_MS = 15 * 60 * 1000;
 const ATTEMPTS_PER_ADDRESS = 10;
 
-// Deliberately higher than the address limit. Limiting by account is what stops
-// one attacker spreading guesses across many addresses, but it is also a way to
-// lock a real administrator out by guessing at their email on purpose. Keeping
-// it above the address limit means an attacker trips their own limit first.
-const ATTEMPTS_PER_ACCOUNT = 30;
+// Set where a person will never reach it and an attacker gains nothing. Hashing
+// costs a quarter of a second, so a hundred guesses in fifteen minutes is
+// already hopeless against any real password.
+//
+// It cannot be set low. Blocking by account alone means anyone who knows an
+// address can lock its owner out by guessing at it from enough places, and no
+// value avoids that: a limit tight enough to stop distributed guessing is tight
+// enough to be used as a weapon. The hash is the defence; this is the backstop.
+const ATTEMPTS_PER_ACCOUNT = 100;
 
 function emailFrom(request) {
   const email = request.body?.email;
 
-  return typeof email === 'string' ? email.trim().toLowerCase() : 'no-email';
+  return typeof email === 'string' && email.trim() !== '' ? email.trim().toLowerCase() : null;
+}
+
+function addressOf(request) {
+  return request.ip ?? 'unknown-address';
 }
 
 function tooManyAttempts(request, response) {
-  console.warn(`Rate limit reached for ${request.method} ${request.originalUrl}`);
+  console.warn(
+    `Rate limit reached on ${request.originalUrl} from ${addressOf(request)} for ${emailFrom(request) ?? 'no account'}`,
+  );
 
   response.status(429).json({
     error: 'TooManyRequests',
@@ -41,8 +51,11 @@ const limitByAccount = rateLimit({
   skipSuccessfulRequests: true,
   standardHeaders: false,
   legacyHeaders: false,
-  keyGenerator: emailFrom,
+  // A body with no usable address is skipped rather than counted under a shared
+  // key, which would let malformed requests exhaust one bucket for everyone.
+  skip: (request) => emailFrom(request) === null,
+  keyGenerator: (request) => emailFrom(request) ?? 'no-account',
   handler: tooManyAttempts,
 });
 
-module.exports = { limitByAddress, limitByAccount, emailFrom };
+module.exports = { limitByAddress, limitByAccount, emailFrom, addressOf };

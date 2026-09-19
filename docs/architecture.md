@@ -136,10 +136,27 @@ first account in the collection, with no credentials at all.
 no account is found would answer identically but faster, and the difference in
 waiting is enough to map which addresses are accounts.
 
-**Failures are counted, successes are not.** Ten from one address in fifteen
-minutes is enough to stop guessing; the per account limit sits higher on
-purpose, so that someone hammering one administrator's address trips their own
-limit before locking that person out.
+**Failures are counted, successes are not**, and every one of them is logged
+with the address it came from and the account it was aimed at. An attempt that
+stays under the limits is invisible otherwise, and a run of them is the only
+warning of an attack in progress.
+
+Ten failures from one address in fifteen minutes stops guessing from there. The
+per account limit sits at a hundred, which is not a mistake and not a number a
+person will reach.
+
+It cannot be set low, and the reason is worth stating plainly rather than
+claiming a protection that does not hold. Counting by account alone means
+anyone who knows an address can lock its owner out by guessing at it from
+enough places, and no value avoids that: a limit tight enough to stop guessing
+spread across many addresses is tight enough to be used as a weapon. What makes
+guessing pointless is the cost of the hash, roughly a quarter of a second each.
+The counter is the backstop, not the defence.
+
+**Whether the address is real depends on deployment.** `TRUST_PROXY` says
+whether the API answers through a proxy. Left false behind one, every caller
+shares the proxy's address and therefore one bucket, and they lock each other
+out. Set true without one, a caller can forge the address being counted.
 
 ## Deny by default
 

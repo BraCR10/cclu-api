@@ -11,6 +11,10 @@ const errorHandler = require('./middlewares/errorHandler');
 
 const app = express();
 
+// Declared rather than guessed. Behind a proxy the rate limiter sees the
+// proxy's address for everyone, and one shared bucket locks out the lot.
+app.set('trust proxy', process.env.TRUST_PROXY === 'true' ? 1 : false);
+
 // The session travels in a cookie, so the browser only sends it when the
 // response names this exact origin. A wildcard cannot carry credentials.
 app.use(cors({ origin: process.env.WEB_ORIGIN, credentials: true }));
