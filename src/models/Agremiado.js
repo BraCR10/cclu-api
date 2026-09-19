@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { ACCOUNT_STATUSES } = require('../config/accountStatus');
 
 const AGREMIADO_TYPES = {
   COMERCIO: 'comercio',
@@ -101,6 +102,12 @@ const agremiadoSchema = new mongoose.Schema(
     website: {
       type: String,
       trim: true,
+    },
+    accountStatus: {
+      type: String,
+      required: true,
+      enum: Object.values(ACCOUNT_STATUSES),
+      default: ACCOUNT_STATUSES.ACTIVA,
     },
     applicationStatus: {
       type: String,

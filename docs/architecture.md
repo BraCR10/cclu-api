@@ -114,6 +114,51 @@ cannot log in, and that decision belongs to the service that authenticates them;
 teaching the middleware about registration states would tie every role in the
 system to the agremiado model.
 
+## Deny by default
+
+`app.js` mounts the public routes, then the gate, then everything else.
+
+```js
+app.use('/api/auth', publicAuthRoutes);
+app.use('/api', authenticate, requireActiveAccount);
+app.use('/api/auth', privateAuthRoutes);
+```
+
+A route registered below the gate is protected without asking for it, so
+forgetting to think about access leaves a route closed rather than open. Making
+one public means moving it above the gate, which is a deliberate edit a reviewer
+sees in the diff.
+
+An unknown path under `/api` answers 401 rather than 404, which also keeps the
+list of routes that exist to ourselves.
+
+## Two questions about an account
+
+Access asks two things, and they are separate on purpose.
+
+| Field               | Answers                       | When it changes                   |
+| ------------------- | ----------------------------- | --------------------------------- |
+| `applicationStatus` | Was the application accepted? | Only during the application       |
+| `accountStatus`     | Does the account work today?  | Whenever an administrator says so |
+
+An agremiado needs an approved application and an active account. An
+administrador has no application, so only the account is read.
+
+Folding the two together would mean suspending someone by writing
+`applicationStatus: rechazada`, which records something that never happened and
+would offer them the resubmission RF-AG-009 gives a rejected applicant.
+
+`accountStatus` holds `activa` or `suspendida`, the same two values for every
+account in the system. CA-ADM-003-03 also names giving an agremiado their leave,
+which is suspending the account and ending the membership rather than a third
+state of its own.
+
+`authenticate` proves a token is genuine; it cannot know whether the account
+behind it still works, because a token is a photograph taken at sign in and
+nothing rechecks it afterwards. `requireActiveAccount` reads the account on each
+request, which costs one indexed lookup and is what makes a suspension take
+effect immediately instead of whenever the token happens to expire.
+
 ## Cross origin requests and CSRF
 
 The browser loads the interface from one origin and calls the API on another, so

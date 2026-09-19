@@ -70,8 +70,24 @@ Write a comment only when the code cannot express the reason behind it.
 - Never leave commented-out code. Git remembers it; the file should not.
 - Never restate a signature, a type, or an obvious assignment.
 
+- Never cite a requirement identifier. Write the reason itself.
+
 A comment that explains a business constraint or a non-obvious external
 limitation earns its place. Everything else is noise.
+
+`// CA-ADM-003-03 requires this` tells a reader nothing they can act on. They
+still do not know why, only that someone decided it, and checking costs them a
+trip into a versioned PDF whose identifiers may since have moved. Write what the
+rule is and the code explains itself:
+
+```js
+// An administrator can suspend an account, so being approved once is not
+// enough to be let in today.
+```
+
+Traceability belongs to the ticket, the pull request and `docs/`, which are
+versioned alongside the requirements and read by people looking for exactly
+that. Source files are read by people trying to change the code.
 
 ## Separation of responsibilities
 
