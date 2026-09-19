@@ -4,6 +4,8 @@ const {
   emailFrom,
   addressOf,
   describeAttempt,
+  skipsAccountLimit,
+  accountKeyFor,
 } = require('../../src/middlewares/limitLoginAttempts');
 
 test('emailFrom takes the address the attempt was aimed at', () => {
@@ -46,4 +48,18 @@ test('describeAttempt keeps the attempt in fields, where a newline cannot forge 
     account: forged.toLowerCase(),
   });
   assert.ok(!Object.values(described).some((value) => typeof value !== 'string' && value !== null));
+});
+
+test('the account limit counts a real address and steps aside for anything else', () => {
+  assert.equal(skipsAccountLimit({ body: { email: 'admin@cclu.cr' } }), false);
+  assert.equal(skipsAccountLimit({ body: { email: { $ne: null } } }), true);
+  assert.equal(skipsAccountLimit({ body: {} }), true);
+});
+
+test('the account limit counts each address in its own bucket', () => {
+  assert.equal(accountKeyFor({ body: { email: ' Admin@CCLU.cr ' } }), 'admin@cclu.cr');
+  assert.notEqual(
+    accountKeyFor({ body: { email: 'a@cclu.cr' } }),
+    accountKeyFor({ body: { email: 'b@cclu.cr' } }),
+  );
 });

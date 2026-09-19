@@ -47,6 +47,16 @@ function tooManyAttempts(request, response) {
   });
 }
 
+// Skipped rather than counted under a shared key, which malformed requests
+// would otherwise exhaust for everyone.
+function skipsAccountLimit(request) {
+  return emailFrom(request) === null;
+}
+
+function accountKeyFor(request) {
+  return emailFrom(request) ?? 'no-account';
+}
+
 // Only failures count. A working sign in is not evidence of an attack, and
 // counting it would lock a busy administrator out of their own panel.
 const limitByAddress = rateLimit({
@@ -64,11 +74,17 @@ const limitByAccount = rateLimit({
   skipSuccessfulRequests: true,
   standardHeaders: false,
   legacyHeaders: false,
-  // Skipped rather than counted under a shared key, which malformed requests
-  // would otherwise exhaust for everyone.
-  skip: (request) => emailFrom(request) === null,
-  keyGenerator: (request) => emailFrom(request) ?? 'no-account',
+  skip: skipsAccountLimit,
+  keyGenerator: accountKeyFor,
   handler: tooManyAttempts,
 });
 
-module.exports = { limitByAddress, limitByAccount, emailFrom, addressOf, describeAttempt };
+module.exports = {
+  limitByAddress,
+  limitByAccount,
+  emailFrom,
+  addressOf,
+  describeAttempt,
+  skipsAccountLimit,
+  accountKeyFor,
+};
