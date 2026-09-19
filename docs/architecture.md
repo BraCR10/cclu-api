@@ -114,6 +114,33 @@ cannot log in, and that decision belongs to the service that authenticates them;
 teaching the middleware about registration states would tie every role in the
 system to the member model.
 
+## Signing in
+
+`POST /api/auth/admin/login` answers 204 and sets the cookie. The token is never
+in the body: putting it there would hand it to any script on the page, which is
+the reach the cookie exists to deny.
+
+Members will sign in through a route of their own rather than sharing this one,
+because what the answer may reveal differs. A member is told their application
+is still pending once the password is right; an administrator is told nothing
+either way, since confirming that an address is an administrator is half of what
+someone guessing needs.
+
+Three things protect the route, and each covers a different attack.
+
+**Credentials are read as strings before anything is queried.** A body carrying
+`{ "email": { "$ne": null } }` would otherwise become a query that matches the
+first account in the collection, with no credentials at all.
+
+**A missing account costs the same as a wrong password.** Returning early when
+no account is found would answer identically but faster, and the difference in
+waiting is enough to map which addresses are accounts.
+
+**Failures are counted, successes are not.** Ten from one address in fifteen
+minutes is enough to stop guessing; the per account limit sits higher on
+purpose, so that someone hammering one administrator's address trips their own
+limit before locking that person out.
+
 ## Deny by default
 
 `app.js` mounts the public routes, then the gate, then everything else.
