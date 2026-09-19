@@ -8,10 +8,6 @@
     {
       "key": "baseUrl",
       "value": "http://localhost:4000"
-    },
-    {
-      "key": "token",
-      "value": ""
     }
   ],
   "item": [
@@ -30,6 +26,39 @@
               "path": ["health"]
             },
             "description": "Returns 200 with \"database\": \"connected\" when the API reached MongoDB, and 503 with \"database\": \"disconnected\" when the process started but the connection is down."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Get current identity",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "description": "Returns the identity behind the session cookie. Postman stores the cookie on sign in and sends it back on its own, so there is nothing to paste here."
+          },
+          "response": []
+        },
+        {
+          "name": "Sign out",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "logout"]
+            },
+            "description": "Clears the session cookie. Needs no authentication, so an expired session can still be closed."
           },
           "response": []
         }

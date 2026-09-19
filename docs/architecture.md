@@ -79,6 +79,10 @@ infrastructure checks it and it is not part of the domain.
 
 ## Authentication and authorization
 
+The session travels in an `httpOnly` cookie that the API issues and the browser
+returns on its own. No script can read it, so a cross-site scripting flaw cannot
+carry the session away; the client never holds the token at all.
+
 Two middlewares protect a route, and they always appear in this order.
 
 ```js
@@ -89,12 +93,16 @@ const { ROLES } = require('../config/roles');
 router.get('/solicitudes', authenticate, authorize(ROLES.ADMINISTRADOR), listSolicitudes);
 ```
 
-`authenticate` reads the `Authorization: Bearer <token>` header, verifies the
-signature and attaches `request.identity` as `{ id, role }`. `authorize` reads
-that identity and refuses a role it was not given.
+`authenticate` reads the session cookie, verifies the signature and attaches
+`request.identity` as `{ id, role }`. `authorize` reads that identity and
+refuses a role it was not given.
 
 A public route mounts neither. There is no public role: a visitor holds no
 token, and a role nobody is ever issued is a value that can only ever be wrong.
+
+Because the client cannot read the cookie, it cannot know its own role either.
+`GET /api/auth/me` answers that question, and the answer comes from a verified
+token rather than from one the client decoded for itself.
 
 The token carries the identifier and the role, and nothing else. It is signed,
 not encrypted, so whoever holds it can read its payload. Personal data stays in
@@ -105,6 +113,25 @@ not of these middlewares. An agremiado whose registration is still pending
 cannot log in, and that decision belongs to the service that authenticates them;
 teaching the middleware about registration states would tie every role in the
 system to the agremiado model.
+
+## Cross origin requests and CSRF
+
+The browser loads the interface from one origin and calls the API on another, so
+every call is cross origin. `WEB_ORIGIN` names the single origin allowed to send
+credentials. A wildcard is not an option: a response that allows any origin
+cannot carry a cookie.
+
+A cookie the browser attaches by itself is a cookie an attacker's page can make
+it attach too, which is what cross-site request forgery is. Two things stop it.
+
+`SameSite=Lax` keeps the cookie off requests that arrive from another site. This
+holds as long as the interface and the API stay on the same registrable domain,
+which is why they are deployed as subdomains of one domain.
+
+`verifyOrigin` then refuses any state changing request whose `Origin` names
+somewhere else. A browser always sends that header on such a request, so a
+forged page cannot avoid it. A request with no `Origin` at all did not come from
+a browser and is allowed through, which is what keeps `postman.json` usable.
 
 ## Presentation boundary
 

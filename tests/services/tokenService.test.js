@@ -47,6 +47,32 @@ test('verifyToken rejects a token whose payload was edited', () => {
   assert.throws(() => verifyToken(`${header}.${forgedPayload}.${signature}`, SECRET));
 });
 
+test('issueToken names the algorithm in the header instead of leaving it to a default', () => {
+  const token = issueToken(IDENTITY, SECRET, '1h');
+  const header = JSON.parse(Buffer.from(token.split('.')[0], 'base64url').toString());
+
+  assert.equal(header.alg, 'HS256');
+});
+
+test('verifyToken rejects a token that asks for no signature at all', () => {
+  const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(
+    JSON.stringify({ sub: IDENTITY.id, role: ROLES.ADMINISTRADOR }),
+  ).toString('base64url');
+
+  assert.throws(() => verifyToken(`${header}.${payload}.`, SECRET));
+});
+
+test('verifyToken rejects a token signed with an algorithm this API does not use', () => {
+  const token = jwt.sign({ role: ROLES.ADMINISTRADOR }, SECRET, {
+    algorithm: 'HS512',
+    subject: IDENTITY.id,
+    expiresIn: '1h',
+  });
+
+  assert.throws(() => verifyToken(token, SECRET));
+});
+
 test('verifyToken rejects a token that has expired', () => {
   const token = issueToken(IDENTITY, SECRET, '-1s');
 
