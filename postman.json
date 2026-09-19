@@ -8,6 +8,14 @@
     {
       "key": "baseUrl",
       "value": "http://localhost:4000"
+    },
+    {
+      "key": "adminEmail",
+      "value": ""
+    },
+    {
+      "key": "adminPassword",
+      "value": ""
     }
   ],
   "item": [
@@ -34,6 +42,29 @@
     {
       "name": "Auth",
       "item": [
+        {
+          "name": "Sign in as administrator",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/admin/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "admin", "login"]
+            },
+            "description": "Answers 204 and sets the session cookie, which Postman keeps in its jar and returns on its own. Invalid credentials always answer 401 with the same message, whether or not the address is an account. Ten failures from one address within fifteen minutes answer 429."
+          },
+          "response": []
+        },
         {
           "name": "Get current identity",
           "request": {
