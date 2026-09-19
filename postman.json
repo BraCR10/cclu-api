@@ -24,6 +24,14 @@
     {
       "key": "sectorId",
       "value": ""
+    },
+    {
+      "key": "memberEmail",
+      "value": ""
+    },
+    {
+      "key": "memberPassword",
+      "value": ""
     }
   ],
   "item": [
@@ -70,6 +78,29 @@
               "path": ["api", "auth", "admin", "login"]
             },
             "description": "Answers 204 and sets the session cookie, which Postman keeps in its jar and returns on its own. Invalid credentials always answer 401 with the same message, whether or not the address is an account. Ten failures from one address within fifteen minutes answer 429."
+          },
+          "response": []
+        },
+        {
+          "name": "Sign in as member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{memberEmail}}\",\n  \"password\": \"{{memberPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/member/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "member", "login"]
+            },
+            "description": "204 and the session cookie when the application is approved and the account active. 401 with one message for a wrong password or an address that is not an account. 403 with a reason once the password was right but the application is pending or rejected, or the account suspended."
           },
           "response": []
         },
