@@ -180,3 +180,70 @@ test('a registration that succeeds answers with its identifier and nothing else'
 
   assert.deepEqual(stored, { id: '65f0c3a1b2c3d4e5f6a7b8cb' });
 });
+
+test('every field that must be text is refused when it arrives as an operator', async () => {
+  const textFields = [
+    'email',
+    'phone',
+    'location',
+    'identificationNumber',
+    'businessName',
+    'businessDescription',
+    'memberType',
+    'identificationType',
+    'canton',
+    'sector',
+    'instagram',
+    'website',
+  ];
+
+  for (const field of textFields) {
+    await assert.rejects(
+      buildRegistration(validBody({ [field]: { $ne: null } }), REFERENCES),
+      RegistrationError,
+      `${field} was accepted as an operator`,
+    );
+  }
+});
+
+test('a field longer than allowed is refused', async () => {
+  await assert.rejects(
+    buildRegistration(validBody({ businessDescription: 'a'.repeat(501) }), REFERENCES),
+    RegistrationError,
+  );
+
+  const accepted = await buildRegistration(
+    validBody({ businessDescription: 'a'.repeat(500) }),
+    REFERENCES,
+  );
+
+  assert.equal(accepted.businessDescription.length, 500);
+});
+
+test('a password longer than the hash can read is refused', async () => {
+  await assert.rejects(
+    buildRegistration(validBody({ password: 'a'.repeat(73) }), REFERENCES),
+    RegistrationError,
+  );
+
+  const accepted = await buildRegistration(validBody({ password: 'a'.repeat(72) }), REFERENCES);
+
+  assert.ok(accepted.passwordHash);
+});
+
+test('a link that is not a web address is refused', async () => {
+  for (const value of ['javascript:alert(1)', 'data:text/html,x', 'ftp://x.cr', 'x.cr']) {
+    await assert.rejects(
+      buildRegistration(validBody({ website: value }), REFERENCES),
+      RegistrationError,
+      `${value} was accepted as a link`,
+    );
+  }
+
+  const accepted = await buildRegistration(
+    validBody({ website: 'https://panaderia.cr' }),
+    REFERENCES,
+  );
+
+  assert.equal(accepted.website, 'https://panaderia.cr');
+});

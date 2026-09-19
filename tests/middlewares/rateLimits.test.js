@@ -6,7 +6,7 @@ const {
   describeAttempt,
   skipsAccountLimit,
   accountKeyFor,
-} = require('../../src/middlewares/limitLoginAttempts');
+} = require('../../src/middlewares/rateLimits');
 
 test('emailFrom takes the address the attempt was aimed at', () => {
   assert.equal(emailFrom({ body: { email: '  ADMIN@CCLU.CR ' } }), 'admin@cclu.cr');

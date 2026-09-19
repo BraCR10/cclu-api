@@ -4,6 +4,10 @@ const { Sector } = require('../models/Sector');
 const passwordService = require('./passwordService');
 
 const MINIMUM_PASSWORD_LENGTH = 12;
+
+// bcrypt reads no further than the 72nd byte. Accepting more would let someone
+// believe the tail of their password counts for something.
+const MAXIMUM_PASSWORD_BYTES = 72;
 const MAXIMUM_TEXT_LENGTH = 500;
 
 // Named one by one, and nothing outside this list is ever read. Spreading the
@@ -17,14 +21,12 @@ const REQUIRED_TEXT_FIELDS = [
   'businessDescription',
 ];
 
-const OPTIONAL_TEXT_FIELDS = [
-  'logoUrl',
-  'whatsappNumber',
-  'instagram',
-  'facebook',
-  'linkedin',
-  'website',
-];
+const OPTIONAL_TEXT_FIELDS = ['whatsappNumber', 'instagram', 'facebook', 'linkedin'];
+
+// Stored to be rendered as links later, so a javascript: or data: value is kept
+// out now rather than trusted to whatever displays it.
+const OPTIONAL_LINK_FIELDS = ['logoUrl', 'website'];
+const SAFE_LINK = /^https?:\/\//i;
 
 const REQUIRED_REFERENCE_FIELDS = [
   { field: 'canton', model: Canton },
@@ -97,6 +99,10 @@ function readPassword(body) {
     );
   }
 
+  if (Buffer.byteLength(password, 'utf8') > MAXIMUM_PASSWORD_BYTES) {
+    throw new RegistrationError('The password is longer than can be used.');
+  }
+
   return password;
 }
 
@@ -135,6 +141,18 @@ async function buildRegistration(body, references = REQUIRED_REFERENCE_FIELDS) {
     }
   }
 
+  for (const field of OPTIONAL_LINK_FIELDS) {
+    const value = readText(body, field, { required: false });
+
+    if (value !== undefined) {
+      if (!SAFE_LINK.test(value)) {
+        throw new RegistrationError(`The field ${field} must be a web address.`);
+      }
+
+      registration[field] = value;
+    }
+  }
+
   for (const { field, allowed } of CHOICE_FIELDS) {
     registration[field] = readChoice(body, field, allowed);
   }
@@ -143,9 +161,13 @@ async function buildRegistration(body, references = REQUIRED_REFERENCE_FIELDS) {
   // costs no lookups.
   const password = readPassword(body);
 
-  for (const { field, model } of references) {
-    registration[field] = await readReference(body, field, model);
-  }
+  const found = await Promise.all(
+    references.map(({ field, model }) => readReference(body, field, model)),
+  );
+
+  references.forEach(({ field }, index) => {
+    registration[field] = found[index];
+  });
 
   registration.passwordHash = await passwordService.hashPassword(password);
 

@@ -1,5 +1,5 @@
 const { SESSION_COOKIE_NAME, sessionCookieOptions } = require('../config/sessionCookie');
-const { describeAttempt } = require('../middlewares/limitLoginAttempts');
+const { describeAttempt } = require('../middlewares/rateLimits');
 const adminAuthService = require('../services/adminAuthService');
 const tokenService = require('../services/tokenService');
 

@@ -186,8 +186,22 @@ pass through, so the duplicate is treated as an expected answer rather than a
 failure. What comes back names nothing: saying which identifier collided would
 confirm to a stranger that a particular card belongs to a member of the chamber.
 
+**Registrations are counted per address, successes included.** A registration
+that works is still a row created and a hash computed by a stranger, and the
+hash is deliberately slow. Five in fifteen minutes is more than anyone signing
+up once will need.
+
+The password is refused past the 72nd byte, which is as far as bcrypt reads.
+Accepting more would let someone believe the tail of their password counted for
+something.
+
+Fields that will be rendered as links are checked for their scheme here rather
+than trusted to whatever displays them later.
+
 `GET /api/cantons` and `GET /api/sectors` are public for the same reason the
-registration is. A form cannot offer a closed list without knowing what is in it.
+registration is. A form cannot offer a closed list without knowing what is in
+it, and that is also why the registration needs a limit: those listings hand
+anyone the two references a submission has to carry.
 
 ## Deny by default
 
