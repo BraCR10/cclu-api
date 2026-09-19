@@ -3,30 +3,43 @@ const rateLimit = require('express-rate-limit');
 const WINDOW_MS = 15 * 60 * 1000;
 const ATTEMPTS_PER_ADDRESS = 10;
 
-// Set where a person will never reach it and an attacker gains nothing. Hashing
-// costs a quarter of a second, so a hundred guesses in fifteen minutes is
-// already hopeless against any real password.
-//
-// It cannot be set low. Blocking by account alone means anyone who knows an
-// address can lock its owner out by guessing at it from enough places, and no
-// value avoids that: a limit tight enough to stop distributed guessing is tight
-// enough to be used as a weapon. The hash is the defence; this is the backstop.
+// Set where a person will never reach it and an attacker gains nothing: the
+// hash costs a quarter of a second, so a hundred guesses in fifteen minutes is
+// already hopeless. It cannot be set low, and docs/architecture.md says why.
 const ATTEMPTS_PER_ACCOUNT = 100;
+
+// The longest address any standard allows. Anything beyond it is not a mailbox,
+// and an unbounded one becomes an unbounded key and an unbounded log line.
+const MAX_EMAIL_LENGTH = 254;
 
 function emailFrom(request) {
   const email = request.body?.email;
 
-  return typeof email === 'string' && email.trim() !== '' ? email.trim().toLowerCase() : null;
+  if (typeof email !== 'string') {
+    return null;
+  }
+
+  const trimmed = email.trim();
+
+  return trimmed === '' || trimmed.length > MAX_EMAIL_LENGTH ? null : trimmed.toLowerCase();
 }
 
 function addressOf(request) {
   return request.ip ?? 'unknown-address';
 }
 
+// Passed as a field rather than built into the sentence. Interpolated, a
+// newline inside the address writes a second line that reads like ours.
+function describeAttempt(request) {
+  return { path: request.originalUrl, address: addressOf(request), account: emailFrom(request) };
+}
+
 function tooManyAttempts(request, response) {
-  console.warn(
-    `Rate limit reached on ${request.originalUrl} from ${addressOf(request)} for ${emailFrom(request) ?? 'no account'}`,
-  );
+  // Once the counter is over the limit every further request lands here, and
+  // logging each one would let an attacker write the log as fast as they like.
+  if (request.rateLimit?.used === request.rateLimit?.limit + 1) {
+    console.warn('Rate limit reached', describeAttempt(request));
+  }
 
   response.status(429).json({
     error: 'TooManyRequests',
@@ -51,11 +64,11 @@ const limitByAccount = rateLimit({
   skipSuccessfulRequests: true,
   standardHeaders: false,
   legacyHeaders: false,
-  // A body with no usable address is skipped rather than counted under a shared
-  // key, which would let malformed requests exhaust one bucket for everyone.
+  // Skipped rather than counted under a shared key, which malformed requests
+  // would otherwise exhaust for everyone.
   skip: (request) => emailFrom(request) === null,
   keyGenerator: (request) => emailFrom(request) ?? 'no-account',
   handler: tooManyAttempts,
 });
 
-module.exports = { limitByAddress, limitByAccount, emailFrom, addressOf };
+module.exports = { limitByAddress, limitByAccount, emailFrom, addressOf, describeAttempt };

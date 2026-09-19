@@ -20,9 +20,8 @@ function readEmail() {
   return email.trim().toLowerCase();
 }
 
-// Read from the environment and never printed. Generating one here would have
-// to show it, and anything shown lands in scrollback, in a pipeline log, or in
-// whatever collects this process's output.
+// Read from the environment and never printed. Anything shown lands in
+// scrollback and in whatever collects this process's output.
 function readPassword() {
   const password = process.env.ADMIN_PASSWORD;
 

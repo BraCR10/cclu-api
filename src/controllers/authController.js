@@ -1,5 +1,5 @@
 const { SESSION_COOKIE_NAME, sessionCookieOptions } = require('../config/sessionCookie');
-const { addressOf, emailFrom } = require('../middlewares/limitLoginAttempts');
+const { describeAttempt } = require('../middlewares/limitLoginAttempts');
 const adminAuthService = require('../services/adminAuthService');
 const tokenService = require('../services/tokenService');
 
@@ -11,12 +11,10 @@ function invalidCredentials() {
   return error;
 }
 
-// Recorded because an attempt that stays under the limits is invisible
-// otherwise, and a run of them is the only warning of an attack in progress.
+// An attempt under the limits is invisible otherwise, and a run of them is the
+// only warning of an attack in progress.
 function recordFailedSignIn(request) {
-  console.warn(
-    `Failed sign in on ${request.originalUrl} from ${addressOf(request)} for ${emailFrom(request) ?? 'no account'}`,
-  );
+  console.warn('Failed sign in', describeAttempt(request));
 }
 
 async function signInAdmin(
