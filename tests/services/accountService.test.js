@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
+  emailHeldByAnotherRole,
   isIdentityUsable,
   describeCurrentAccount,
   effectiveMemberState,
@@ -214,4 +215,41 @@ test('an administrator is described without a member code or a state', async () 
 
   assert.equal(account.memberCode, undefined);
   assert.equal(account.state, undefined);
+});
+
+const holders = {
+  [ROLES.MEMBER]: async (email) => email === 'socio@example.cr',
+  [ROLES.ADMIN]: async (email) => email === 'admin@example.cr',
+};
+
+// An index is unique inside one collection, and an address belongs to two of
+// them. Neither index can refuse what the other already holds.
+test('an address an administrator holds is found while a member registers', async () => {
+  assert.equal(await emailHeldByAnotherRole('admin@example.cr', ROLES.MEMBER, holders), true);
+});
+
+test('an address a member holds is found while an administrator is created', async () => {
+  assert.equal(await emailHeldByAnotherRole('socio@example.cr', ROLES.ADMIN, holders), true);
+});
+
+// The role's own collection has an index for that, and answering here would
+// make an ordinary duplicate look like a collision with the other role.
+test('the role doing the asking is skipped, since it has its own index', async () => {
+  assert.equal(await emailHeldByAnotherRole('socio@example.cr', ROLES.MEMBER, holders), false);
+  assert.equal(await emailHeldByAnotherRole('admin@example.cr', ROLES.ADMIN, holders), false);
+});
+
+test('an address nobody holds is let through', async () => {
+  assert.equal(await emailHeldByAnotherRole('nuevo@example.cr', ROLES.MEMBER, holders), false);
+});
+
+// Both schemas trim and lowercase on save, so a comparison that did neither
+// would let one address in twice wearing different capitals.
+test('the address is compared the way both collections store it', async () => {
+  assert.equal(await emailHeldByAnotherRole('  ADMIN@Example.CR  ', ROLES.MEMBER, holders), true);
+});
+
+test('nobody is asked about something that is not an address', async () => {
+  assert.equal(await emailHeldByAnotherRole(undefined, ROLES.MEMBER, holders), false);
+  assert.equal(await emailHeldByAnotherRole('   ', ROLES.MEMBER, holders), false);
 });

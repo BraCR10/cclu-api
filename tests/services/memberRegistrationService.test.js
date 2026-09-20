@@ -151,6 +151,10 @@ test('a reference that names nothing is refused', async () => {
   await assert.rejects(buildRegistration(validBody(), NOTHING_FOUND), ValidationError);
 });
 
+// The cross collection check is a database call, and these tests have no
+// database. Held by nobody is the ordinary case.
+const HELD_BY_NOBODY = async () => false;
+
 test('a duplicate identifier answers without confirming whose it is', async () => {
   const duplicate = Object.assign(new Error('E11000 duplicate key'), { code: 11000 });
 
@@ -161,6 +165,7 @@ test('a duplicate identifier answers without confirming whose it is', async () =
         throw duplicate;
       },
       REFERENCES,
+      HELD_BY_NOBODY,
     ),
     (error) => {
       assert.equal(error.statusCode, 409);
@@ -176,9 +181,59 @@ test('a registration that succeeds answers with its identifier and nothing else'
     validBody(),
     async (document) => ({ _id: '65f0c3a1b2c3d4e5f6a7b8cb', ...document }),
     REFERENCES,
+    HELD_BY_NOBODY,
   );
 
   assert.deepEqual(stored, { id: '65f0c3a1b2c3d4e5f6a7b8cb' });
+});
+
+// Told apart, the public registration form becomes a way of asking the chamber
+// who its administrators are, and anyone can open it.
+test('an address an administrator holds is refused in the same words as any duplicate', async () => {
+  const duplicate = Object.assign(new Error('E11000 duplicate key'), { code: 11000 });
+  const refusals = [];
+
+  for (const [create, heldByAnotherRole] of [
+    [
+      () => {
+        throw duplicate;
+      },
+      HELD_BY_NOBODY,
+    ],
+    [
+      () => assert.fail('the member was created although an administrator holds the address'),
+      async () => true,
+    ],
+  ]) {
+    await assert.rejects(
+      registerMember(validBody(), create, REFERENCES, heldByAnotherRole),
+      (error) => {
+        refusals.push({ code: error.code, message: error.message, status: error.statusCode });
+        return true;
+      },
+    );
+  }
+
+  assert.deepEqual(refusals[0], refusals[1]);
+});
+
+test('an address an administrator holds never reaches the collection', async () => {
+  let created = false;
+
+  await assert.rejects(
+    registerMember(
+      validBody(),
+      async () => {
+        created = true;
+        return { _id: 'x' };
+      },
+      REFERENCES,
+      async () => true,
+    ),
+    ValidationError,
+  );
+
+  assert.equal(created, false);
 });
 
 test('every field that must be text is refused when it arrives as an operator', async () => {

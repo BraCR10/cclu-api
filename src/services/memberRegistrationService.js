@@ -1,4 +1,6 @@
 const { Member, MEMBER_TYPES, IDENTIFICATION_TYPES } = require('../models/Member');
+const { ROLES } = require('../config/roles');
+const accountService = require('./accountService');
 const { Canton } = require('../models/Canton');
 const { Sector } = require('../models/Sector');
 const passwordService = require('./passwordService');
@@ -93,12 +95,31 @@ async function buildRegistration(body, references = REQUIRED_REFERENCE_FIELDS) {
 // a gap two simultaneous registrations can both pass through.
 const DUPLICATE_KEY = 11000;
 
+// One answer for an address another member holds and for one an administrator
+// holds. Told apart, this form becomes a way of asking the chamber who its
+// administrators are, and it is open to anyone.
+function alreadyRegistered() {
+  return new ValidationError(
+    CODES.ALREADY_REGISTERED,
+    null,
+    'The registration could not be completed. Contact the chamber for help.',
+    409,
+  );
+}
+
 async function registerMember(
   body,
   create = (document) => Member.create(document),
   references = REQUIRED_REFERENCE_FIELDS,
+  heldByAnotherRole = accountService.emailHeldByAnotherRole,
 ) {
   const registration = await buildRegistration(body, references);
+
+  // The index below cannot see the administrators, so an address one of them
+  // holds is refused here instead, in the same words.
+  if (await heldByAnotherRole(registration.email, ROLES.MEMBER)) {
+    throw alreadyRegistered();
+  }
 
   try {
     const member = await create(registration);
@@ -106,14 +127,7 @@ async function registerMember(
     return { id: String(member._id) };
   } catch (error) {
     if (error.code === DUPLICATE_KEY) {
-      // Saying which identifier collided would confirm to a stranger that it
-      // belongs to a member of the chamber, so the field is left unnamed.
-      throw new ValidationError(
-        CODES.ALREADY_REGISTERED,
-        null,
-        'The registration could not be completed. Contact the chamber for help.',
-        409,
-      );
+      throw alreadyRegistered();
     }
 
     throw error;
