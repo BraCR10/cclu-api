@@ -2,6 +2,7 @@ const { SESSION_COOKIE_NAME, sessionCookieOptions } = require('../config/session
 const { describeAttempt } = require('../middlewares/rateLimits');
 const adminAuthService = require('../services/adminAuthService');
 const memberAuthService = require('../services/memberAuthService');
+const currentAccountService = require('../services/currentAccountService');
 const tokenService = require('../services/tokenService');
 
 function invalidCredentials() {
@@ -74,8 +75,21 @@ async function signInMember(
   response.status(204).end();
 }
 
-async function getCurrentIdentity(request, response) {
-  response.json(request.identity);
+async function getCurrentIdentity(
+  request,
+  response,
+  next,
+  describeCurrentAccount = currentAccountService.describeCurrentAccount,
+) {
+  const account = await describeCurrentAccount(request.identity);
+
+  // The gate already proved the account is usable, so a record missing here
+  // means it disappeared between the two, and the session is worth nothing.
+  if (account === null) {
+    throw invalidCredentials();
+  }
+
+  response.json(account);
 }
 
 async function signOut(request, response) {

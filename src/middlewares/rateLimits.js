@@ -79,16 +79,6 @@ const limitByAccount = rateLimit({
   handler: tooManyAttempts,
 });
 
-module.exports = {
-  limitByAddress,
-  limitByAccount,
-  emailFrom,
-  addressOf,
-  describeAttempt,
-  skipsAccountLimit,
-  accountKeyFor,
-};
-
 // Registration counts every request, not only the failures. A registration that
 // succeeds is still a row created and a hash computed by a stranger.
 const REGISTRATIONS_PER_ADDRESS = 5;
@@ -101,4 +91,27 @@ const limitRegistrations = rateLimit({
   handler: tooManyAttempts,
 });
 
-module.exports.limitRegistrations = limitRegistrations;
+// Checking a code is cheap to ask and cheap to answer, which is what makes it
+// worth throttling: the limit is what keeps the roll from being read one code
+// at a time by someone who already holds an account.
+const CODE_CHECKS_PER_ADDRESS = 60;
+
+const limitCodeChecks = rateLimit({
+  windowMs: WINDOW_MS,
+  limit: CODE_CHECKS_PER_ADDRESS,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: tooManyAttempts,
+});
+
+module.exports = {
+  limitByAddress,
+  limitByAccount,
+  limitRegistrations,
+  limitCodeChecks,
+  emailFrom,
+  addressOf,
+  describeAttempt,
+  skipsAccountLimit,
+  accountKeyFor,
+};
