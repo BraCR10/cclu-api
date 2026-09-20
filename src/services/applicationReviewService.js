@@ -1,5 +1,7 @@
 const { Member, APPLICATION_STATUSES } = require('../models/Member');
 const { generateMemberCode } = require('./memberCodeService');
+const { issueResubmissionToken } = require('./resubmissionService');
+const emailService = require('./emailService');
 
 const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
 const MAXIMUM_REASON_LENGTH = 500;
@@ -30,7 +32,7 @@ const APPLICATION_FIELDS = [
   'createdAt',
 ].join(' ');
 
-const DECISION_FIELDS = 'applicationStatus statusReason memberCode reviewedAt';
+const DECISION_FIELDS = 'applicationStatus statusReason memberCode reviewedAt email businessName';
 
 // What a decision left behind. The reason and the reviewer are carried because
 // an administrator asked a week later has nowhere else to look.
@@ -184,12 +186,20 @@ async function approveApplication(
   throw new ApplicationReviewError('A member code could not be assigned.', 500);
 }
 
+// Built here rather than in the template, because only the API knows the token
+// and where the site answers.
+function resubmitUrlFor(token, origin = process.env.WEB_ORIGIN) {
+  return origin === undefined ? undefined : `${origin.replace(/\/+$/, '')}/resubmit/${token}`;
+}
+
 async function rejectApplication(
   memberId,
   reviewerId,
   body,
   decide = updateMatchingApplication,
   findStatus = findApplicationStatus,
+  issueToken = issueResubmissionToken,
+  notify = emailService.notify,
 ) {
   const id = readMemberId(memberId);
   const reason = readReason(body);
@@ -209,7 +219,21 @@ async function rejectApplication(
     await refuseDecision(id, findStatus);
   }
 
-  return rejected;
+  // The decision is already written. A message that does not leave is reported,
+  // never undone, so the administrator learns the applicant was not reached.
+  const { token } = await issueToken(id);
+  const notified = await notify('applicationRejected', rejected.email, {
+    businessName: rejected.businessName,
+    reason,
+    resubmitUrl: resubmitUrlFor(token),
+  });
+
+  // The address and the name were read to send the message, not to answer with.
+  const decision = { ...rejected };
+  delete decision.email;
+  delete decision.businessName;
+
+  return { ...decision, notified };
 }
 
 module.exports = {

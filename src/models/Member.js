@@ -138,9 +138,24 @@ const memberSchema = new mongoose.Schema(
       sparse: true,
       trim: true,
     },
+    // What a rejection leaves behind so the applicant can come back. The link
+    // in their message is the only proof they own this registration, so the
+    // token is stored the way a password is and never in the clear.
+    resubmissionTokenHash: {
+      type: String,
+      default: null,
+    },
+    resubmissionExpiresAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true },
 );
+
+// Looked up by this digest when somebody follows their link, so it is indexed
+// and sparse: only a rejected registration carries one.
+memberSchema.index({ resubmissionTokenHash: 1 }, { sparse: true });
 
 const Member = mongoose.model('Member', memberSchema);
 

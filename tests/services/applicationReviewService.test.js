@@ -25,6 +25,8 @@ function recordingDecide(result = { applicationStatus: APPLICATION_STATUSES.APPR
 }
 
 const findingNothing = async () => null;
+const issuingToken = async () => ({ token: 'a'.repeat(64) });
+const silentNotify = async () => true;
 const findingStatus = (applicationStatus) => async () => ({ applicationStatus });
 
 async function refusal(work) {
@@ -51,7 +53,15 @@ test('an approval only matches an application that is still pending', async () =
 test('a rejection only matches an application that is still pending', async () => {
   const { calls, decide } = recordingDecide({ applicationStatus: APPLICATION_STATUSES.REJECTED });
 
-  await rejectApplication(MEMBER_ID, REVIEWER_ID, { reason: 'Unverifiable address.' }, decide);
+  await rejectApplication(
+    MEMBER_ID,
+    REVIEWER_ID,
+    { reason: 'Unverifiable address.' },
+    decide,
+    findingNothing,
+    issuingToken,
+    silentNotify,
+  );
 
   assert.deepEqual(calls[0].filter, {
     _id: MEMBER_ID,
@@ -240,7 +250,15 @@ test('a reason longer than allowed is refused', async () => {
 test('a rejection stores the trimmed reason and draws no member code', async () => {
   const { calls, decide } = recordingDecide({ applicationStatus: APPLICATION_STATUSES.REJECTED });
 
-  await rejectApplication(MEMBER_ID, REVIEWER_ID, { reason: '  Unverifiable address.  ' }, decide);
+  await rejectApplication(
+    MEMBER_ID,
+    REVIEWER_ID,
+    { reason: '  Unverifiable address.  ' },
+    decide,
+    findingNothing,
+    issuingToken,
+    silentNotify,
+  );
 
   const { $set } = calls[0].changes;
 
