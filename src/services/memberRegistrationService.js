@@ -2,13 +2,15 @@ const { Member, MEMBER_TYPES, IDENTIFICATION_TYPES } = require('../models/Member
 const { Canton } = require('../models/Canton');
 const { Sector } = require('../models/Sector');
 const passwordService = require('./passwordService');
-const { createFieldReaders } = require('./fieldReaders');
-
-const MINIMUM_PASSWORD_LENGTH = 12;
-
-// bcrypt reads no further than the 72nd byte. Accepting more would let someone
-// believe the tail of their password counts for something.
-const MAXIMUM_PASSWORD_BYTES = 72;
+const {
+  readText,
+  readChoice,
+  readPassword,
+  readReference,
+  ValidationError,
+  refuse,
+  CODES,
+} = require('../config/memberRules');
 
 // Named one by one, and nothing outside this list is ever read. Spreading the
 // body would let a caller set their own role or arrive already approved.
@@ -37,35 +39,9 @@ const CHOICE_FIELDS = [
   { field: 'identificationType', allowed: Object.values(IDENTIFICATION_TYPES) },
 ];
 
-class RegistrationError extends Error {
-  constructor(message, statusCode = 400) {
-    super(message);
-    this.name = 'RegistrationError';
-    this.statusCode = statusCode;
-  }
-}
-
-const { readText, readChoice, readLink, readReference } = createFieldReaders(RegistrationError);
-
-function readPassword(body) {
-  const password = body.password;
-
-  if (typeof password !== 'string' || password.length < MINIMUM_PASSWORD_LENGTH) {
-    throw new RegistrationError(
-      `The password must be at least ${MINIMUM_PASSWORD_LENGTH} characters.`,
-    );
-  }
-
-  if (Buffer.byteLength(password, 'utf8') > MAXIMUM_PASSWORD_BYTES) {
-    throw new RegistrationError('The password is longer than can be used.');
-  }
-
-  return password;
-}
-
 async function buildRegistration(body, references = REQUIRED_REFERENCE_FIELDS) {
   if (body === null || typeof body !== 'object' || Array.isArray(body)) {
-    throw new RegistrationError('The registration body is missing.');
+    refuse(CODES.BODY_MISSING, null, 'The registration body is missing.');
   }
 
   const registration = {};
@@ -83,7 +59,7 @@ async function buildRegistration(body, references = REQUIRED_REFERENCE_FIELDS) {
   }
 
   for (const field of OPTIONAL_LINK_FIELDS) {
-    const value = readLink(body, field, { required: false });
+    const value = readText(body, field, { required: false });
 
     if (value !== undefined) {
       registration[field] = value;
@@ -131,8 +107,10 @@ async function registerMember(
   } catch (error) {
     if (error.code === DUPLICATE_KEY) {
       // Saying which identifier collided would confirm to a stranger that it
-      // belongs to a member of the chamber.
-      throw new RegistrationError(
+      // belongs to a member of the chamber, so the field is left unnamed.
+      throw new ValidationError(
+        CODES.ALREADY_REGISTERED,
+        null,
         'The registration could not be completed. Contact the chamber for help.',
         409,
       );
@@ -142,4 +120,4 @@ async function registerMember(
   }
 }
 
-module.exports = { registerMember, buildRegistration, RegistrationError };
+module.exports = { registerMember, buildRegistration };

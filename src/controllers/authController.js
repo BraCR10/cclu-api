@@ -2,7 +2,8 @@ const { SESSION_COOKIE_NAME, sessionCookieOptions } = require('../config/session
 const { describeAttempt } = require('../middlewares/rateLimits');
 const adminAuthService = require('../services/adminAuthService');
 const memberAuthService = require('../services/memberAuthService');
-const currentAccountService = require('../services/currentAccountService');
+const accountService = require('../services/accountService');
+
 const tokenService = require('../services/tokenService');
 
 function invalidCredentials() {
@@ -79,7 +80,7 @@ async function getCurrentIdentity(
   request,
   response,
   next,
-  describeCurrentAccount = currentAccountService.describeCurrentAccount,
+  describeCurrentAccount = accountService.describeCurrentAccount,
 ) {
   const account = await describeCurrentAccount(request.identity);
 

@@ -4,11 +4,10 @@ const mongoose = require('mongoose');
 const connectDatabase = require('../src/config/database');
 const { Admin } = require('../src/models/Admin');
 const { hashPassword } = require('../src/services/passwordService');
+const { readPassword } = require('../src/config/memberRules');
 
 // The panel has no way to sign up, so there has to be a way in before anyone is
 // in. This is it.
-
-const MINIMUM_PASSWORD_LENGTH = 12;
 
 function readEmail() {
   const email = process.argv[2];
@@ -20,23 +19,11 @@ function readEmail() {
   return email.trim().toLowerCase();
 }
 
-// Read from the environment and never printed. Anything shown lands in
-// scrollback and in whatever collects this process's output.
-function readPassword() {
-  const password = process.env.ADMIN_PASSWORD;
-
-  if (typeof password !== 'string' || password.length < MINIMUM_PASSWORD_LENGTH) {
-    throw new Error(
-      `Set ADMIN_PASSWORD to at least ${MINIMUM_PASSWORD_LENGTH} characters before running this.`,
-    );
-  }
-
-  return password;
-}
-
 async function createAdmin() {
   const email = readEmail();
-  const password = readPassword();
+  // Read from the environment and never printed. Anything shown lands in
+  // scrollback and in whatever collects this process's output.
+  const password = readPassword({ ADMIN_PASSWORD: process.env.ADMIN_PASSWORD }, 'ADMIN_PASSWORD');
 
   await connectDatabase();
 
