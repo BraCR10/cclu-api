@@ -63,10 +63,11 @@ test('the ten sectors the registration form offers are the ones defined', () => 
   );
 });
 
-// The ERS lists these by name in the registration fields of RF-AG-001. Written
-// out here rather than derived, so a change to either side has to face the
-// other one.
-const SECTORS_IN_THE_SPECIFICATION = [
+// Written out rather than derived from the seed, so changing one of them has
+// to face the other. The chamber settled on these ten and the directory filters
+// by them; a form offering a different set would split one business across two
+// names.
+const SETTLED_SECTORS = [
   'comercios',
   'alimentos y bebidas',
   'servicios profesionales',
@@ -79,9 +80,9 @@ const SECTORS_IN_THE_SPECIFICATION = [
   'otro',
 ];
 
-test('the sectors are the ones the specification names, in its order', () => {
+test('the sectors are the ten that were settled on, in their order', () => {
   assert.deepEqual(
     sectors.map((sector) => sector.name.toLowerCase()),
-    SECTORS_IN_THE_SPECIFICATION,
+    SETTLED_SECTORS,
   );
 });
