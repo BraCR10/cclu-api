@@ -15,10 +15,18 @@ function readEmail() {
   const email = process.argv[2];
 
   if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-    throw new Error('Usage: ADMIN_PASSWORD=<password> npm run create-admin -- <email>');
+    throw new Error('Usage: ADMIN_PASSWORD=<password> npm run create-admin -- <email> [name]');
   }
 
   return email.trim().toLowerCase();
+}
+
+// Optional, because an address is enough to sign in with. Without one every
+// screen greets the person by their address, which reads like a mistake.
+function readName() {
+  const name = process.argv[3];
+
+  return typeof name === 'string' && name.trim() !== '' ? name.trim() : undefined;
 }
 
 async function createAdmin() {
@@ -40,7 +48,11 @@ async function createAdmin() {
 
   // The unique index is what actually prevents a duplicate; this only turns a
   // race into a message an operator can read.
-  const admin = await Admin.create({ email, passwordHash: await hashPassword(password) });
+  const admin = await Admin.create({
+    name: readName(),
+    email,
+    passwordHash: await hashPassword(password),
+  });
 
   console.log(`Administrator created: ${email} (${admin._id})`);
 }
