@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { sendEmail, notify, EmailDeliveryError } = require('../../src/services/emailService');
-const { renderTemplate, UnknownTemplateError } = require('../../src/emails');
+const { renderTemplate, UnknownTemplateError, TEMPLATE_NAMES } = require('../../src/emails');
 const { readMailerConfig, MailerConfigurationError } = require('../../src/config/mailer');
 
 const CONFIGURED = {
@@ -82,19 +82,36 @@ test('a rejection reason written by an administrator is escaped too', () => {
   assert.ok(message.html.includes('&lt;img'));
 });
 
-test('every template answers with a subject and both bodies', () => {
-  const rendered = [
-    renderTemplate('applicationApproved', { businessName: 'A', memberCode: 'MA7K2Q4' }),
-    renderTemplate('applicationRejected', { businessName: 'A', reason: 'No verificable.' }),
-    renderTemplate('passwordChangeCode', { code: '123456', minutesValid: 15 }),
-  ];
+const TEMPLATE_FIXTURES = {
+  applicationApproved: { businessName: 'A', memberCode: 'MA7K2Q4' },
+  applicationRejected: { businessName: 'A', reason: 'No verificable.' },
+  passwordResetLink: { resetUrl: 'https://cclu.example/password/reset/abc', minutesValid: 30 },
+};
 
-  for (const message of rendered) {
+// Driven by the registry rather than a list written beside it, so a template
+// added without anybody checking what it renders fails here.
+test('every template answers with a subject and both bodies', () => {
+  for (const name of TEMPLATE_NAMES) {
+    const data = TEMPLATE_FIXTURES[name];
+
+    assert.ok(data !== undefined, `no fixture for the ${name} template`);
+
+    const message = renderTemplate(name, data);
+
     assert.equal(typeof message.subject, 'string');
     assert.ok(message.subject.length > 0);
     assert.ok(message.text.length > 0);
     assert.ok(message.html.length > 0);
   }
+});
+
+// The address is built by the API from a token it generated, but a template
+// that dropped the escaping would still be the place it stopped being safe.
+test('a reset link with no address to offer says so instead of writing undefined', () => {
+  const message = renderTemplate('passwordResetLink', { minutesValid: 30 });
+
+  assert.ok(!message.text.includes('undefined'));
+  assert.ok(!message.html.includes('undefined'));
 });
 
 test('a template that does not exist is refused rather than sent empty', () => {
