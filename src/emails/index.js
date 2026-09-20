@@ -1,13 +1,13 @@
 const { applicationApproved } = require('./applicationApproved');
 const { applicationRejected } = require('./applicationRejected');
-const { passwordChangeCode } = require('./passwordChangeCode');
+const { passwordResetLink } = require('./passwordResetLink');
 
 // A new kind of notification is a new file beside this one and a line here.
 // Nothing in the sending component changes.
 const TEMPLATES = {
   applicationApproved,
   applicationRejected,
-  passwordChangeCode,
+  passwordResetLink,
 };
 
 class UnknownTemplateError extends Error {

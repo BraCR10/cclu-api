@@ -1,6 +1,6 @@
 const express = require('express');
 const authController = require('../controllers/authController');
-const passwordChangeController = require('../controllers/passwordChangeController');
+const passwordResetController = require('../controllers/passwordResetController');
 const { limitByAddress, limitByAccount } = require('../middlewares/rateLimits');
 
 const publicAuthRoutes = express.Router();
@@ -15,14 +15,33 @@ publicAuthRoutes.post('/member/login', limitByAddress, limitByAccount, authContr
 // the cookie of an expired session, which is exactly when clearing it matters.
 publicAuthRoutes.post('/logout', authController.signOut);
 
+// Somebody who forgot their password cannot sign in to ask for a new one, so
+// requiring a session here would shut out the only person this exists for. The
+// answer is the same whether or not the address is an account.
+publicAuthRoutes.post(
+  '/password/forgot',
+  limitByAddress,
+  limitByAccount,
+  passwordResetController.requestForgotten,
+);
+
+// The link arrives by mail and may be opened on a device that has no session.
+// The token is what proves the request was theirs.
+publicAuthRoutes.get('/password/reset/:token', limitByAddress, passwordResetController.checkLink);
+publicAuthRoutes.post('/password/reset', limitByAddress, passwordResetController.completeReset);
+
 const privateAuthRoutes = express.Router();
 
 privateAuthRoutes.get('/me', authController.getCurrentIdentity);
 
 // One flow for both roles: the steps are the same and building it twice would
-// be two places for the code to be checked differently. The address limit
-// counts failures, which is the shape of guessing at either step.
-privateAuthRoutes.post('/password/request', limitByAddress, passwordChangeController.requestChange);
-privateAuthRoutes.post('/password/confirm', limitByAddress, passwordChangeController.confirmChange);
+// be two places for the rule to be applied differently. The current password is
+// asked for here so that holding somebody's open session is not enough to make
+// the chamber send them a link.
+privateAuthRoutes.post(
+  '/password/request',
+  limitByAddress,
+  passwordResetController.requestFromSession,
+);
 
 module.exports = { publicAuthRoutes, privateAuthRoutes };
