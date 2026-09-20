@@ -2,13 +2,13 @@ const { Member, MEMBER_TYPES, IDENTIFICATION_TYPES } = require('../models/Member
 const { Canton } = require('../models/Canton');
 const { Sector } = require('../models/Sector');
 const passwordService = require('./passwordService');
+const { createFieldReaders } = require('./fieldReaders');
 
 const MINIMUM_PASSWORD_LENGTH = 12;
 
 // bcrypt reads no further than the 72nd byte. Accepting more would let someone
 // believe the tail of their password counts for something.
 const MAXIMUM_PASSWORD_BYTES = 72;
-const MAXIMUM_TEXT_LENGTH = 500;
 
 // Named one by one, and nothing outside this list is ever read. Spreading the
 // body would let a caller set their own role or arrive already approved.
@@ -23,10 +23,9 @@ const REQUIRED_TEXT_FIELDS = [
 
 const OPTIONAL_TEXT_FIELDS = ['whatsappNumber', 'instagram', 'facebook', 'linkedin'];
 
-// Stored to be rendered as links later, so a javascript: or data: value is kept
-// out now rather than trusted to whatever displays it.
+// Rendered as links later, so the scheme is checked there rather than trusted
+// to whatever displays them.
 const OPTIONAL_LINK_FIELDS = ['logoUrl', 'website'];
-const SAFE_LINK = /^https?:\/\//i;
 
 const REQUIRED_REFERENCE_FIELDS = [
   { field: 'canton', model: Canton },
@@ -46,49 +45,7 @@ class RegistrationError extends Error {
   }
 }
 
-function readText(body, field, { required }) {
-  const value = body[field];
-
-  if (value === undefined || value === null || value === '') {
-    if (required) {
-      throw new RegistrationError(`The field ${field} is required.`);
-    }
-
-    return undefined;
-  }
-
-  // A value that is not a string stops being data and becomes part of the
-  // query, because MongoDB reads $ and . as operators.
-  if (typeof value !== 'string') {
-    throw new RegistrationError(`The field ${field} must be text.`);
-  }
-
-  const trimmed = value.trim();
-
-  if (trimmed === '') {
-    if (required) {
-      throw new RegistrationError(`The field ${field} is required.`);
-    }
-
-    return undefined;
-  }
-
-  if (trimmed.length > MAXIMUM_TEXT_LENGTH) {
-    throw new RegistrationError(`The field ${field} is longer than allowed.`);
-  }
-
-  return trimmed;
-}
-
-function readChoice(body, field, allowed) {
-  const value = readText(body, field, { required: true });
-
-  if (!allowed.includes(value)) {
-    throw new RegistrationError(`The field ${field} is not one of the accepted values.`);
-  }
-
-  return value;
-}
+const { readText, readChoice, readLink, readReference } = createFieldReaders(RegistrationError);
 
 function readPassword(body) {
   const password = body.password;
@@ -104,22 +61,6 @@ function readPassword(body) {
   }
 
   return password;
-}
-
-async function readReference(body, field, model) {
-  const id = readText(body, field, { required: true });
-
-  if (!/^[0-9a-fA-F]{24}$/.test(id)) {
-    throw new RegistrationError(`The field ${field} is not a valid reference.`);
-  }
-
-  const found = await model.findById(id).select('_id').lean();
-
-  if (found === null) {
-    throw new RegistrationError(`The field ${field} does not name anything that exists.`);
-  }
-
-  return found._id;
 }
 
 async function buildRegistration(body, references = REQUIRED_REFERENCE_FIELDS) {
@@ -142,13 +83,9 @@ async function buildRegistration(body, references = REQUIRED_REFERENCE_FIELDS) {
   }
 
   for (const field of OPTIONAL_LINK_FIELDS) {
-    const value = readText(body, field, { required: false });
+    const value = readLink(body, field, { required: false });
 
     if (value !== undefined) {
-      if (!SAFE_LINK.test(value)) {
-        throw new RegistrationError(`The field ${field} must be a web address.`);
-      }
-
       registration[field] = value;
     }
   }
