@@ -11,6 +11,9 @@ const PATTERNS = {
 };
 
 const FIELDS = {
+  // A person's name has no shape worth enforcing. Every rule anybody writes for
+  // one refuses somebody's real name.
+  name: { maxLength: 120 },
   email: { maxLength: 254, pattern: 'email' },
   phone: { maxLength: 20, pattern: 'phone' },
   whatsappNumber: { maxLength: 20, pattern: 'phone' },

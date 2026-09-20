@@ -3,6 +3,13 @@ const { ACCOUNT_STATUSES } = require('../config/accountStatus');
 
 const adminSchema = new mongoose.Schema(
   {
+    // Optional, because administrators created before this field existed have
+    // none and refusing to load them would lock the chamber out of its own
+    // panel. Everything that reads it falls back to the address.
+    name: {
+      type: String,
+      trim: true,
+    },
     email: {
       type: String,
       required: true,

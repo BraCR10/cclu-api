@@ -59,9 +59,11 @@ const ACCOUNT_RULES = {
     find: (id) => Admin.findById(id).select('accountStatus').lean(),
     isUsable: (account) => account.accountStatus === ACCOUNT_STATUSES.ACTIVE,
     describe: async (id) => {
-      const admin = await Admin.findById(id).select('email').lean();
+      const admin = await Admin.findById(id).select('name email').lean();
 
-      return admin === null ? null : { email: admin.email, displayName: admin.email };
+      // The address stands in where no name was stored, so a screen always has
+      // something to greet somebody by.
+      return admin === null ? null : { email: admin.email, displayName: admin.name || admin.email };
     },
   },
 };
