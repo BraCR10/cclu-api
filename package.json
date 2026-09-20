@@ -13,7 +13,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "node --test",
-    "create-admin": "node scripts/create-admin.js"
+    "create-admin": "node scripts/create-admin.js",
+    "seed-catalogs": "node scripts/seed-catalogs.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

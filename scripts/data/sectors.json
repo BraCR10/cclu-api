@@ -1,0 +1,12 @@
+[
+  { "name": "Comercio" },
+  { "name": "Alimentos y bebidas" },
+  { "name": "Servicios profesionales" },
+  { "name": "Salud y bienestar" },
+  { "name": "Tecnología" },
+  { "name": "Turismo y hospedaje" },
+  { "name": "Manufactura" },
+  { "name": "Construcción" },
+  { "name": "Agropecuario" },
+  { "name": "Otro" }
+]
