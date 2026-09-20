@@ -62,3 +62,26 @@ test('the ten sectors the registration form offers are the ones defined', () => 
     'a business that fits nothing else has nowhere to go',
   );
 });
+
+// The ERS lists these by name in the registration fields of RF-AG-001. Written
+// out here rather than derived, so a change to either side has to face the
+// other one.
+const SECTORS_IN_THE_SPECIFICATION = [
+  'comercios',
+  'alimentos y bebidas',
+  'servicios profesionales',
+  'salud y bienestar',
+  'tecnología',
+  'turismo y hospedaje',
+  'manufactura',
+  'construcción',
+  'agropecuario',
+  'otro',
+];
+
+test('the sectors are the ones the specification names, in its order', () => {
+  assert.deepEqual(
+    sectors.map((sector) => sector.name.toLowerCase()),
+    SECTORS_IN_THE_SPECIFICATION,
+  );
+});
