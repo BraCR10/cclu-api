@@ -3,8 +3,8 @@ const assert = require('node:assert/strict');
 const {
   registerMember,
   buildRegistration,
-  RegistrationError,
 } = require('../../src/services/memberRegistrationService');
+const { ValidationError } = require('../../src/config/memberRules');
 const { MEMBER_TYPES, IDENTIFICATION_TYPES } = require('../../src/models/Member');
 const { ROLES } = require('../../src/config/roles');
 
@@ -42,7 +42,7 @@ function validBody(overrides = {}) {
     identificationNumber: '3101123456',
     businessName: 'Panadería La Unión',
     businessDescription: 'Panadería artesanal',
-    password: 'una-contrasena-larga',
+    password: 'Contrasena1!',
     ...overrides,
   };
 }
@@ -80,7 +80,7 @@ test('a field that must be text is refused when it arrives as an operator', asyn
   for (const field of ['email', 'identificationNumber', 'businessName']) {
     await assert.rejects(
       buildRegistration(validBody({ [field]: { $ne: null } }), REFERENCES),
-      RegistrationError,
+      ValidationError,
     );
   }
 });
@@ -89,11 +89,11 @@ test('a missing required field stops the registration', async () => {
   for (const field of ['email', 'phone', 'location', 'businessName']) {
     await assert.rejects(
       buildRegistration(validBody({ [field]: undefined }), REFERENCES),
-      RegistrationError,
+      ValidationError,
     );
     await assert.rejects(
       buildRegistration(validBody({ [field]: '   ' }), REFERENCES),
-      RegistrationError,
+      ValidationError,
     );
   }
 });
@@ -107,22 +107,22 @@ test('an optional field is simply absent rather than empty', async () => {
 test('a choice outside the accepted values is refused', async () => {
   await assert.rejects(
     buildRegistration(validBody({ memberType: 'administrator' }), REFERENCES),
-    RegistrationError,
+    ValidationError,
   );
   await assert.rejects(
     buildRegistration(validBody({ identificationType: 'inventado' }), REFERENCES),
-    RegistrationError,
+    ValidationError,
   );
 });
 
 test('a password shorter than the minimum is refused', async () => {
   await assert.rejects(
     buildRegistration(validBody({ password: 'corta' }), REFERENCES),
-    RegistrationError,
+    ValidationError,
   );
   await assert.rejects(
     buildRegistration(validBody({ password: { $ne: null } }), REFERENCES),
-    RegistrationError,
+    ValidationError,
   );
 });
 
@@ -142,13 +142,13 @@ test('a reference is checked for shape before it reaches a query', async () => {
 
   await assert.rejects(
     buildRegistration(validBody({ canton: 'not-an-identifier' }), watching),
-    RegistrationError,
+    ValidationError,
   );
   assert.equal(searched, false);
 });
 
 test('a reference that names nothing is refused', async () => {
-  await assert.rejects(buildRegistration(validBody(), NOTHING_FOUND), RegistrationError);
+  await assert.rejects(buildRegistration(validBody(), NOTHING_FOUND), ValidationError);
 });
 
 test('a duplicate identifier answers without confirming whose it is', async () => {
@@ -200,7 +200,7 @@ test('every field that must be text is refused when it arrives as an operator', 
   for (const field of textFields) {
     await assert.rejects(
       buildRegistration(validBody({ [field]: { $ne: null } }), REFERENCES),
-      RegistrationError,
+      ValidationError,
       `${field} was accepted as an operator`,
     );
   }
@@ -209,7 +209,7 @@ test('every field that must be text is refused when it arrives as an operator', 
 test('a field longer than allowed is refused', async () => {
   await assert.rejects(
     buildRegistration(validBody({ businessDescription: 'a'.repeat(501) }), REFERENCES),
-    RegistrationError,
+    ValidationError,
   );
 
   const accepted = await buildRegistration(
@@ -222,11 +222,14 @@ test('a field longer than allowed is refused', async () => {
 
 test('a password longer than the hash can read is refused', async () => {
   await assert.rejects(
-    buildRegistration(validBody({ password: 'a'.repeat(73) }), REFERENCES),
-    RegistrationError,
+    buildRegistration(validBody({ password: `A1!${'a'.repeat(70)}` }), REFERENCES),
+    ValidationError,
   );
 
-  const accepted = await buildRegistration(validBody({ password: 'a'.repeat(72) }), REFERENCES);
+  const accepted = await buildRegistration(
+    validBody({ password: `A1!${'a'.repeat(69)}` }),
+    REFERENCES,
+  );
 
   assert.ok(accepted.passwordHash);
 });
@@ -235,7 +238,7 @@ test('a link that is not a web address is refused', async () => {
   for (const value of ['javascript:alert(1)', 'data:text/html,x', 'ftp://x.cr', 'x.cr']) {
     await assert.rejects(
       buildRegistration(validBody({ website: value }), REFERENCES),
-      RegistrationError,
+      ValidationError,
       `${value} was accepted as a link`,
     );
   }

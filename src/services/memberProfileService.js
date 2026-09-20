@@ -1,18 +1,15 @@
 const { Member, MEMBER_TYPES } = require('../models/Member');
 const { Canton } = require('../models/Canton');
 const { Sector } = require('../models/Sector');
-const { createFieldReaders } = require('./fieldReaders');
-const { effectiveMemberState } = require('./memberStatusService');
-
-class ProfileError extends Error {
-  constructor(message, statusCode = 400) {
-    super(message);
-    this.name = 'ProfileError';
-    this.statusCode = statusCode;
-  }
-}
-
-const { readText, readChoice, readLink, readReference } = createFieldReaders(ProfileError);
+const {
+  readText,
+  readChoice,
+  readReference,
+  ValidationError,
+  refuse,
+  CODES,
+} = require('../config/memberRules');
+const { effectiveMemberState } = require('./accountService');
 
 // Named one by one. A field absent from these lists cannot be changed here, so
 // a body carrying an application status or a member code simply goes unread.
@@ -62,7 +59,7 @@ async function readProfile(memberId, find = findProfile) {
   const member = await find(memberId);
 
   if (member === null || member === undefined) {
-    throw new ProfileError('That account no longer exists.', 404);
+    throw new ValidationError(CODES.UNKNOWN_REFERENCE, null, 'That account no longer exists.', 404);
   }
 
   return presentProfile(member);
@@ -70,7 +67,7 @@ async function readProfile(memberId, find = findProfile) {
 
 async function buildChanges(body, references = EDITABLE_REFERENCE_FIELDS) {
   if (body === null || typeof body !== 'object' || Array.isArray(body)) {
-    throw new ProfileError('The profile body is missing.');
+    refuse(CODES.BODY_MISSING, null, 'The profile body is missing.');
   }
 
   const changes = {};
@@ -89,10 +86,7 @@ async function buildChanges(body, references = EDITABLE_REFERENCE_FIELDS) {
       continue;
     }
 
-    const isLink = OPTIONAL_LINK_FIELDS.includes(field);
-    const value = isLink
-      ? readLink(body, field, { required: false })
-      : readText(body, field, { required: false });
+    const value = readText(body, field, { required: false });
 
     if (value === undefined) {
       unset[field] = '';
@@ -114,7 +108,7 @@ async function buildChanges(body, references = EDITABLE_REFERENCE_FIELDS) {
   }
 
   if (Object.keys(changes).length === 0 && Object.keys(unset).length === 0) {
-    throw new ProfileError('The request changes nothing.');
+    refuse(CODES.NOTHING_TO_CHANGE, null, 'The request changes nothing.');
   }
 
   return { changes, unset };
@@ -141,16 +135,10 @@ async function updateProfile(
   const updated = await apply(memberId, update);
 
   if (updated === null || updated === undefined) {
-    throw new ProfileError('That account no longer exists.', 404);
+    throw new ValidationError(CODES.UNKNOWN_REFERENCE, null, 'That account no longer exists.', 404);
   }
 
   return presentProfile(updated);
 }
 
-module.exports = {
-  readProfile,
-  updateProfile,
-  buildChanges,
-  ProfileError,
-  EDITABLE_TEXT_FIELDS,
-};
+module.exports = { readProfile, updateProfile, buildChanges, EDITABLE_TEXT_FIELDS };

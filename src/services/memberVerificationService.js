@@ -1,6 +1,6 @@
 const { Member } = require('../models/Member');
 const { normalizeMemberCode, isMemberCodeValid, formatMemberCode } = require('./memberCodeService');
-const { effectiveMemberState, MEMBER_STATES } = require('./memberStatusService');
+const { effectiveMemberState, MEMBER_STATES } = require('./accountService');
 
 // What one member may learn about another from a code: enough to recognise the
 // business in front of them, and nothing that belongs to the account.

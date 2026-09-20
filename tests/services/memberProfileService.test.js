@@ -1,10 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {
-  buildChanges,
-  updateProfile,
-  ProfileError,
-} = require('../../src/services/memberProfileService');
+const { buildChanges, updateProfile } = require('../../src/services/memberProfileService');
+const { ValidationError } = require('../../src/config/memberRules');
 
 const MEMBER_ID = '65f0c3a1b2c3d4e5f6a7b8c9';
 const SECTOR_ID = '65f0c3a1b2c3d4e5f6a7b8ca';
@@ -72,7 +69,7 @@ test('an operator never becomes part of the update', async () => {
   for (const body of [{ businessName: { $ne: null } }, { phone: ['8888'] }, { location: 12 }]) {
     const error = await refusal(() => buildChanges(body, noReferences));
 
-    assert.ok(error instanceof ProfileError);
+    assert.ok(error instanceof ValidationError);
   }
 });
 
