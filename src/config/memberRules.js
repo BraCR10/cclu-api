@@ -55,6 +55,8 @@ const CODES = {
   PASSWORD_NEEDS_SPECIAL: 'password_needs_special',
   NOTHING_TO_CHANGE: 'nothing_to_change',
   ALREADY_REGISTERED: 'already_registered',
+  INVALID_CURRENT_PASSWORD: 'invalid_current_password',
+  INVALID_CODE: 'invalid_code',
   BODY_MISSING: 'body_missing',
 };
 

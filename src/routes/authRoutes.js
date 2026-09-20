@@ -1,5 +1,6 @@
 const express = require('express');
 const authController = require('../controllers/authController');
+const passwordChangeController = require('../controllers/passwordChangeController');
 const { limitByAddress, limitByAccount } = require('../middlewares/rateLimits');
 
 const publicAuthRoutes = express.Router();
@@ -17,5 +18,11 @@ publicAuthRoutes.post('/logout', authController.signOut);
 const privateAuthRoutes = express.Router();
 
 privateAuthRoutes.get('/me', authController.getCurrentIdentity);
+
+// One flow for both roles: the steps are the same and building it twice would
+// be two places for the code to be checked differently. The address limit
+// counts failures, which is the shape of guessing at either step.
+privateAuthRoutes.post('/password/request', limitByAddress, passwordChangeController.requestChange);
+privateAuthRoutes.post('/password/confirm', limitByAddress, passwordChangeController.confirmChange);
 
 module.exports = { publicAuthRoutes, privateAuthRoutes };
