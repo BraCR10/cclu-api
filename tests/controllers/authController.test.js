@@ -86,11 +86,34 @@ test('signOut clears the cookie without asking who is asking', async () => {
   assert.equal(response.sent.status, 204);
 });
 
-test('getCurrentIdentity answers with the identity the token carried', async () => {
+test('getCurrentIdentity answers with the account, not only the token payload', async () => {
   const response = responseSpy();
   const identity = { id: 'abc', role: ROLES.ADMIN };
+  const describe = async () => ({
+    ...identity,
+    email: 'admin@cclu.cr',
+    displayName: 'admin@cclu.cr',
+  });
 
-  await authController.getCurrentIdentity({ identity }, response);
+  await authController.getCurrentIdentity({ identity }, response, undefined, describe);
 
-  assert.deepEqual(response.sent.body, identity);
+  assert.equal(response.sent.body.email, 'admin@cclu.cr');
+  assert.equal(response.sent.body.role, ROLES.ADMIN);
+});
+
+// The gate above already proved the account was usable, so nothing here means
+// it disappeared between the two and the session is worth nothing.
+test('getCurrentIdentity refuses a session whose account no longer exists', async () => {
+  const response = responseSpy();
+
+  await assert.rejects(
+    () =>
+      authController.getCurrentIdentity(
+        { identity: { id: 'abc', role: ROLES.ADMIN } },
+        response,
+        undefined,
+        async () => null,
+      ),
+    (error) => error.statusCode === 401,
+  );
 });
