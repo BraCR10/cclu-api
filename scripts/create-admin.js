@@ -5,6 +5,8 @@ const connectDatabase = require('../src/config/database');
 const { Admin } = require('../src/models/Admin');
 const { hashPassword } = require('../src/services/passwordService');
 const { readPassword } = require('../src/config/memberRules');
+const { emailHeldByAnotherRole } = require('../src/services/accountService');
+const { ROLES } = require('../src/config/roles');
 
 // The panel has no way to sign up, so there has to be a way in before anyone is
 // in. This is it.
@@ -26,6 +28,15 @@ async function createAdmin() {
   const password = readPassword({ ADMIN_PASSWORD: process.env.ADMIN_PASSWORD }, 'ADMIN_PASSWORD');
 
   await connectDatabase();
+
+  // The index on this collection cannot see the members, so the other half of
+  // the rule is asked here. Named plainly, unlike the public form: an operator
+  // running this already knows who is in the chamber.
+  if (await emailHeldByAnotherRole(email, ROLES.ADMIN)) {
+    throw new Error(
+      'That address already belongs to a member. One address cannot hold both accounts.',
+    );
+  }
 
   // The unique index is what actually prevents a duplicate; this only turns a
   // race into a message an operator can read.

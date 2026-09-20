@@ -66,6 +66,35 @@ const ACCOUNT_RULES = {
   },
 };
 
+// An index is unique inside one collection, and an address belongs to two of
+// them. Neither index can refuse what the other already holds, so this rule is
+// asked rather than enforced, and that is genuinely weaker: two writes landing
+// at the same instant can still pass each other. Making it a guarantee would
+// take one collection holding every address, which is a change to the model.
+const EMAIL_HOLDERS = {
+  [ROLES.MEMBER]: (email) => Member.exists({ email }),
+  [ROLES.ADMIN]: (email) => Admin.exists({ email }),
+};
+
+// Normalised here rather than trusted to the schema, which applies its own
+// lowercasing when a document is saved and not necessarily when one is sought.
+function normalizeEmail(email) {
+  return typeof email === 'string' ? email.trim().toLowerCase() : '';
+}
+
+async function emailHeldByAnotherRole(email, role, holders = EMAIL_HOLDERS) {
+  const address = normalizeEmail(email);
+
+  if (address === '') {
+    return false;
+  }
+
+  const others = Object.entries(holders).filter(([held]) => held !== role);
+  const found = await Promise.all(others.map(([, holds]) => holds(address)));
+
+  return found.some(Boolean);
+}
+
 async function isIdentityUsable(identity, rules = ACCOUNT_RULES) {
   const rule = rules[identity?.role];
 
@@ -97,6 +126,9 @@ async function describeCurrentAccount(identity, rules = ACCOUNT_RULES) {
 }
 
 module.exports = {
+  emailHeldByAnotherRole,
+  normalizeEmail,
+  EMAIL_HOLDERS,
   isIdentityUsable,
   describeCurrentAccount,
   effectiveMemberState,
