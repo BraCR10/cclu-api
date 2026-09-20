@@ -30,4 +30,15 @@ async function verifyCode(
   response.json(await verifyMemberCode(request.body));
 }
 
-module.exports = { getOwnProfile, updateOwnProfile, verifyCode };
+// Public, and resolved by the code a card carries. Nothing here reads a
+// session, so the answer is the same for everyone who scans it.
+async function getPublicProfile(
+  request,
+  response,
+  next,
+  readPublicProfile = memberVerificationService.readPublicProfile,
+) {
+  response.json(await readPublicProfile(request.params.memberCode));
+}
+
+module.exports = { getOwnProfile, updateOwnProfile, verifyCode, getPublicProfile };
