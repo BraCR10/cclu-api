@@ -27,9 +27,27 @@ const adminSchema = new mongoose.Schema(
       enum: Object.values(ACCOUNT_STATUSES),
       default: ACCOUNT_STATUSES.ACTIVE,
     },
+    // Set when the administrator is invited to join. See [RF-ADM-009] Gestión de administradores 
+    // Before the invitation is accepted the account is suspended, so the only way in is the link that
+    // carries this token. Both are cleared once the administrator sets a password.
+    invitationTokenHash: {
+      type: String,
+    },
+    invitationExpiresAt: {
+      type: Date,
+    },
+    invitedByAdmin: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin',
+      default: null,
+    },
   },
   { timestamps: true },
 );
+
+// Looked up by this digest when somebody follows their invitation link, so it
+// is indexed and sparse: only an invited administrator carries one.
+adminSchema.index({ invitationTokenHash: 1 }, { sparse: true });
 
 const Admin = mongoose.model('Admin', adminSchema);
 

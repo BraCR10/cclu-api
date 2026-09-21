@@ -1,6 +1,7 @@
 const express = require('express');
 const applicationReviewController = require('../controllers/applicationReviewController');
 const adminProfileController = require('../controllers/adminProfileController');
+const adminInvitationController = require('../controllers/adminInvitationController');
 const { authorize } = require('../middlewares/authorize');
 const { ROLES } = require('../config/roles');
 
@@ -12,6 +13,10 @@ adminRoutes.use(authorize(ROLES.ADMIN));
 
 adminRoutes.get('/me', adminProfileController.getOwnProfile);
 adminRoutes.patch('/me', adminProfileController.updateOwnProfile);
+
+adminRoutes.post('/administrators/invitations', adminInvitationController.inviteAdministrator);
+adminRoutes.patch('/administrators/:administratorId', adminInvitationController.updateAdministrator);
+adminRoutes.patch('/administrators/:administratorId/status', adminInvitationController.updateAdministratorStatus);
 
 adminRoutes.get('/applications/pending', applicationReviewController.getPendingApplications);
 adminRoutes.get('/applications/decided', applicationReviewController.getDecidedApplications);
