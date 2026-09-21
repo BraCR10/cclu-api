@@ -10,17 +10,22 @@ function passwordResetLink({ resetUrl, minutesValid }) {
     'Si no pidió este cambio, ignore este mensaje y su contraseña seguirá igual.',
   ].join('\n\n');
 
-  const paragraphs = ['Recibimos una solicitud para cambiar la contraseña de su cuenta.'];
+  const blocks = ['Recibimos una solicitud para cambiar la contraseña de su cuenta.'];
 
   // The address is built by the API from a token it generated, so it is markup
   // this application wrote rather than a value somebody sent.
-  paragraphs.push(
+  blocks.push(
     resetUrl === undefined
       ? 'Comuníquese con la Cámara para continuar.'
-      : `<a href="${escapeHtml(resetUrl)}">Establecer una contraseña nueva</a>`,
+      : {
+          type: 'button',
+          href: resetUrl,
+          url: resetUrl,
+          label: 'Establecer una contraseña nueva',
+        },
   );
 
-  paragraphs.push(
+  blocks.push(
     `El enlace vence en ${escapeHtml(minutesValid)} minutos y sirve una sola vez. Es personal: no lo comparta.`,
     'Si no pidió este cambio, ignore este mensaje y su contraseña seguirá igual.',
   );
@@ -28,7 +33,7 @@ function passwordResetLink({ resetUrl, minutesValid }) {
   return {
     subject: 'Enlace para cambiar su contraseña',
     text,
-    html: layout('Cambiar su contraseña', paragraphs),
+    html: layout('Cambiar su contraseña', blocks),
   };
 }
 

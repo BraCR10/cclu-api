@@ -30,6 +30,18 @@ async function verifyCode(
   response.json(await verifyMemberCode(request.body));
 }
 
+// The member's own membership. Read from the session, never from the path, so
+// a member can only ever see the membership attached to the account they
+// signed in with.
+async function getOwnMembership(
+  request,
+  response,
+  next,
+  readMembership = memberProfileService.readMembership,
+) {
+  response.json(await readMembership(request.identity.id));
+}
+
 // Public, and resolved by the code a card carries. Nothing here reads a
 // session, so the answer is the same for everyone who scans it.
 async function getPublicProfile(
@@ -41,4 +53,10 @@ async function getPublicProfile(
   response.json(await readPublicProfile(request.params.memberCode));
 }
 
-module.exports = { getOwnProfile, updateOwnProfile, verifyCode, getPublicProfile };
+module.exports = {
+  getOwnProfile,
+  updateOwnProfile,
+  verifyCode,
+  getPublicProfile,
+  getOwnMembership,
+};

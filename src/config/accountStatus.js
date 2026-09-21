@@ -4,6 +4,7 @@
 const ACCOUNT_STATUSES = {
   ACTIVE: 'active',
   SUSPENDED: 'suspended',
+  TERMINATED: 'terminated',
 };
 
 module.exports = { ACCOUNT_STATUSES };

@@ -1,7 +1,12 @@
 const express = require('express');
 const authController = require('../controllers/authController');
 const passwordResetController = require('../controllers/passwordResetController');
-const { limitByAddress, limitByAccount } = require('../middlewares/rateLimits');
+const {
+  limitByAddress,
+  limitByAccount,
+  limitForgotPasswordByAddress,
+  limitForgotPasswordByAccount,
+} = require('../middlewares/rateLimits');
 
 const publicAuthRoutes = express.Router();
 
@@ -20,8 +25,8 @@ publicAuthRoutes.post('/logout', authController.signOut);
 // answer is the same whether or not the address is an account.
 publicAuthRoutes.post(
   '/password/forgot',
-  limitByAddress,
-  limitByAccount,
+  limitForgotPasswordByAddress,
+  limitForgotPasswordByAccount,
   passwordResetController.requestForgotten,
 );
 

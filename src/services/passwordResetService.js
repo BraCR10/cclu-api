@@ -156,19 +156,40 @@ async function requestResetFromSession(
 // Somebody here has forgotten their password, so there is nothing to ask them
 // for but the address. The answer is the same whether or not it is an account:
 // told apart, this becomes a way of asking the chamber who belongs to it.
+//
+// The account-dependent work (minting the token, writing it, sending the mail)
+// is scheduled and not awaited, so the answer returns just as fast for an
+// address that exists as for one that does not. The lookup itself remains a
+// single indexed read for both, so no message carries the timing of anything
+// heavier than that.
 async function requestForgottenPassword(
   body,
   find = findAccountByEmail,
   save = saveRequest,
   sendEmail = emailService.sendEmail,
+  schedule = scheduleBackgroundWork,
 ) {
   const found = await find(body?.email);
 
   if (found !== null) {
-    await issueResetLink(found.account, found.role, save, sendEmail);
+    schedule(() => issueResetLink(found.account, found.role, save, sendEmail), found.role);
   }
 
   return { minutesValid: MINUTES_VALID };
+}
+
+// Runs the account-dependent work after the response has left. A failure here
+// must not change the answer that was already sent, so it is reported and
+// dropped: the person can simply ask again. Nothing sensitive is logged.
+function scheduleBackgroundWork(work, role) {
+  setImmediate(() => {
+    work().catch((error) => {
+      console.error('Password reset was not delivered, the person can ask again', {
+        role,
+        reason: error.message,
+      });
+    });
+  });
 }
 
 async function readResetRequest(rawToken, locate = findRequest) {
@@ -234,5 +255,6 @@ module.exports = {
   findAccountByEmail,
   resetUrlFor,
   digestOf,
+  scheduleBackgroundWork,
   MINUTES_VALID,
 };

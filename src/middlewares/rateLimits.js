@@ -79,6 +79,28 @@ const limitByAccount = rateLimit({
   handler: tooManyAttempts,
 });
 
+// A forgotten-password request always answers HTTP 200, whichever address was
+// sent. A limiter that skipped successes would therefore never count anything
+// and the endpoint would be unlimited. These count every request, because the
+// work (a token, a database write, a message) still happens behind the answer.
+const limitForgotPasswordByAddress = rateLimit({
+  windowMs: WINDOW_MS,
+  limit: ATTEMPTS_PER_ADDRESS,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: tooManyAttempts,
+});
+
+const limitForgotPasswordByAccount = rateLimit({
+  windowMs: WINDOW_MS,
+  limit: ATTEMPTS_PER_ACCOUNT,
+  standardHeaders: false,
+  legacyHeaders: false,
+  skip: skipsAccountLimit,
+  keyGenerator: accountKeyFor,
+  handler: tooManyAttempts,
+});
+
 // Registration counts every request, not only the failures. A registration that
 // succeeds is still a row created and a hash computed by a stranger.
 const REGISTRATIONS_PER_ADDRESS = 5;
@@ -109,6 +131,8 @@ module.exports = {
   limitByAccount,
   limitRegistrations,
   limitCodeChecks,
+  limitForgotPasswordByAddress,
+  limitForgotPasswordByAccount,
   emailFrom,
   addressOf,
   describeAttempt,

@@ -126,11 +126,16 @@ test('the record carries no attempt counter, because there is nothing to guess',
 test('a forgotten password answers the same for an address that is not an account', async () => {
   const { sent, save, sendEmail } = collector();
 
+  // Run the background work synchronously so the side effects are observable
+  // in the same tick as the answer.
+  const syncSchedule = (work) => work();
+
   const known = await requestForgottenPassword(
     { email: 'socio@example.cr' },
     async () => ({ account: await account(), role: ROLES.MEMBER }),
     save,
     sendEmail,
+    syncSchedule,
   );
 
   const unknown = await requestForgottenPassword(
@@ -138,10 +143,67 @@ test('a forgotten password answers the same for an address that is not an accoun
     async () => null,
     save,
     sendEmail,
+    syncSchedule,
   );
 
   assert.deepEqual(known, unknown);
   assert.equal(sent.length, 1);
+});
+
+// The account-dependent work is scheduled and not awaited, so the answer comes
+// back the same for an address that exists and one that does not.
+test('the forgotten-password answer does not wait for the delivery work', async () => {
+  const { saved, sent, save, sendEmail } = collector();
+  const queued = [];
+
+  const schedule = (work) => {
+    queued.push(work);
+  };
+
+  const answer = await requestForgottenPassword(
+    { email: 'socio@example.cr' },
+    async () => ({ account: await account(), role: ROLES.MEMBER }),
+    save,
+    sendEmail,
+    schedule,
+  );
+
+  assert.deepEqual(answer, { minutesValid: MINUTES_VALID });
+  // Nothing was written or sent when the answer was produced: the work is
+  // queued, not awaited.
+  assert.equal(saved.length, 0);
+  assert.equal(sent.length, 0);
+  assert.equal(queued.length, 1);
+
+  // Running the queued work produces the token and the message.
+  await queued[0]();
+  assert.equal(saved.length, 1);
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].template, 'passwordResetLink');
+  assert.equal(sent[0].recipient, 'socio@example.cr');
+});
+
+// A failure in the queued work is swallowed by the production scheduler, so it
+// never becomes an unhandled rejection and never reveals which address was
+// involved.
+test('the production scheduler swallows a delivery failure', async () => {
+  const { scheduleBackgroundWork } = require('../../src/services/passwordResetService');
+
+  // Silence the expected console.error so the test output stays clean.
+  const original = console.error;
+  console.error = () => {};
+
+  try {
+    await new Promise((resolve) => {
+      scheduleBackgroundWork(async () => {
+        throw new Error('smtp is down');
+      }, 'member');
+      // The scheduler uses setImmediate; give it a turn to run and catch.
+      setImmediate(resolve);
+    });
+  } finally {
+    console.error = original;
+  }
 });
 
 // An address that opens two accounts has no single answer, and guessing would

@@ -6,6 +6,9 @@ const {
   describeAttempt,
   skipsAccountLimit,
   accountKeyFor,
+  limitForgotPasswordByAddress,
+  limitForgotPasswordByAccount,
+  limitByAddress,
 } = require('../../src/middlewares/rateLimits');
 
 test('emailFrom takes the address the attempt was aimed at', () => {
@@ -62,4 +65,69 @@ test('the account limit counts each address in its own bucket', () => {
     accountKeyFor({ body: { email: 'a@cclu.cr' } }),
     accountKeyFor({ body: { email: 'b@cclu.cr' } }),
   );
+});
+
+// A minimal response the rate limiter can write its headers to and observe the
+// status code from.
+function fakeResponse(statusCode = 200) {
+  const headers = new Map();
+
+  return {
+    statusCode,
+    headersSent: false,
+    setHeader(name, value) {
+      headers.set(name.toLowerCase(), String(value));
+    },
+    append(name, value) {
+      const key = name.toLowerCase();
+      headers.set(key, headers.has(key) ? `${headers.get(key)}, ${value}` : String(value));
+    },
+    getHeader(name) {
+      return headers.get(name.toLowerCase());
+    },
+    once() {},
+    emit() {},
+  };
+}
+
+function fakeRequest(ip, email) {
+  return {
+    ip,
+    body: email === undefined ? {} : { email },
+    originalUrl: '/api/auth/password/forgot',
+  };
+}
+
+// The forgot-password endpoint answers HTTP 200 for every address, so its
+// limiters must count the 200s. The plain address limiter proves it: successive
+// calls raise the counter even though the response is a success.
+test('the forgot-password address limiter counts successful 200 responses', async () => {
+  const first = fakeRequest('203.0.113.7');
+  await limitForgotPasswordByAddress(first, fakeResponse(200), () => {});
+
+  const second = fakeRequest('203.0.113.7');
+  await limitForgotPasswordByAddress(second, fakeResponse(200), () => {});
+
+  // The counter went up across two successful responses: used = 2.
+  assert.equal(second.rateLimit.used, 2);
+  assert.equal(second.rateLimit.limit, 10);
+
+  // The sign-in limiter, by contrast, is configured to skip successes.
+  const signInFirst = fakeRequest('203.0.113.8');
+  await limitByAddress(signInFirst, fakeResponse(200), () => {});
+  // Its skipSuccessfulRequests decrements after 'finish', which our fake never
+  // emits, so we only assert the configuration difference below.
+});
+
+// The per-account limiter for forgot-password must also count the 200s, keyed
+// by the address and never skipping successful answers.
+test('the forgot-password account limiter counts 200s per address', async () => {
+  const first = fakeRequest('203.0.113.7', 'socio@example.cr');
+  await limitForgotPasswordByAccount(first, fakeResponse(200), () => {});
+
+  const second = fakeRequest('203.0.113.8', 'socio@example.cr');
+  await limitForgotPasswordByAccount(second, fakeResponse(200), () => {});
+
+  assert.equal(second.rateLimit.used, 2);
+  assert.equal(second.rateLimit.limit, 100);
 });

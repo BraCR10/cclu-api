@@ -11,6 +11,7 @@ const MEMBER_STATES = {
   ACTIVE: 'active',
   SUSPENDED: 'suspended',
   REJECTED: 'rejected',
+  TERMINATED: 'terminated',
 };
 
 function effectiveMemberState(member) {
@@ -20,6 +21,10 @@ function effectiveMemberState(member) {
 
   if (member.applicationStatus !== APPLICATION_STATUSES.APPROVED) {
     return MEMBER_STATES.UNDER_REVIEW;
+  }
+
+  if (member.accountStatus === ACCOUNT_STATUSES.TERMINATED) {
+    return MEMBER_STATES.TERMINATED;
   }
 
   return member.accountStatus === ACCOUNT_STATUSES.SUSPENDED

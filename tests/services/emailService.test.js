@@ -86,6 +86,10 @@ const TEMPLATE_FIXTURES = {
   applicationApproved: { businessName: 'A', memberCode: 'MA7K2Q4' },
   applicationRejected: { businessName: 'A', reason: 'No verificable.' },
   passwordResetLink: { resetUrl: 'https://cclu.example/password/reset/abc', minutesValid: 30 },
+  administratorInvitation: {
+    invitationUrl: 'https://cclu.example/admin/invitation/abc',
+    daysValid: 7,
+  },
 };
 
 // Driven by the registry rather than a list written beside it, so a template
