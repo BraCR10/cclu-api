@@ -2,6 +2,7 @@ const express = require('express');
 const applicationReviewController = require('../controllers/applicationReviewController');
 const adminProfileController = require('../controllers/adminProfileController');
 const adminInvitationController = require('../controllers/adminInvitationController');
+const adminMemberManagementController = require('../controllers/adminMemberManagementController');
 const { authorize } = require('../middlewares/authorize');
 const { ROLES } = require('../config/roles');
 
@@ -22,5 +23,11 @@ adminRoutes.get('/applications/pending', applicationReviewController.getPendingA
 adminRoutes.get('/applications/decided', applicationReviewController.getDecidedApplications);
 adminRoutes.post('/applications/:memberId/approve', applicationReviewController.approveApplication);
 adminRoutes.post('/applications/:memberId/reject', applicationReviewController.rejectApplication);
+
+// Member management: the panel lists every member with their membership, then
+// moves a member between the account states and edits the membership itself.
+adminRoutes.get('/members', adminMemberManagementController.listMembers);
+adminRoutes.patch('/members/:memberId/status', adminMemberManagementController.updateMemberStatus);
+adminRoutes.patch('/members/:memberId/membership', adminMemberManagementController.updateMembership);
 
 module.exports = { adminRoutes };

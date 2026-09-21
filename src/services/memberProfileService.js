@@ -1,6 +1,7 @@
 const { Member, MEMBER_TYPES } = require('../models/Member');
 const { Canton } = require('../models/Canton');
 const { Sector } = require('../models/Sector');
+const { Membership } = require('../models/Membership');
 const {
   readText,
   readChoice,
@@ -141,4 +142,22 @@ async function updateProfile(
   return presentProfile(updated);
 }
 
-module.exports = { readProfile, updateProfile, buildChanges, EDITABLE_TEXT_FIELDS };
+// The member's own membership, not somebody else's. A member may predate the
+// membership collection, so "no membership yet" is a valid answer rather than
+// an error.
+async function readMembership(memberId, find = (id) => Membership.findOne({ member: id }).lean()) {
+  const membership = await find(memberId);
+
+  if (membership === null || membership === undefined) {
+    return { id: null, type: null, status: null, expiresAt: null };
+  }
+
+  return {
+    id: String(membership._id),
+    type: membership.type,
+    status: membership.status,
+    expiresAt: membership.expiresAt,
+  };
+}
+
+module.exports = { readProfile, updateProfile, buildChanges, EDITABLE_TEXT_FIELDS, readMembership };

@@ -8,6 +8,7 @@ const MEMBERSHIP_TYPES = {
 const MEMBERSHIP_STATUSES = {
   ACTIVE: 'active',
   INACTIVE: 'inactive',
+  TERMINATED: 'terminated',
 };
 
 const membershipSchema = new mongoose.Schema(

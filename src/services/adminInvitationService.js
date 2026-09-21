@@ -318,6 +318,7 @@ async function acceptInvitation(rawToken, body, find = findByDigest, hash = pass
   // password again over an account already active.
   admin.invitationTokenHash = null;
   admin.invitationExpiresAt = null;
+  admin.accountStatus = ACCOUNT_STATUSES.ACTIVE;
 
   await admin.save();
 
