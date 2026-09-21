@@ -9,6 +9,15 @@ async function inviteAdministrator(
   response.status(201).json(await invite(request.identity, request.body));
 }
 
+async function listAdministrators(
+  request,
+  response,
+  next,
+  readAdministrators = adminInvitationService.listAdministrators,
+) {
+  response.json(await readAdministrators(request.identity));
+}
+
 async function updateAdministrator(
   request,
   response,
@@ -38,6 +47,7 @@ async function acceptInvitation(
 
 module.exports = {
   inviteAdministrator,
+  listAdministrators,
   updateAdministrator,
   updateAdministratorStatus,
   acceptInvitation,

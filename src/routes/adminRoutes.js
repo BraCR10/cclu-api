@@ -16,8 +16,10 @@ adminRoutes.get('/me', adminProfileController.getOwnProfile);
 adminRoutes.patch('/me', adminProfileController.updateOwnProfile);
 
 adminRoutes.post('/administrators/invitations', adminInvitationController.inviteAdministrator);
-adminRoutes.patch('/administrators/:administratorId', adminInvitationController.updateAdministrator);
-adminRoutes.patch('/administrators/:administratorId/status', adminInvitationController.updateAdministratorStatus);
+adminRoutes.get('/administrators', adminInvitationController.listAdministrators);
+
+adminRoutes.patch('/administrators/:administratorId', adminInvitationController.updateAdministrator,);
+adminRoutes.patch('/administrators/:administratorId/status', adminInvitationController.updateAdministratorStatus,);
 
 adminRoutes.get('/applications/pending', applicationReviewController.getPendingApplications);
 adminRoutes.get('/applications/decided', applicationReviewController.getDecidedApplications);

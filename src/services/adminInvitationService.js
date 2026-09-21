@@ -29,7 +29,9 @@ function digestOf(token) {
 // Built here rather than in the template, because only the API knows the token
 // and where the site answers.
 function invitationUrlFor(token, origin = process.env.WEB_ORIGIN) {
-  return origin === undefined ? undefined : `${origin.replace(/\/+$/, '')}/admin/invitation/${token}`;
+  return origin === undefined
+    ? undefined
+    : `${origin.replace(/\/+$/, '')}/admin/invitation/${token}`;
 }
 
 // The address must look like an address before it is written anywhere. A value
@@ -185,6 +187,19 @@ async function inviteAdministrator(
   return { sent: true, expires, ...(expires ? { daysValid: days } : {}) };
 }
 
+// The list an administrator sees is the accounts they invited, not every
+// administrator in the chamber. The current administrator's identifier is the
+// filter, so no body can ask for somebody else's list.
+function defaultListAdministrators(identity) {
+  return Admin.find({ invitedByAdmin: identity.id }).sort({ email: 1 }).lean();
+}
+
+async function listAdministrators(identity, read = defaultListAdministrators) {
+  const administrators = await read(identity);
+
+  return administrators.map(present);
+}
+
 // What an administrator may see of another administrator's account.
 function present(admin) {
   return {
@@ -236,10 +251,11 @@ function defaultSave(id, fields) {
 // body is looked at, so a request cannot smuggle a role or a reset here.
 async function updateAdministratorStatus(identity, administratorId, body, save = defaultSave) {
   const id = readAdminId(administratorId);
-  const status = readChoice(body === null || typeof body !== 'object' ? {} : body, 'accountStatus', [
-    ACCOUNT_STATUSES.ACTIVE,
-    ACCOUNT_STATUSES.SUSPENDED,
-  ]);
+  const status = readChoice(
+    body === null || typeof body !== 'object' ? {} : body,
+    'accountStatus',
+    [ACCOUNT_STATUSES.ACTIVE, ACCOUNT_STATUSES.SUSPENDED],
+  );
 
   const admin = await save(id, { accountStatus: status });
 
@@ -307,7 +323,12 @@ async function findInvitedAdmin(rawToken, find = findByDigest) {
 
 // The invitation ends in the only act that matters: choosing a password. Until
 // then the account is suspended and the link is the only way in.
-async function acceptInvitation(rawToken, body, find = findByDigest, hash = passwordService.hashPassword) {
+async function acceptInvitation(
+  rawToken,
+  body,
+  find = findByDigest,
+  hash = passwordService.hashPassword,
+) {
   const admin = await findInvitedAdmin(rawToken, find);
   const password = readPassword(body === null ? {} : body);
 
@@ -327,6 +348,7 @@ async function acceptInvitation(rawToken, body, find = findByDigest, hash = pass
 
 module.exports = {
   inviteAdministrator,
+  listAdministrators,
   updateAdministrator,
   updateAdministratorStatus,
   acceptInvitation,

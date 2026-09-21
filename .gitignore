@@ -5,3 +5,4 @@ postman.environment*.json
 *.postman_environment.json
 npm-debug.log
 coverage/
+personal_notes.txt
