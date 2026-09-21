@@ -81,6 +81,13 @@ const memberSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    // Set only once a logo has gone through the upload endpoint. A member with
+    // this field carries a signed address computed fresh on every read, never
+    // one saved from a previous request, because a signed address expires.
+    logoKey: {
+      type: String,
+      trim: true,
+    },
     passwordHash: {
       type: String,
       required: true,
@@ -137,6 +144,13 @@ const memberSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
       trim: true,
+    },
+    // Until when the paid membership stands. Set only by an approved payment:
+    // one month from the moment an administrator approved it. Absent or in the
+    // past means the membership is the free one.
+    paidUntil: {
+      type: Date,
+      default: null,
     },
     // What a rejection leaves behind so the applicant can come back. The link
     // in their message is the only proof they own this registration, so the

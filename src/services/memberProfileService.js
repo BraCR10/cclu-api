@@ -11,6 +11,7 @@ const {
   CODES,
 } = require('../config/memberRules');
 const { effectiveMemberState } = require('./accountService');
+const { createDownloadUrl } = require('./fileStorageService');
 
 // Named one by one. A field absent from these lists cannot be changed here, so
 // a body carrying an application status or a member code simply goes unread.
@@ -38,6 +39,7 @@ const PROFILE_FIELDS = [
   'accountStatus',
   'statusReason',
   'createdAt',
+  'logoKey',
 ].join(' ');
 
 function findProfile(memberId) {
@@ -49,21 +51,28 @@ function findProfile(memberId) {
 }
 
 // The raw pair of statuses never leaves the API on its own; what goes out is
-// the state they add up to.
-function presentProfile(member) {
-  const { applicationStatus, accountStatus, ...rest } = member;
+// the state they add up to. Likewise logoKey: a member who uploaded a logo
+// carries a key, never an address, so what leaves here is a signed address
+// computed fresh, never one saved from an earlier request.
+async function presentProfile(member, sign = createDownloadUrl) {
+  const { applicationStatus, accountStatus, logoKey, ...rest } = member;
+  const logoUrl = logoKey ? await sign(logoKey) : (rest.logoUrl ?? null);
 
-  return { ...rest, state: effectiveMemberState({ applicationStatus, accountStatus }) };
+  return {
+    ...rest,
+    logoUrl,
+    state: effectiveMemberState({ applicationStatus, accountStatus }),
+  };
 }
 
-async function readProfile(memberId, find = findProfile) {
+async function readProfile(memberId, find = findProfile, sign = createDownloadUrl) {
   const member = await find(memberId);
 
   if (member === null || member === undefined) {
     throw new ValidationError(CODES.UNKNOWN_REFERENCE, null, 'That account no longer exists.', 404);
   }
 
-  return presentProfile(member);
+  return presentProfile(member, sign);
 }
 
 async function buildChanges(body, references = EDITABLE_REFERENCE_FIELDS) {
@@ -93,6 +102,12 @@ async function buildChanges(body, references = EDITABLE_REFERENCE_FIELDS) {
       unset[field] = '';
     } else {
       changes[field] = value;
+    }
+
+    // A logo set or cleared by hand replaces whatever the upload endpoint
+    // stored, so the two never disagree about which address is current.
+    if (field === 'logoUrl') {
+      unset.logoKey = '';
     }
   }
 
@@ -125,6 +140,7 @@ async function updateProfile(
       .populate('sector', 'name')
       .lean(),
   references = EDITABLE_REFERENCE_FIELDS,
+  sign = createDownloadUrl,
 ) {
   const { changes, unset } = await buildChanges(body, references);
   const update = { $set: changes };
@@ -139,7 +155,7 @@ async function updateProfile(
     throw new ValidationError(CODES.UNKNOWN_REFERENCE, null, 'That account no longer exists.', 404);
   }
 
-  return presentProfile(updated);
+  return presentProfile(updated, sign);
 }
 
 // The member's own membership, not somebody else's. A member may predate the

@@ -3,6 +3,10 @@ const applicationReviewController = require('../controllers/applicationReviewCon
 const adminProfileController = require('../controllers/adminProfileController');
 const adminInvitationController = require('../controllers/adminInvitationController');
 const adminMemberManagementController = require('../controllers/adminMemberManagementController');
+const membershipController = require('../controllers/membershipController');
+const paymentController = require('../controllers/paymentController');
+const moderationController = require('../controllers/moderationController');
+const reportController = require('../controllers/reportController');
 const { authorize } = require('../middlewares/authorize');
 const { ROLES } = require('../config/roles');
 
@@ -40,5 +44,19 @@ adminRoutes.patch(
   '/members/:memberId/membership',
   adminMemberManagementController.updateMembership,
 );
+
+// The manual reconciliation the whole membership rests on (RF-ADM-004/005).
+adminRoutes.get('/payments/pending', paymentController.listPending);
+adminRoutes.post('/payments/:paymentId/approve', paymentController.approve);
+adminRoutes.post('/payments/:paymentId/reject', paymentController.reject);
+adminRoutes.get('/members/:memberId/payments', paymentController.listForMember);
+adminRoutes.get('/memberships', paymentController.listMemberships);
+adminRoutes.put('/membership/fee', membershipController.updateFee);
+
+// The chamber's say over what the commerces publish (RF-ADM-008).
+adminRoutes.get('/publications', moderationController.listPublications);
+adminRoutes.post('/publications/:type/:id/moderation', moderationController.moderate);
+
+adminRoutes.get('/reports', reportController.getReport);
 
 module.exports = { adminRoutes };

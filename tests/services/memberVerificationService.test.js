@@ -264,3 +264,21 @@ test('a code is found however a person wrote it down', async () => {
     assert.equal(profile.memberCode, formatMemberCode(VALID_CODE));
   }
 });
+
+test('a listing carrying a logo key answers with a signed address, not the key', async () => {
+  const sign = async (key) => `https://storage.example/${key}?signed`;
+
+  const profile = await readPublicProfile(
+    VALID_CODE,
+    finding(wholeDocument({ logoKey: 'member-logos/x/y.png' })),
+    sign,
+  );
+
+  assert.equal(profile.logoUrl, 'https://storage.example/member-logos/x/y.png?signed');
+});
+
+test('a listing with no logo key falls back to the legacy text address', async () => {
+  const profile = await readPublicProfile(VALID_CODE, finding(wholeDocument()));
+
+  assert.equal(profile.logoUrl, 'https://cdn.example/logo.png');
+});

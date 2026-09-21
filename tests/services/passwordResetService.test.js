@@ -296,6 +296,37 @@ test('the new password is set and the link is spent', async () => {
   assert.equal(await verifyPassword(CURRENT_PASSWORD, stored), false);
 });
 
+// An ordinary administrator resetting a forgotten password is not an invitee:
+// their standing must come out exactly as it went in.
+test('a plain reset never touches the account status', async () => {
+  let stored = null;
+
+  const request = {
+    account: 'x',
+    role: ROLES.ADMIN,
+    tokenDigest: digestOf('e'.repeat(64)),
+    expiresAt: new Date(Date.now() + 60_000),
+    deleteOne: async () => {},
+  };
+
+  const suspended = {
+    email: 'castigada@cclu.cr',
+    passwordHash: 'whatever',
+    accountStatus: 'suspended',
+    save: async function save() {
+      stored = { ...this };
+    },
+  };
+
+  await completePasswordReset(
+    { token: 'e'.repeat(64), newPassword: NEW_PASSWORD },
+    async () => request,
+    { [ROLES.ADMIN]: { findById: async () => suspended } },
+  );
+
+  assert.equal(stored.accountStatus, 'suspended');
+});
+
 test('a password the rules refuse never reaches the account', async () => {
   const request = {
     account: 'x',

@@ -21,6 +21,7 @@ const REQUIRED_ENVIRONMENT_VARIABLES = [
 const FILE_PURPOSES = {
   PAYMENT_RECEIPT: 'payment-receipts',
   MEMBER_LOGO: 'member-logos',
+  MARKETPLACE_LISTING: 'marketplace-listings',
 };
 
 // The accepted types and the extension each one is stored under. The name that

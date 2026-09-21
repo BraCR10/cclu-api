@@ -159,6 +159,1134 @@
             "description": "Public, since nobody has an account yet. Answers 201 with the identifier alone. Role and application status are set by the server and ignored if sent. A repeated identifier answers 409 with a message that names nothing."
           },
           "response": []
+        },
+        {
+          "name": "Upload own logo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contentType\": \"image/png\",\n  \"content\": \"<base64, no data: prefix required>\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/logo",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "logo"]
+            },
+            "description": "Requires a member session. Decodes the base64 content, stores it in S3 under member-logos/, and answers with a signed address good for a few minutes. Replaces whatever logo the member had before, key or legacy text address alike."
+          },
+          "response": []
+        },
+        {
+          "name": "Remove own logo",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/logo",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "logo"]
+            },
+            "description": "Requires a member session. Answers 204 whether or not a logo was set."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Membership",
+      "item": [
+        {
+          "name": "Get monthly fee",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/membership/fee",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "membership", "fee"]
+            },
+            "description": "Requires a member or administrator session. Answers { amount } or { amount: null } while unconfigured."
+          },
+          "response": []
+        },
+        {
+          "name": "Set monthly fee",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 15000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/membership/fee",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "membership", "fee"]
+            },
+            "description": "Requires an administrator session. The new amount applies to payments registered from this moment on."
+          },
+          "response": []
+        },
+        {
+          "name": "Get own membership",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/membership",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "membership"]
+            },
+            "description": "Requires a member session. Answers type free|paid, paidUntil, the configured fee and both benefit lists."
+          },
+          "response": []
+        },
+        {
+          "name": "Register a payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contentType\": \"application/pdf\",\n  \"content\": \"<base64>\",\n  \"paidAt\": \"2026-09-20\",\n  \"detail\": \"Transferencia SINPE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "payments"]
+            },
+            "description": "Requires a member session and a configured fee. The receipt (image or PDF) lands in S3 under payment-receipts/. Registers pending and notifies the administrators."
+          },
+          "response": []
+        },
+        {
+          "name": "List own payments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "payments"]
+            },
+            "description": "Requires a member session. Newest first, each with a freshly signed receipt address."
+          },
+          "response": []
+        },
+        {
+          "name": "List pending payments (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/payments/pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "payments", "pending"]
+            },
+            "description": "Requires an administrator session. Oldest first, each with the member beside it."
+          },
+          "response": []
+        },
+        {
+          "name": "Approve a payment (admin)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/payments/:paymentId/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "payments", ":paymentId", "approve"],
+              "variable": [
+                {
+                  "key": "paymentId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Requires an administrator session. Extends the membership one month from the approval and notifies the member. An already decided payment answers 409."
+          },
+          "response": []
+        },
+        {
+          "name": "Reject a payment (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"El monto no coincide\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/payments/:paymentId/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "payments", ":paymentId", "reject"],
+              "variable": [
+                {
+                  "key": "paymentId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Requires an administrator session and a reason, which the member receives by email."
+          },
+          "response": []
+        },
+        {
+          "name": "List a member's payments (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/members/:memberId/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "members", ":memberId", "payments"],
+              "variable": [
+                {
+                  "key": "memberId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Requires an administrator session."
+          },
+          "response": []
+        },
+        {
+          "name": "List memberships (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/memberships?state=active",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "memberships"],
+              "query": [
+                {
+                  "key": "state",
+                  "value": "active",
+                  "description": "active | inactive; omit for all"
+                }
+              ]
+            },
+            "description": "Requires an administrator session. Every approved member with the membership their payments add up to."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Promotions",
+      "item": [
+        {
+          "name": "Browse promotions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/promotions?name=&canton=&sector=&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "promotions"],
+              "query": [
+                {
+                  "key": "name",
+                  "value": ""
+                },
+                {
+                  "key": "canton",
+                  "value": ""
+                },
+                {
+                  "key": "sector",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Public. Carries only live promotions of commerces with the paid membership, each with the commerce's public contact card."
+          },
+          "response": []
+        },
+        {
+          "name": "Read one promotion",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/promotions/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "promotions", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Public. Anything not visible answers 404."
+          },
+          "response": []
+        },
+        {
+          "name": "List my promotions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/promotions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "promotions"]
+            },
+            "description": "Requires a member session. Carries every state: expired, closed, moderated."
+          },
+          "response": []
+        },
+        {
+          "name": "Publish a promotion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"2x1 en pan dulce\",\n  \"description\": \"Todos los martes\",\n  \"conditions\": \"Solo en tienda\",\n  \"validUntil\": \"2026-10-31\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/promotions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "promotions"]
+            },
+            "description": "Requires a member session with the paid membership; otherwise 403 paid_membership_required."
+          },
+          "response": []
+        },
+        {
+          "name": "Edit my promotion",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true,\n  \"validUntil\": \"2026-11-30\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/promotions/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "promotions", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Requires ownership and the paid membership. Reactivating an expired promotion without a new validUntil answers 400 expired_needs_new_validity."
+          },
+          "response": []
+        },
+        {
+          "name": "Close my promotion",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/promotions/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "promotions", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Requires ownership and the paid membership. Turns it off; the record stays under BD-003."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Discounts",
+      "item": [
+        {
+          "name": "Browse discounts (members only)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/discounts?name=&canton=&sector=&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "discounts"],
+              "query": [
+                {
+                  "key": "name",
+                  "value": ""
+                },
+                {
+                  "key": "canton",
+                  "value": ""
+                },
+                {
+                  "key": "sector",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Requires a member or administrator session: the catalog is a benefit of belonging. name searches the description."
+          },
+          "response": []
+        },
+        {
+          "name": "Read one discount",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/discounts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "discounts", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Requires a member or administrator session."
+          },
+          "response": []
+        },
+        {
+          "name": "List my discounts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/discounts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "discounts"]
+            },
+            "description": "Requires a member session."
+          },
+          "response": []
+        },
+        {
+          "name": "Publish a discount",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"10% para afiliados\",\n  \"conditions\": \"Presentar carné\",\n  \"validUntil\": \"2026-10-31\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/discounts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "discounts"]
+            },
+            "description": "Requires a member session with the paid membership. A discount has no title: description, validity and conditions define it."
+          },
+          "response": []
+        },
+        {
+          "name": "Edit my discount",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conditions\": \"Presentar carné vigente\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/discounts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "discounts", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Requires ownership and the paid membership. Same reactivation rule as promotions."
+          },
+          "response": []
+        },
+        {
+          "name": "Close my discount",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/discounts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "discounts", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Requires ownership and the paid membership."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Moderation",
+      "item": [
+        {
+          "name": "List publications (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/publications?type=products&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "publications"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "products",
+                  "description": "products | promotions | discounts | jobs"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Requires an administrator session. Every state is listed, hidden and blocked included."
+          },
+          "response": []
+        },
+        {
+          "name": "Moderate a publication (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"deactivate\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/publications/:type/:id/moderation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "publications", ":type", ":id", "moderation"],
+              "variable": [
+                {
+                  "key": "type",
+                  "value": "products"
+                },
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Requires an administrator session. action is deactivate | reactivate | block. Blocked is permanent: any further action on it answers 400."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Administrators",
+      "item": [
+        {
+          "name": "List administrators",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/administrators",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "administrators"]
+            },
+            "description": "Requires an administrator session. An invited administrator stays suspended until the invitation is accepted."
+          },
+          "response": []
+        },
+        {
+          "name": "Invite an administrator",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nueva Directora\",\n  \"email\": \"nueva@cclu.cr\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/administrators/invitations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "administrators", "invitations"]
+            },
+            "description": "Requires an administrator session. Sends an invitation link; the account opens only once the invitee sets their own password through it."
+          },
+          "response": []
+        },
+        {
+          "name": "Edit an administrator",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nombre Corregido\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/administrators/:administratorId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "administrators", ":administratorId"],
+              "variable": [
+                {
+                  "key": "administratorId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Requires an administrator session. name and email only."
+          },
+          "response": []
+        },
+        {
+          "name": "Activate or suspend an administrator",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountStatus\": \"suspended\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/administrators/:administratorId/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "administrators", ":administratorId", "status"],
+              "variable": [
+                {
+                  "key": "administratorId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Requires an administrator session. accountStatus is active or suspended."
+          },
+          "response": []
+        },
+        {
+          "name": "Accept an invitation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"una-contrasena-fuerte-1!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/administrators/invitations/:invitationId/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "administrators", "invitations", ":invitationId", "accept"],
+              "variable": [
+                {
+                  "key": "invitationId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Public on purpose: the person following the invitation link has no session yet. The invitation token travels as :invitationId in the path."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Generate a report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/reports?type=members&canton=&sector=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "reports"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "members",
+                  "description": "members | paid_members | unpaid_members | products | promotions | discounts | jobs"
+                },
+                {
+                  "key": "canton",
+                  "value": ""
+                },
+                {
+                  "key": "sector",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Requires an administrator session. Publication reports count only what the public can see."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Directory",
+      "item": [
+        {
+          "name": "Search the directory",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/directory?name=&canton={{cantonId}}&sector={{sectorId}}&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "directory"],
+              "query": [
+                {
+                  "key": "name",
+                  "value": ""
+                },
+                {
+                  "key": "canton",
+                  "value": "{{cantonId}}"
+                },
+                {
+                  "key": "sector",
+                  "value": "{{sectorId}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Public. Every filter is optional; an empty or missing one is simply not applied. Answers only affiliates whose application is approved and whose account is active, the same rule the code lookup below answers to."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Jobs",
+      "item": [
+        {
+          "name": "Browse the job board",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "contractType",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Public. Carries only postings still open, newest first."
+          },
+          "response": []
+        },
+        {
+          "name": "Read one posting",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/:jobId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", ":jobId"],
+              "variable": [
+                {
+                  "key": "jobId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Public. A closed posting answers 404, the same as one that never existed."
+          },
+          "response": []
+        },
+        {
+          "name": "List my postings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/jobs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "jobs"]
+            },
+            "description": "Requires a member session. Carries every posting of that member, open or closed."
+          },
+          "response": []
+        },
+        {
+          "name": "Post a job",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Panadero\",\n  \"description\": \"Se busca panadero con experiencia.\",\n  \"requirements\": \"Dos años de experiencia en horno de leña.\",\n  \"howToApply\": \"Escriba al correo del comercio con su currículum.\",\n  \"contractType\": \"full_time\",\n  \"location\": \"La Unión\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs"]
+            },
+            "description": "Requires a member session with the paid membership. contractType is one of full_time, part_time, temporary, internship. requirements and howToApply are required; location, contactEmail and contactPhone are optional and fall back to the commerce contact."
+          },
+          "response": []
+        },
+        {
+          "name": "Edit my posting",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Panadero senior\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/:jobId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", ":jobId"],
+              "variable": [
+                {
+                  "key": "jobId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Requires a member session and ownership of the posting; otherwise 403. Only the fields sent are changed."
+          },
+          "response": []
+        },
+        {
+          "name": "Close my posting",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/:jobId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", ":jobId"],
+              "variable": [
+                {
+                  "key": "jobId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Requires a member session and ownership of the posting. Turns it off rather than deleting it: published content is kept permanently under BD-003."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Marketplace",
+      "item": [
+        {
+          "name": "Browse the marketplace",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/marketplace?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "marketplace"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "category",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Public. Carries only listings still active, newest first."
+          },
+          "response": []
+        },
+        {
+          "name": "Read one listing",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/marketplace/:listingId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "marketplace", ":listingId"],
+              "variable": [
+                {
+                  "key": "listingId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Public. A closed listing answers 404, the same as one that never existed."
+          },
+          "response": []
+        },
+        {
+          "name": "List my listings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/marketplace",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "marketplace"]
+            },
+            "description": "Requires a member session. Carries every listing of that member, open or closed."
+          },
+          "response": []
+        },
+        {
+          "name": "Publish a listing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Pan artesanal\",\n  \"description\": \"Pan de masa madre horneado a diario.\",\n  \"price\": 2500,\n  \"category\": \"Alimentos\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/marketplace",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "marketplace"]
+            },
+            "description": "Requires a member session. price and category are optional."
+          },
+          "response": []
+        },
+        {
+          "name": "Edit my listing",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 3000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/marketplace/:listingId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "marketplace", ":listingId"],
+              "variable": [
+                {
+                  "key": "listingId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Requires a member session and ownership of the listing; otherwise 403. Only the fields sent are changed."
+          },
+          "response": []
+        },
+        {
+          "name": "Close my listing",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/marketplace/:listingId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "marketplace", ":listingId"],
+              "variable": [
+                {
+                  "key": "listingId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Requires a member session and ownership of the listing. Turns it off rather than deleting it: published content is kept permanently under BD-003."
+          },
+          "response": []
+        },
+        {
+          "name": "Upload a listing image",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contentType\": \"image/jpeg\",\n  \"content\": \"<base64, no data: prefix required>\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/marketplace/:listingId/image",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "marketplace", ":listingId", "image"],
+              "variable": [
+                {
+                  "key": "listingId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Requires a member session and ownership of the listing. Replaces whatever image the listing had before."
+          },
+          "response": []
+        },
+        {
+          "name": "Remove a listing image",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/marketplace/:listingId/image",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "marketplace", ":listingId", "image"],
+              "variable": [
+                {
+                  "key": "listingId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Requires a member session and ownership of the listing."
+          },
+          "response": []
         }
       ]
     },

@@ -2,6 +2,9 @@ const { applicationApproved } = require('./applicationApproved');
 const { applicationRejected } = require('./applicationRejected');
 const { passwordResetLink } = require('./passwordResetLink');
 const { administratorInvitation } = require('./administratorInvitation');
+const { paymentSubmitted } = require('./paymentSubmitted');
+const { paymentApproved } = require('./paymentApproved');
+const { paymentRejected } = require('./paymentRejected');
 
 // A new kind of notification is a new file beside this one and a line here.
 // Nothing in the sending component changes.
@@ -10,6 +13,9 @@ const TEMPLATES = {
   applicationRejected,
   passwordResetLink,
   administratorInvitation,
+  paymentSubmitted,
+  paymentApproved,
+  paymentRejected,
 };
 
 class UnknownTemplateError extends Error {

@@ -2,6 +2,9 @@ const { Member } = require('../models/Member');
 const { normalizeMemberCode, isMemberCodeValid, formatMemberCode } = require('./memberCodeService');
 const { effectiveMemberState, MEMBER_STATES } = require('./accountService');
 const { ValidationError, CODES } = require('../config/memberRules');
+const { createDownloadUrl } = require('./fileStorageService');
+const { PUBLIC_FIELDS } = require('../config/memberPublicFields');
+const { presentPublicMember } = require('./memberPublicPresenter');
 
 // What one member may learn about another from a code: enough to recognise the
 // business in front of them, and nothing that belongs to the account.
@@ -50,28 +53,6 @@ async function verifyMemberCode(body, find = findByCode) {
   };
 }
 
-// The public entry. Named field by field rather than by removing what must not
-// leave, because a field added to the model later would otherwise arrive here
-// on its own. The address is left out on purpose: it is what someone signs in
-// with, and a directory needs the telephone and the site, not the credential.
-const PUBLIC_FIELDS = [
-  'businessName',
-  'businessDescription',
-  'memberType',
-  'memberCode',
-  'location',
-  'phone',
-  'whatsappNumber',
-  'instagram',
-  'facebook',
-  'linkedin',
-  'website',
-  'logoUrl',
-  'createdAt',
-  'applicationStatus',
-  'accountStatus',
-].join(' ');
-
 function findPublicByCode(code) {
   return Member.findOne({ memberCode: code })
     .select(PUBLIC_FIELDS)
@@ -89,9 +70,7 @@ function notListed() {
   );
 }
 
-// Built rather than filtered. Handing back the document and trusting a screen
-// not to paint a field would still send it to the browser.
-async function readPublicProfile(rawCode, find = findPublicByCode) {
+async function readPublicProfile(rawCode, find = findPublicByCode, sign = createDownloadUrl) {
   const code = normalizeMemberCode(rawCode);
 
   if (code === null || !isMemberCodeValid(code)) {
@@ -110,24 +89,7 @@ async function readPublicProfile(rawCode, find = findPublicByCode) {
     throw notListed();
   }
 
-  return {
-    memberCode: formatMemberCode(member.memberCode),
-    businessName: member.businessName,
-    businessDescription: member.businessDescription,
-    memberType: member.memberType,
-    sector: member.sector?.name ?? null,
-    canton: member.canton?.name ?? null,
-    province: member.canton?.province ?? null,
-    location: member.location,
-    phone: member.phone,
-    whatsappNumber: member.whatsappNumber ?? null,
-    instagram: member.instagram ?? null,
-    facebook: member.facebook ?? null,
-    linkedin: member.linkedin ?? null,
-    website: member.website ?? null,
-    logoUrl: member.logoUrl ?? null,
-    affiliatedSince: member.createdAt,
-  };
+  return presentPublicMember(member, sign);
 }
 
 module.exports = { verifyMemberCode, readPublicProfile };

@@ -297,3 +297,14 @@ a browser and is allowed through, which is what keeps `postman.json` usable.
 `cclu-web` reaches this API over HTTP and by no other means. It holds no
 database driver and no direct connection. Keeping the web client free of data
 access dependencies is what enforces this, not convention alone.
+
+## Known limitation: scheduled notifications
+
+RF-AG-010 names two notices that fire on a clock rather than on a request: the
+reminder five days before a paid membership expires, and the notice that it was
+deactivated for lack of payment. This API runs nothing on a schedule — every
+effect happens inside a request — so those two messages are not sent. The
+membership itself needs no scheduler: whether it is paid is computed from
+`paidUntil` at read time, so it lapses on its own the moment the date passes.
+Adding a scheduled job (a cron invoking a maintenance endpoint, or a worker)
+is the follow-up this note exists to point at.
