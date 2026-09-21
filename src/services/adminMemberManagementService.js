@@ -3,7 +3,6 @@ const { Membership, MEMBERSHIP_TYPES, MEMBERSHIP_STATUSES } = require('../models
 const { ACCOUNT_STATUSES } = require('../config/accountStatus');
 const {
   refuse,
-  readText,
   readChoice,
   CODES,
   ValidationError,
