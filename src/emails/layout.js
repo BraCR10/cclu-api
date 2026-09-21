@@ -29,10 +29,10 @@ function escapeHtml(value) {
 }
 
 /**
- * Bloques aceptados por layout():
- *  - string                          -> párrafo ya escapado por la plantilla
- *  - { type: 'text', html }          -> párrafo
- *  - { type: 'button', href, label, url } -> botón + dirección textual
+ * Blocks accepted by layout():
+ *  - string                          -> paragraph, already escaped by the template
+ *  - { type: 'text', html }          -> paragraph
+ *  - { type: 'button', href, label, url } -> button + plain text address
  */
 function renderBlock(block) {
   if (typeof block === 'string') {
