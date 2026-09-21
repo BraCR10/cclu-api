@@ -31,6 +31,9 @@ publicRoutes.post('/resubmission/:token', limitRegistrations, resubmissionContro
 // Reached by the link in an invitation message. The person following it has no
 // session yet and the account is suspended until a password is set, so this is
 // deliberately public; the token is what proves the invitation is theirs.
-publicRoutes.post('/administrators/invitations/:invitationId/accept', adminInvitationController.acceptInvitation);
+publicRoutes.post(
+  '/administrators/invitations/:invitationId/accept',
+  adminInvitationController.acceptInvitation,
+);
 
 module.exports = { publicRoutes };

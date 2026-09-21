@@ -20,7 +20,7 @@ const COLORS = {
   buttonText: '#FFFFFF',
 };
 
-const FONT_STACK = "Segoe UI, Roboto, Helvetica, Arial, sans-serif";
+const FONT_STACK = 'Segoe UI, Roboto, Helvetica, Arial, sans-serif';
 
 const SIGNATURE = 'Cámara de Comercio, Turismo, Industria y Afines del Cantón de La Unión';
 
@@ -67,7 +67,6 @@ function renderBlock(block) {
 
   return '';
 }
-
 
 // Paragraphs arrive already escaped, because each template decides which parts
 // of its own text are markup it wrote and which are values it received.
@@ -139,6 +138,5 @@ function layout(heading, blocks) {
 </body>
 </html>`;
 }
-
 
 module.exports = { layout, escapeHtml, SIGNATURE };

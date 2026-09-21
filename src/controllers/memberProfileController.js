@@ -53,4 +53,10 @@ async function getPublicProfile(
   response.json(await readPublicProfile(request.params.memberCode));
 }
 
-module.exports = { getOwnProfile, updateOwnProfile, verifyCode, getPublicProfile, getOwnMembership };
+module.exports = {
+  getOwnProfile,
+  updateOwnProfile,
+  verifyCode,
+  getPublicProfile,
+  getOwnMembership,
+};

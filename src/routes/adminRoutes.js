@@ -18,8 +18,14 @@ adminRoutes.patch('/me', adminProfileController.updateOwnProfile);
 adminRoutes.post('/administrators/invitations', adminInvitationController.inviteAdministrator);
 adminRoutes.get('/administrators', adminInvitationController.listAdministrators);
 
-adminRoutes.patch('/administrators/:administratorId', adminInvitationController.updateAdministrator,);
-adminRoutes.patch('/administrators/:administratorId/status', adminInvitationController.updateAdministratorStatus,);
+adminRoutes.patch(
+  '/administrators/:administratorId',
+  adminInvitationController.updateAdministrator,
+);
+adminRoutes.patch(
+  '/administrators/:administratorId/status',
+  adminInvitationController.updateAdministratorStatus,
+);
 
 adminRoutes.get('/applications/pending', applicationReviewController.getPendingApplications);
 adminRoutes.get('/applications/decided', applicationReviewController.getDecidedApplications);
@@ -30,6 +36,9 @@ adminRoutes.post('/applications/:memberId/reject', applicationReviewController.r
 // moves a member between the account states and edits the membership itself.
 adminRoutes.get('/members', adminMemberManagementController.listMembers);
 adminRoutes.patch('/members/:memberId/status', adminMemberManagementController.updateMemberStatus);
-adminRoutes.patch('/members/:memberId/membership', adminMemberManagementController.updateMembership);
+adminRoutes.patch(
+  '/members/:memberId/membership',
+  adminMemberManagementController.updateMembership,
+);
 
 module.exports = { adminRoutes };

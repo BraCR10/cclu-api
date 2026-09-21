@@ -91,7 +91,11 @@ function fakeResponse(statusCode = 200) {
 }
 
 function fakeRequest(ip, email) {
-  return { ip, body: email === undefined ? {} : { email }, originalUrl: '/api/auth/password/forgot' };
+  return {
+    ip,
+    body: email === undefined ? {} : { email },
+    originalUrl: '/api/auth/password/forgot',
+  };
 }
 
 // The forgot-password endpoint answers HTTP 200 for every address, so its

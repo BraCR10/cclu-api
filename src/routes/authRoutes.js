@@ -1,7 +1,12 @@
 const express = require('express');
 const authController = require('../controllers/authController');
 const passwordResetController = require('../controllers/passwordResetController');
-const { limitByAddress, limitByAccount, limitForgotPasswordByAddress, limitForgotPasswordByAccount } = require('../middlewares/rateLimits');
+const {
+  limitByAddress,
+  limitByAccount,
+  limitForgotPasswordByAddress,
+  limitForgotPasswordByAccount,
+} = require('../middlewares/rateLimits');
 
 const publicAuthRoutes = express.Router();
 

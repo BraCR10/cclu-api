@@ -1,12 +1,7 @@
 const { Member, APPLICATION_STATUSES } = require('../models/Member');
 const { Membership, MEMBERSHIP_TYPES, MEMBERSHIP_STATUSES } = require('../models/Membership');
 const { ACCOUNT_STATUSES } = require('../config/accountStatus');
-const {
-  refuse,
-  readChoice,
-  CODES,
-  ValidationError,
-} = require('../config/memberRules');
+const { refuse, readChoice, CODES, ValidationError } = require('../config/memberRules');
 const { effectiveMemberState } = require('./accountService');
 
 const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
@@ -95,18 +90,19 @@ async function readMembers(list = defaultList, memberships = readAllMemberships)
       memberCode: member.memberCode ?? null,
       accountStatus: member.accountStatus,
       state: effectiveMemberState(member),
-      membership: membership === undefined
-        ? null
-        : {
-            type: membership.type,
-            status: membership.status,
-            expiresAt: membership.expiresAt,
-          },
+      membership:
+        membership === undefined
+          ? null
+          : {
+              type: membership.type,
+              status: membership.status,
+              expiresAt: membership.expiresAt,
+            },
     };
   });
 }
 
-async function  readAllMemberships() {
+async function readAllMemberships() {
   const memberships = await Membership.find().lean();
   const catalog = new Map();
 
@@ -121,7 +117,11 @@ async function  readAllMemberships() {
 // values accepted, and nothing else in the body is read.
 async function updateMemberStatus(memberId, body, save = saveMemberStatus) {
   const id = readMemberId(memberId);
-  const status = readChoice(body === null || typeof body !== 'object' ? {} : body, 'accountStatus', MEMBER_ACCOUNT_STATUSES);
+  const status = readChoice(
+    body === null || typeof body !== 'object' ? {} : body,
+    'accountStatus',
+    MEMBER_ACCOUNT_STATUSES,
+  );
 
   const member = await save(id, { accountStatus: status });
 
