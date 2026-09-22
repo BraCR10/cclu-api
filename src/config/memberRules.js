@@ -61,6 +61,10 @@ const CODES = {
   INVALID_CURRENT_PASSWORD: 'invalid_current_password',
   INVALID_CODE: 'invalid_code',
   BODY_MISSING: 'body_missing',
+  PAID_MEMBERSHIP_REQUIRED: 'paid_membership_required',
+  BLOCKED_PUBLICATION: 'blocked_publication',
+  EXPIRED_NEEDS_NEW_VALIDITY: 'expired_needs_new_validity',
+  FEE_NOT_CONFIGURED: 'fee_not_configured',
 };
 
 class ValidationError extends Error {

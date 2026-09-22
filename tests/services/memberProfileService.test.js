@@ -1,6 +1,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { buildChanges, updateProfile } = require('../../src/services/memberProfileService');
+const {
+  buildChanges,
+  updateProfile,
+  readProfile,
+} = require('../../src/services/memberProfileService');
 const { ValidationError } = require('../../src/config/memberRules');
 
 const MEMBER_ID = '65f0c3a1b2c3d4e5f6a7b8c9';
@@ -130,4 +134,42 @@ test('an account that vanished between the gate and the write is a not found', a
   );
 
   assert.equal(error.statusCode, 404);
+});
+
+// A logo set through the upload endpoint carries a key, not an address, so
+// setting or clearing the text field by hand must not leave a stale one behind.
+test('changing logoUrl by hand clears whatever key the upload endpoint stored', async () => {
+  const { unset } = await buildChanges({ logoUrl: 'https://panaderia.cr/logo.png' }, noReferences);
+
+  assert.equal(unset.logoKey, '');
+});
+
+test('clearing logoUrl by hand clears the key the same way', async () => {
+  const { unset } = await buildChanges({ logoUrl: '' }, noReferences);
+
+  assert.equal(unset.logoKey, '');
+});
+
+test('a profile carrying a logo key answers with a signed address, not the key', async () => {
+  const profile = await readProfile(
+    MEMBER_ID,
+    async () => ({
+      businessName: 'Panadería',
+      logoKey: 'member-logos/x/y.png',
+      logoUrl: 'https://legacy.example/should-not-appear.png',
+    }),
+    async (key) => `https://storage.example/${key}?signed`,
+  );
+
+  assert.equal(profile.logoUrl, 'https://storage.example/member-logos/x/y.png?signed');
+  assert.equal(profile.logoKey, undefined);
+});
+
+test('a profile with no logo key falls back to the legacy text address', async () => {
+  const profile = await readProfile(MEMBER_ID, async () => ({
+    businessName: 'Panadería',
+    logoUrl: 'https://legacy.example/logo.png',
+  }));
+
+  assert.equal(profile.logoUrl, 'https://legacy.example/logo.png');
 });

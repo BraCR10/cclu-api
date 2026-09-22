@@ -2,6 +2,10 @@ const express = require('express');
 const memberController = require('../controllers/memberController');
 const catalogController = require('../controllers/catalogController');
 const memberProfileController = require('../controllers/memberProfileController');
+const memberDirectoryController = require('../controllers/memberDirectoryController');
+const jobController = require('../controllers/jobController');
+const marketplaceController = require('../controllers/marketplaceController');
+const promotionController = require('../controllers/promotionController');
 const resubmissionController = require('../controllers/resubmissionController');
 const adminInvitationController = require('../controllers/adminInvitationController');
 const { limitRegistrations } = require('../middlewares/rateLimits');
@@ -15,9 +19,30 @@ publicRoutes.post('/members', limitRegistrations, memberController.signUp);
 publicRoutes.get('/cantons', catalogController.getCantons);
 publicRoutes.get('/sectors', catalogController.getSectors);
 
+// The whole roll, searchable. Sits above the single-code lookup so the two
+// never compete for the same path: this one always carries a query, that one
+// a segment.
+publicRoutes.get('/directory', memberDirectoryController.listDirectory);
+
 // The address a card's QR carries. It is a permanent contract: a card already
 // issued cannot be reissued, so this path never changes.
 publicRoutes.get('/directory/:memberCode', memberProfileController.getPublicProfile);
+
+// The board, open to anyone. Posting to it is a member's own action and lives
+// under the gate, in jobRoutes.
+publicRoutes.get('/jobs', jobController.list);
+publicRoutes.get('/jobs/:id', jobController.getOne);
+
+// The marketplace, open the same way. Posting to it lives under the gate, in
+// marketplaceRoutes.
+publicRoutes.get('/marketplace', marketplaceController.list);
+publicRoutes.get('/marketplace/:id', marketplaceController.getOne);
+
+// Promotions are as public as the products beside them. Discounts are not
+// here on purpose: that catalog is a benefit of belonging and lives behind
+// the gate (RF-MKT-007).
+publicRoutes.get('/promotions', promotionController.list);
+publicRoutes.get('/promotions/:id', promotionController.getOne);
 
 // Reached by the link in a rejection message. Somebody whose registration was
 // refused cannot sign in, so requiring a session would shut out the only person

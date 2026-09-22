@@ -1,5 +1,6 @@
 const memberProfileService = require('../services/memberProfileService');
 const memberVerificationService = require('../services/memberVerificationService');
+const memberLogoService = require('../services/memberLogoService');
 
 async function getOwnProfile(
   request,
@@ -53,10 +54,21 @@ async function getPublicProfile(
   response.json(await readPublicProfile(request.params.memberCode));
 }
 
+async function uploadOwnLogo(request, response, next, uploadLogo = memberLogoService.uploadLogo) {
+  response.json(await uploadLogo(request.identity.id, request.body));
+}
+
+async function deleteOwnLogo(request, response, next, deleteLogo = memberLogoService.deleteLogo) {
+  await deleteLogo(request.identity.id);
+  response.status(204).end();
+}
+
 module.exports = {
   getOwnProfile,
   updateOwnProfile,
   verifyCode,
   getPublicProfile,
   getOwnMembership,
+  uploadOwnLogo,
+  deleteOwnLogo,
 };

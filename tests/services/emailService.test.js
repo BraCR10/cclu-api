@@ -90,6 +90,9 @@ const TEMPLATE_FIXTURES = {
     invitationUrl: 'https://cclu.example/admin/invitation/abc',
     daysValid: 7,
   },
+  paymentSubmitted: { businessName: 'A' },
+  paymentApproved: { businessName: 'A', paidUntil: '2026-10-21T12:00:00.000Z' },
+  paymentRejected: { businessName: 'A', reason: 'El monto no coincide.' },
 };
 
 // Driven by the registry rather than a list written beside it, so a template
