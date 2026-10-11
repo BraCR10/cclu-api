@@ -1,7 +1,6 @@
 # Architecture
 
-Layered structure required by SAD v1.0, section 4.3.2 (logical view) and
-RNF-015. Where this document and the SAD disagree, the SAD wins.
+How the API is layered, and what each layer may depend on.
 
 ## Layers
 
@@ -280,7 +279,7 @@ application, so only the account is read.
 
 Folding the two together would mean suspending someone by writing
 `applicationStatus: rejected`, which records something that never happened and
-would offer them the resubmission RF-AG-009 gives a rejected applicant.
+would offer them the resubmission a rejected applicant is given.
 
 `accountStatus` holds `active` or `suspended`, the same two values for every
 account in the system. They are defined once, in `src/config/accountStatus.js`,
