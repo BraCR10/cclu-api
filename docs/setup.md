@@ -130,9 +130,13 @@ dropped the connection, which points back to the access section above.
 
 ## Checks before pushing
 
+The QA workflow runs these three on every pull request, in this order, and a
+failure in any of them blocks the merge. Run them locally first:
+
 ```bash
 npm run lint
 npm run format:check
+npm test
 ```
 
 ## Port note
