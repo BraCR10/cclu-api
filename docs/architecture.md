@@ -245,8 +245,13 @@ present on the 403, which is to say only after the password was correct.
 
 ```js
 app.use('/api/auth', publicAuthRoutes);
+app.use('/api', publicRoutes);
+
 app.use('/api', authenticate, requireActiveAccount);
+
 app.use('/api/auth', privateAuthRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/members', memberRoutes);
 ```
 
 A route registered below the gate is protected without asking for it, so
@@ -254,8 +259,8 @@ forgetting to think about access leaves a route closed rather than open. Making
 one public means moving it above the gate, which is a deliberate edit a reviewer
 sees in the diff.
 
-An unknown path under `/api` answers 401 rather than 404, which also keeps the
-list of routes that exist to ourselves.
+Without a session, an unknown path under `/api` answers 401 rather than 404,
+which also keeps the list of routes that exist to ourselves.
 
 ## Two questions about an account
 
