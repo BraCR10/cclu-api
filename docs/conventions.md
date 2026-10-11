@@ -23,8 +23,10 @@ values stored in the database, comments, and the explanations in
 A comment is written for whoever maintains the code, and the code is English,
 so the comment is too. A value inside `.env.example` may still be Spanish when a
 person reads it, as the sender name in `MAIL_FROM` does; the explanation above
-it is not. A test in each repository fails when a comment slips into Spanish, so
-this is checked rather than remembered.
+it is not. In this repository,
+`tests/conventions/commentLanguage.test.js` fails when a comment in `src`,
+`scripts`, `tests` or `.env.example` slips into Spanish, so this is checked
+rather than remembered.
 
 A stored value is an identifier, not a sentence. Keeping `approved` in the
 database rather than `aprobada` is what lets the interface say "Aprobada",
