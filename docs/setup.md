@@ -130,14 +130,11 @@ dropped the connection, which points back to the access section above.
 
 ## Checks before pushing
 
-The QA workflow runs these three on every pull request, in this order, and a
-failure in any of them blocks the merge. Run them locally first:
+Run the same checks CI runs, in this order:
 
-```bash
-npm run lint
-npm run format:check
-npm test
-```
+1. `npm run lint`
+2. `npm run format:check`
+3. `npm test`
 
 ## Port note
 
