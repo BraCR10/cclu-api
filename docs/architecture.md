@@ -18,30 +18,41 @@ services      Business rules. The only layer that decides anything
 models        Mongoose schemas and data access
 ```
 
-| Layer         | May import                                | Must never                             |
-| ------------- | ----------------------------------------- | -------------------------------------- |
-| `routes`      | controllers                               | Contain business rules or touch models |
-| `controllers` | services                                  | Build queries or know about Mongoose   |
-| `services`    | models, other services in the same module | Read `request` or write `response`     |
-| `models`      | nothing in this list                      | Contain business rules                 |
+| Layer         | May import             | Must never                             |
+| ------------- | ---------------------- | -------------------------------------- |
+| `routes`      | controllers            | Contain business rules or touch models |
+| `controllers` | services               | Build queries or know about Mongoose   |
+| `services`    | models, other services | Read `request` or write `response`     |
+| `models`      | nothing in this list   | Contain business rules                 |
 
 The controller layer is the only place that knows an HTTP request exists. A
 service receives plain values and returns plain values, which is what makes it
 testable without starting a server.
 
-## Module boundaries
+## Supporting folders
 
-The system has four functional modules. Each one owns a service, and that
-service is the only way into the module.
+Three folders sit beside the layers rather than inside the chain.
 
-- A module's service may call other services **inside the same module** freely.
-- A module's service may **never** import a service from another module
-  directly. Cross-module access goes through an explicit interface agreed
-  between both modules and documented here before it is written.
+| Folder        | Holds                                                                       | Imported by                        |
+| ------------- | --------------------------------------------------------------------------- | ---------------------------------- |
+| `middlewares` | Request pipeline: session, roles, origin check, rate limits, errors         | `app.js`, routes, `authController` |
+| `config`      | Fixed values and environment reading: roles, statuses, rules, mail, storage | any layer                          |
+| `emails`      | The templates for each outgoing mail and the layout they share              | `emailService` only                |
 
-The rule exists because a direct import creates a dependency nobody declared
-and nobody can see. When two modules need each other, that is a design
-decision, not an import statement.
+`src/app.js` wires middlewares and routers together, and `src/server.js` checks
+the environment, connects to the database and starts listening.
+
+## Services
+
+The code is organised by layer, not by feature module. Each concern owns one
+service file, named after what it decides: `memberRegistrationService`,
+`applicationReviewService`, `passwordResetService`, `accountService` and so on.
+
+A service may call another service when it needs that service's rule rather
+than a copy of it. `passwordResetService` asks `accountService` and
+`emailService`; `applicationReviewService` asks `memberCodeService`,
+`resubmissionService` and `emailService`. A rule written once in a service is
+called from there, never copied into a second one.
 
 ## Worked example
 
