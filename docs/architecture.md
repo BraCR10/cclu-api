@@ -18,30 +18,41 @@ services      Business rules. The only layer that decides anything
 models        Mongoose schemas and data access
 ```
 
-| Layer         | May import                                | Must never                             |
-| ------------- | ----------------------------------------- | -------------------------------------- |
-| `routes`      | controllers                               | Contain business rules or touch models |
-| `controllers` | services                                  | Build queries or know about Mongoose   |
-| `services`    | models, other services in the same module | Read `request` or write `response`     |
-| `models`      | nothing in this list                      | Contain business rules                 |
+| Layer         | May import             | Must never                             |
+| ------------- | ---------------------- | -------------------------------------- |
+| `routes`      | controllers            | Contain business rules or touch models |
+| `controllers` | services               | Build queries or know about Mongoose   |
+| `services`    | models, other services | Read `request` or write `response`     |
+| `models`      | nothing in this list   | Contain business rules                 |
 
 The controller layer is the only place that knows an HTTP request exists. A
 service receives plain values and returns plain values, which is what makes it
 testable without starting a server.
 
-## Module boundaries
+## Supporting folders
 
-The system has four functional modules. Each one owns a service, and that
-service is the only way into the module.
+Three folders sit beside the layers rather than inside the chain.
 
-- A module's service may call other services **inside the same module** freely.
-- A module's service may **never** import a service from another module
-  directly. Cross-module access goes through an explicit interface agreed
-  between both modules and documented here before it is written.
+| Folder        | Holds                                                                       | Imported by                        |
+| ------------- | --------------------------------------------------------------------------- | ---------------------------------- |
+| `middlewares` | Request pipeline: session, roles, origin check, rate limits, errors         | `app.js`, routes, `authController` |
+| `config`      | Fixed values and environment reading: roles, statuses, rules, mail, storage | any layer                          |
+| `emails`      | The templates for each outgoing mail and the layout they share              | `emailService` only                |
 
-The rule exists because a direct import creates a dependency nobody declared
-and nobody can see. When two modules need each other, that is a design
-decision, not an import statement.
+`src/app.js` wires middlewares and routers together, and `src/server.js` checks
+the environment, connects to the database and starts listening.
+
+## Services
+
+The code is organised by layer, not by feature module. Each concern owns one
+service file, named after what it decides: `memberRegistrationService`,
+`applicationReviewService`, `passwordResetService`, `accountService` and so on.
+
+A service may call another service when it needs that service's rule rather
+than a copy of it. `passwordResetService` asks `accountService` and
+`emailService`; `applicationReviewService` asks `memberCodeService`,
+`resubmissionService` and `emailService`. A rule written once in a service is
+called from there, never copied into a second one.
 
 ## Worked example
 
@@ -83,21 +94,25 @@ The session travels in an `httpOnly` cookie that the API issues and the browser
 returns on its own. No script can read it, so a cross-site scripting flaw cannot
 carry the session away; the client never holds the token at all.
 
-Two middlewares protect a route, and they always appear in this order.
+Two middlewares protect a route, and they always run in this order.
+`authenticate` runs once, at the gate in `app.js` (see
+[Deny by default](#deny-by-default)). `authorize` runs inside the router, either
+on the whole router or on a single route.
 
 ```js
-const { authenticate } = require('../middlewares/authenticate');
-const { authorize } = require('../middlewares/authorize');
-const { ROLES } = require('../config/roles');
+// src/routes/adminRoutes.js
+adminRoutes.use(authorize(ROLES.ADMIN));
+adminRoutes.get('/applications/pending', applicationReviewController.getPendingApplications);
 
-router.get('/applications', authenticate, authorize(ROLES.ADMIN), listApplications);
+// src/routes/memberRoutes.js
+memberRoutes.get('/me', authorize(ROLES.MEMBER), memberProfileController.getOwnProfile);
 ```
 
 `authenticate` reads the session cookie, verifies the signature and attaches
 `request.identity` as `{ id, role }`. `authorize` reads that identity and
 refuses a role it was not given.
 
-A public route mounts neither. There is no public role: a visitor holds no
+A public route, mounted above the gate, runs neither. There is no public role: a visitor holds no
 token, and a role nobody is ever issued is a value that can only ever be wrong.
 
 Because the client cannot read the cookie, it cannot know its own role either.
@@ -120,8 +135,8 @@ system to the member model.
 in the body: putting it there would hand it to any script on the page, which is
 the reach the cookie exists to deny.
 
-Members will sign in through a route of their own rather than sharing this one,
-because what the answer may reveal differs. A member is told their application
+Members sign in through a route of their own, `POST /api/auth/member/login`,
+rather than sharing this one, because what the answer may reveal differs. A member is told their application
 is still pending once the password is right; an administrator is told nothing
 either way, since confirming that an address is an administrator is half of what
 someone guessing needs.
@@ -234,8 +249,13 @@ present on the 403, which is to say only after the password was correct.
 
 ```js
 app.use('/api/auth', publicAuthRoutes);
+app.use('/api', publicRoutes);
+
 app.use('/api', authenticate, requireActiveAccount);
+
 app.use('/api/auth', privateAuthRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/members', memberRoutes);
 ```
 
 A route registered below the gate is protected without asking for it, so
@@ -243,8 +263,8 @@ forgetting to think about access leaves a route closed rather than open. Making
 one public means moving it above the gate, which is a deliberate edit a reviewer
 sees in the diff.
 
-An unknown path under `/api` answers 401 rather than 404, which also keeps the
-list of routes that exist to ourselves.
+Without a session, an unknown path under `/api` answers 401 rather than 404,
+which also keeps the list of routes that exist to ourselves.
 
 ## Two questions about an account
 
@@ -259,13 +279,12 @@ A member needs an approved application and an active account. An admin has no
 application, so only the account is read.
 
 Folding the two together would mean suspending someone by writing
-`applicationStatus: rechazada`, which records something that never happened and
+`applicationStatus: rejected`, which records something that never happened and
 would offer them the resubmission RF-AG-009 gives a rejected applicant.
 
-`accountStatus` holds `activa` or `suspendida`, the same two values for every
-account in the system. CA-ADM-003-03 also names giving a member their leave,
-which is suspending the account and ending the membership rather than a third
-state of its own.
+`accountStatus` holds `active` or `suspended`, the same two values for every
+account in the system. They are defined once, in `src/config/accountStatus.js`,
+and both `Member` and `Admin` read them from there.
 
 `authenticate` proves a token is genuine; it cannot know whether the account
 behind it still works, because a token is a photograph taken at sign in and
