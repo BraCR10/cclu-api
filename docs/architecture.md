@@ -259,13 +259,12 @@ A member needs an approved application and an active account. An admin has no
 application, so only the account is read.
 
 Folding the two together would mean suspending someone by writing
-`applicationStatus: rechazada`, which records something that never happened and
+`applicationStatus: rejected`, which records something that never happened and
 would offer them the resubmission RF-AG-009 gives a rejected applicant.
 
-`accountStatus` holds `activa` or `suspendida`, the same two values for every
-account in the system. CA-ADM-003-03 also names giving a member their leave,
-which is suspending the account and ending the membership rather than a third
-state of its own.
+`accountStatus` holds `active` or `suspended`, the same two values for every
+account in the system. They are defined once, in `src/config/accountStatus.js`,
+and both `Member` and `Admin` read them from there.
 
 `authenticate` proves a token is genuine; it cannot know whether the account
 behind it still works, because a token is a photograph taken at sign in and
