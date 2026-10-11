@@ -14,8 +14,7 @@ here needs to change, change it deliberately and tell the team.
 | Commit messages               | English  |
 | Content shown to end users    | Spanish  |
 
-The source requirement documents (ERS, SAD) are in Spanish, and the interface is
-Spanish because the people using it are. Everything else is English, including
+The interface is Spanish because the people using it are. Everything else is English, including
 the parts that are easy to forget: route paths, model names, field names, the
 values stored in the database, comments, and the explanations in
 `.env.example`.
@@ -147,8 +146,7 @@ The full rules, including how services call each other, are in
 
 ## Data retention
 
-BD-003 of the ERS requires that members, memberships, payments and published
-content be kept permanently. Historical records are never physically deleted.
+Members, memberships, payments and published content are kept permanently. Historical records are never physically deleted.
 
 - Never call `deleteOne`, `deleteMany`, `findByIdAndDelete` or `drop` on a
   domain collection.

@@ -29,13 +29,9 @@ The web client consumes this API over HTTP and has no other route to the data.
 | [Branching](docs/branching.md)       | Branch roles, naming, and the pull request cycle  |
 | [Testing](docs/testing.md)           | What carries unit tests, and how they are written |
 
-The requirement and architecture documents (ERS and SAD) are not published
-here; ask the project lead for a copy. Where the ERS and the prototype differ,
-the prototype wins, as the next section explains.
+## Prototype
 
-## Source of truth
-
-The accepted Figma prototype defines the product: screens, flows, UI copy and the business rules they imply. Where it differs from the earlier ERS, the prototype wins.
+The accepted Figma prototype defines the product: screens, flows, UI copy and the business rules they imply.
 
 - [Desktop prototype](https://www.figma.com/proto/YPsVPnxVtPDJZxj2Q2NtS5/CCLU-%E2%80%94-Prototipo-de-plataforma?node-id=30-2&starting-point-node-id=30%3A2)
 - [Mobile prototype](https://www.figma.com/proto/YPsVPnxVtPDJZxj2Q2NtS5/CCLU-%E2%80%94-Prototipo-de-plataforma?node-id=81-557&starting-point-node-id=81%3A557)
