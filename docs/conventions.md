@@ -112,7 +112,7 @@ Every file belongs to exactly one layer and may only depend downward.
 routes -> controllers -> services -> models
 ```
 
-The full rules, including the boundary between modules, are in
+The full rules, including how services call each other, are in
 [architecture.md](architecture.md).
 
 ## Data retention

@@ -24,7 +24,7 @@ The web client consumes this API over HTTP and has no other route to the data.
 | Document                             | Contents                                          |
 | ------------------------------------ | ------------------------------------------------- |
 | [Setup](docs/setup.md)               | Run the API from a clean clone                    |
-| [Architecture](docs/architecture.md) | Layers, module boundaries, adding a module        |
+| [Architecture](docs/architecture.md) | Layers, supporting folders, adding a module       |
 | [Conventions](docs/conventions.md)   | Versioning, code style, comments, error handling  |
 | [Branching](docs/branching.md)       | Branch roles, naming, and the pull request cycle  |
 | [Testing](docs/testing.md)           | What carries unit tests, and how they are written |
