@@ -94,21 +94,25 @@ The session travels in an `httpOnly` cookie that the API issues and the browser
 returns on its own. No script can read it, so a cross-site scripting flaw cannot
 carry the session away; the client never holds the token at all.
 
-Two middlewares protect a route, and they always appear in this order.
+Two middlewares protect a route, and they always run in this order.
+`authenticate` runs once, at the gate in `app.js` (see
+[Deny by default](#deny-by-default)). `authorize` runs inside the router, either
+on the whole router or on a single route.
 
 ```js
-const { authenticate } = require('../middlewares/authenticate');
-const { authorize } = require('../middlewares/authorize');
-const { ROLES } = require('../config/roles');
+// src/routes/adminRoutes.js
+adminRoutes.use(authorize(ROLES.ADMIN));
+adminRoutes.get('/applications/pending', applicationReviewController.getPendingApplications);
 
-router.get('/applications', authenticate, authorize(ROLES.ADMIN), listApplications);
+// src/routes/memberRoutes.js
+memberRoutes.get('/me', authorize(ROLES.MEMBER), memberProfileController.getOwnProfile);
 ```
 
 `authenticate` reads the session cookie, verifies the signature and attaches
 `request.identity` as `{ id, role }`. `authorize` reads that identity and
 refuses a role it was not given.
 
-A public route mounts neither. There is no public role: a visitor holds no
+A public route, mounted above the gate, runs neither. There is no public role: a visitor holds no
 token, and a role nobody is ever issued is a value that can only ever be wrong.
 
 Because the client cannot read the cookie, it cannot know its own role either.
@@ -131,8 +135,8 @@ system to the member model.
 in the body: putting it there would hand it to any script on the page, which is
 the reach the cookie exists to deny.
 
-Members will sign in through a route of their own rather than sharing this one,
-because what the answer may reveal differs. A member is told their application
+Members sign in through a route of their own, `POST /api/auth/member/login`,
+rather than sharing this one, because what the answer may reveal differs. A member is told their application
 is still pending once the password is right; an administrator is told nothing
 either way, since confirming that an address is an administrator is half of what
 someone guessing needs.
