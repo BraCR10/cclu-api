@@ -32,6 +32,36 @@ A stored value is an identifier, not a sentence. Keeping `approved` in the
 database rather than `aprobada` is what lets the interface say "Aprobada",
 "Aprobado" or "En regla" without a data migration each time.
 
+## Error messages
+
+The API and the web split an error into what a program decides and what a person
+reads.
+
+The API answers every client error with the same shape:
+
+```json
+{
+  "error": "ValidationError",
+  "message": "Too long.",
+  "code": "too_long",
+  "field": "phone"
+}
+```
+
+- `code` is stable, snake_case and in English. It is the only thing a client
+  decides on. Adding an error means adding a code, never reusing a message.
+- `field` names the input the error belongs to, when there is one.
+- `message` is English and written for whoever reads the logs or calls the API by
+  hand. It is never shown to a user and may change at any time.
+
+The web keeps one catalog that turns each `code` into the Spanish sentence a
+person reads. An error with a `field` appears under that input; one without it
+appears in a toast. A code missing from the catalog, or any server error, shows
+the generic message "Algo salió mal. Intentá de nuevo."
+
+Emails are the one exception: the API writes them in Spanish, because they reach
+a person without passing through the web.
+
 ## Versioning
 
 Commits follow [Conventional Commits](https://www.conventionalcommits.org).
