@@ -32,11 +32,11 @@ testable without starting a server.
 
 Three folders sit beside the layers rather than inside the chain.
 
-| Folder        | Holds                                                                       | Imported by                        |
-| ------------- | --------------------------------------------------------------------------- | ---------------------------------- |
-| `middlewares` | Request pipeline: session, roles, origin check, rate limits, errors         | `app.js`, routes, `authController` |
-| `config`      | Fixed values and environment reading: roles, statuses, rules, mail, storage | any layer                          |
-| `emails`      | The templates for each outgoing mail and the layout they share              | `emailService` only                |
+| Folder        | Holds                                                                                    | Imported by                        |
+| ------------- | ---------------------------------------------------------------------------------------- | ---------------------------------- |
+| `middlewares` | Request pipeline: session, roles, origin check, rate limits, errors                      | `app.js`, routes, `authController` |
+| `config`      | Fixed values and environment reading: roles, statuses, rules, error codes, mail, storage | any layer                          |
+| `emails`      | The templates for each outgoing mail and the layout they share                           | `emailService` only                |
 
 `src/app.js` wires middlewares and routers together, and `src/server.js` checks
 the environment, connects to the database and starts listening.
@@ -238,9 +238,10 @@ The order is what resolves it.
 Someone who guessed the password already proved they own the account, so telling
 them costs nothing. Someone trying addresses learns the same thing every time.
 
-The refusal carries a `reason` alongside its message so a screen can say the
-right thing in its own words without matching on English text. It is only ever
-present on the 403, which is to say only after the password was correct.
+The refusal carries the state as its `code`, repeated in `reason`, so a screen
+can say the right thing in its own words without matching on English text. It
+is only ever present on the 403, which is to say only after the password was
+correct.
 
 ## Deny by default
 

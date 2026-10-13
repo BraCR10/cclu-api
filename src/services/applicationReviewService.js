@@ -2,6 +2,7 @@ const { Member, APPLICATION_STATUSES } = require('../models/Member');
 const { generateMemberCode } = require('./memberCodeService');
 const { issueResubmissionToken } = require('./resubmissionService');
 const emailService = require('./emailService');
+const { ApplicationError, ERROR_CODES } = require('../config/errorCodes');
 
 const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
 const MAXIMUM_REASON_LENGTH = 500;
@@ -51,17 +52,18 @@ const DECIDED_FIELDS = [
 
 const DECIDED_STATUSES = [APPLICATION_STATUSES.APPROVED, APPLICATION_STATUSES.REJECTED];
 
-class ApplicationReviewError extends Error {
-  constructor(message, statusCode = 400) {
-    super(message);
-    this.name = 'ApplicationReviewError';
-    this.statusCode = statusCode;
+class ApplicationReviewError extends ApplicationError {
+  constructor(code, message, { statusCode = 400, field = null, reason } = {}) {
+    super(code, message, { statusCode, field, reason, name: 'ApplicationReviewError' });
   }
 }
 
 function readMemberId(value) {
   if (typeof value !== 'string' || !OBJECT_ID.test(value)) {
-    throw new ApplicationReviewError('The application identifier is not valid.');
+    throw new ApplicationReviewError(
+      ERROR_CODES.INVALID_FORMAT,
+      'The application identifier is not valid.',
+    );
   }
 
   return value;
@@ -73,13 +75,19 @@ function readReason(body) {
   const reason = body === null || typeof body !== 'object' ? undefined : body.reason;
 
   if (typeof reason !== 'string' || reason.trim() === '') {
-    throw new ApplicationReviewError('A reason is required to reject an application.');
+    throw new ApplicationReviewError(
+      ERROR_CODES.REQUIRED,
+      'A reason is required to reject an application.',
+      { field: 'reason' },
+    );
   }
 
   const trimmed = reason.trim();
 
   if (trimmed.length > MAXIMUM_REASON_LENGTH) {
-    throw new ApplicationReviewError('The reason is longer than allowed.');
+    throw new ApplicationReviewError(ERROR_CODES.TOO_LONG, 'The reason is longer than allowed.', {
+      field: 'reason',
+    });
   }
 
   return trimmed;
@@ -132,16 +140,20 @@ async function refuseDecision(memberId, findStatus) {
   const existing = await findStatus(memberId);
 
   if (existing === null || existing === undefined) {
-    throw new ApplicationReviewError('No application exists with that identifier.', 404);
+    throw new ApplicationReviewError(
+      ERROR_CODES.UNKNOWN_REFERENCE,
+      'No application exists with that identifier.',
+      { statusCode: 404 },
+    );
   }
-
-  const error = new ApplicationReviewError('This application was already decided.', 409);
 
   // Only administrators reach this point, so naming the state costs nothing and
   // lets the panel say what happened instead of guessing.
-  error.reason = existing.applicationStatus;
-
-  throw error;
+  throw new ApplicationReviewError(
+    ERROR_CODES.ALREADY_DECIDED,
+    'This application was already decided.',
+    { statusCode: 409, reason: existing.applicationStatus },
+  );
 }
 
 async function approveApplication(
@@ -183,7 +195,11 @@ async function approveApplication(
     return approved;
   }
 
-  throw new ApplicationReviewError('A member code could not be assigned.', 500);
+  throw new ApplicationReviewError(
+    ERROR_CODES.INTERNAL_ERROR,
+    'A member code could not be assigned.',
+    { statusCode: 500 },
+  );
 }
 
 // Built here rather than in the template, because only the API knows the token

@@ -1,17 +1,21 @@
-function unauthorized() {
-  const error = new Error('Authentication required.');
-  error.name = 'Unauthorized';
-  error.statusCode = 401;
+const { ApplicationError, ERROR_CODES } = require('../config/errorCodes');
 
-  return error;
+function unauthorized() {
+  return new ApplicationError(ERROR_CODES.AUTHENTICATION_REQUIRED, 'Authentication required.', {
+    statusCode: 401,
+    name: 'Unauthorized',
+  });
 }
 
 function forbidden() {
-  const error = new Error('This role cannot access the resource.');
-  error.name = 'Forbidden';
-  error.statusCode = 403;
-
-  return error;
+  return new ApplicationError(
+    ERROR_CODES.ROLE_NOT_ALLOWED,
+    'This role cannot access the resource.',
+    {
+      statusCode: 403,
+      name: 'Forbidden',
+    },
+  );
 }
 
 function authorize(...allowedRoles) {

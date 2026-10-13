@@ -348,3 +348,21 @@ test('a configuration missing a single variable names only that one', async () =
     assert.equal(error.message.includes(name), false);
   }
 });
+
+test('every refusal of an upload carries a registered code', async () => {
+  const { store } = recordingStore();
+
+  const wrongType = await refusal(() =>
+    uploadFile(validUpload({ contentType: 'text/html' }), store),
+  );
+  const tooLarge = await refusal(() =>
+    uploadFile(validUpload({ content: Buffer.alloc(MAXIMUM_FILE_SIZE_BYTES + 1) }), store),
+  );
+  const empty = await refusal(() => uploadFile(validUpload({ content: Buffer.alloc(0) }), store));
+  const missing = await refusal(() => uploadFile(null, store));
+
+  assert.equal(wrongType.code, 'file_type_not_allowed');
+  assert.equal(tooLarge.code, 'file_too_large');
+  assert.equal(empty.code, 'required');
+  assert.equal(missing.code, 'required');
+});

@@ -7,8 +7,8 @@ const {
   readReference,
   ValidationError,
   refuse,
-  CODES,
 } = require('../config/memberRules');
+const { ERROR_CODES } = require('../config/errorCodes');
 const { effectiveMemberState } = require('./accountService');
 
 // Named one by one. A field absent from these lists cannot be changed here, so
@@ -59,7 +59,12 @@ async function readProfile(memberId, find = findProfile) {
   const member = await find(memberId);
 
   if (member === null || member === undefined) {
-    throw new ValidationError(CODES.UNKNOWN_REFERENCE, null, 'That account no longer exists.', 404);
+    throw new ValidationError(
+      ERROR_CODES.UNKNOWN_REFERENCE,
+      null,
+      'That account no longer exists.',
+      404,
+    );
   }
 
   return presentProfile(member);
@@ -67,7 +72,7 @@ async function readProfile(memberId, find = findProfile) {
 
 async function buildChanges(body, references = EDITABLE_REFERENCE_FIELDS) {
   if (body === null || typeof body !== 'object' || Array.isArray(body)) {
-    refuse(CODES.BODY_MISSING, null, 'The profile body is missing.');
+    refuse(ERROR_CODES.BODY_MISSING, null, 'The profile body is missing.');
   }
 
   const changes = {};
@@ -108,7 +113,7 @@ async function buildChanges(body, references = EDITABLE_REFERENCE_FIELDS) {
   }
 
   if (Object.keys(changes).length === 0 && Object.keys(unset).length === 0) {
-    refuse(CODES.NOTHING_TO_CHANGE, null, 'The request changes nothing.');
+    refuse(ERROR_CODES.NOTHING_TO_CHANGE, null, 'The request changes nothing.');
   }
 
   return { changes, unset };
@@ -135,7 +140,12 @@ async function updateProfile(
   const updated = await apply(memberId, update);
 
   if (updated === null || updated === undefined) {
-    throw new ValidationError(CODES.UNKNOWN_REFERENCE, null, 'That account no longer exists.', 404);
+    throw new ValidationError(
+      ERROR_CODES.UNKNOWN_REFERENCE,
+      null,
+      'That account no longer exists.',
+      404,
+    );
   }
 
   return presentProfile(updated);

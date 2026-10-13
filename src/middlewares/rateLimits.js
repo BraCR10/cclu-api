@@ -1,4 +1,5 @@
 const rateLimit = require('express-rate-limit');
+const { ERROR_CODES } = require('../config/errorCodes');
 
 const WINDOW_MS = 15 * 60 * 1000;
 const ATTEMPTS_PER_ADDRESS = 10;
@@ -44,6 +45,7 @@ function tooManyAttempts(request, response) {
   response.status(429).json({
     error: 'TooManyRequests',
     message: 'Too many attempts. Wait a few minutes and try again.',
+    code: ERROR_CODES.TOO_MANY_ATTEMPTS,
   });
 }
 
@@ -114,4 +116,5 @@ module.exports = {
   describeAttempt,
   skipsAccountLimit,
   accountKeyFor,
+  tooManyAttempts,
 };

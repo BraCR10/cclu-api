@@ -61,6 +61,32 @@ the generic message "Algo salió mal. Intentá de nuevo."
 Emails are the one exception: the API writes them in Spanish, because they reach
 a person without passing through the web.
 
+### Error contract
+
+`cclu-api/src/config/errorCodes.json` is the registry: the only codes the API
+answers with. A test in the API fails when the source writes a code that is not
+in it.
+
+| Status | `code`                                                                                                                      |
+| ------ | --------------------------------------------------------------------------------------------------------------------------- |
+| 4xx    | A registered code, or `invalid_request` when the failure came from outside the application, such as a body that is not JSON |
+| 5xx    | Always `internal_error`, with a generic `message` and no `field`                                                            |
+
+- The API raises a client error with `ApplicationError`, from
+  `cclu-api/src/config/errorCodes.js`: a code, a message and, when needed, a
+  status (400 by default), a `field` and a `reason`. Every client error is one,
+  and none is built by setting `statusCode` by hand. A server failure needs no
+  code, since the answer is `internal_error` whatever caused it.
+- `reason` refines a code when a screen needs the detail, such as the state an
+  already decided application is in.
+- `cclu-web` keeps a copy of the registry in `tests/fixtures/apiErrorCodes.json`.
+  Its contract test fails when a code in that copy has no sentence in the
+  `errors` messages.
+
+Adding a code takes three edits: the registry, the copy in `cclu-web` (run
+`npm run sync:error-codes` there with both repositories cloned side by side),
+and the sentence in the `errors` messages.
+
 ## Versioning
 
 Commits follow [Conventional Commits](https://www.conventionalcommits.org).
@@ -175,8 +201,9 @@ async function getMember(request, response) {
   Express 5 and three different wrappers is worse than none.
 - Use `try/catch` only when this function can genuinely recover from the
   failure or must add context before rethrowing.
-- To signal an HTTP status, throw an error carrying a `statusCode` property.
-  `middlewares/errorHandler.js` reads it and defaults to 500.
+- To signal an HTTP status, throw an `ApplicationError` with a registered code
+  (see [Error contract](#error-contract)). `middlewares/errorHandler.js` reads
+  its status and defaults to 500.
 
 Errors with a status of 500 or above are logged and returned with a generic
 message. Internal failure detail never reaches the client.

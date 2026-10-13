@@ -11,8 +11,8 @@ const {
   readReference,
   ValidationError,
   refuse,
-  CODES,
 } = require('../config/memberRules');
+const { ERROR_CODES } = require('../config/errorCodes');
 
 // Named one by one, and nothing outside this list is ever read. Spreading the
 // body would let a caller set their own role or arrive already approved.
@@ -43,7 +43,7 @@ const CHOICE_FIELDS = [
 
 async function buildRegistration(body, references = REQUIRED_REFERENCE_FIELDS) {
   if (body === null || typeof body !== 'object' || Array.isArray(body)) {
-    refuse(CODES.BODY_MISSING, null, 'The registration body is missing.');
+    refuse(ERROR_CODES.BODY_MISSING, null, 'The registration body is missing.');
   }
 
   const registration = {};
@@ -100,7 +100,7 @@ const DUPLICATE_KEY = 11000;
 // administrators are, and it is open to anyone.
 function alreadyRegistered() {
   return new ValidationError(
-    CODES.ALREADY_REGISTERED,
+    ERROR_CODES.ALREADY_REGISTERED,
     null,
     'The registration could not be completed. Contact the chamber for help.',
     409,
