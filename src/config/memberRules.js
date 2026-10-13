@@ -1,3 +1,5 @@
+const { ApplicationError, ERROR_CODES } = require('./errorCodes');
+
 // Every constraint a member's data answers to, in one place. The web mirrors
 // the shape and length rules so a person is told before they send anything;
 // these are the ones that decide.
@@ -42,34 +44,9 @@ const PASSWORD = {
   ],
 };
 
-// The code is what the web reads to decide which message to show; the message
-// is for a log and for whoever is holding a terminal.
-const CODES = {
-  REQUIRED: 'required',
-  NOT_TEXT: 'not_text',
-  TOO_LONG: 'too_long',
-  INVALID_FORMAT: 'invalid_format',
-  NOT_ALLOWED: 'not_allowed',
-  UNKNOWN_REFERENCE: 'unknown_reference',
-  PASSWORD_TOO_SHORT: 'password_too_short',
-  PASSWORD_TOO_LONG: 'password_too_long',
-  PASSWORD_NEEDS_LETTER: 'password_needs_letter',
-  PASSWORD_NEEDS_DIGIT: 'password_needs_digit',
-  PASSWORD_NEEDS_SPECIAL: 'password_needs_special',
-  NOTHING_TO_CHANGE: 'nothing_to_change',
-  ALREADY_REGISTERED: 'already_registered',
-  INVALID_CURRENT_PASSWORD: 'invalid_current_password',
-  INVALID_CODE: 'invalid_code',
-  BODY_MISSING: 'body_missing',
-};
-
-class ValidationError extends Error {
+class ValidationError extends ApplicationError {
   constructor(code, field, message, statusCode = 400) {
-    super(message);
-    this.name = 'ValidationError';
-    this.statusCode = statusCode;
-    this.code = code;
-    this.field = field;
+    super(code, message, { statusCode, field, name: 'ValidationError' });
   }
 }
 
@@ -83,7 +60,7 @@ function readText(body, field, { required }) {
 
   if (value === undefined || value === null || value === '') {
     if (required) {
-      refuse(CODES.REQUIRED, field, `The field ${field} is required.`);
+      refuse(ERROR_CODES.REQUIRED, field, `The field ${field} is required.`);
     }
 
     return undefined;
@@ -92,25 +69,25 @@ function readText(body, field, { required }) {
   // A value that is not a string stops being data and becomes part of the
   // query, because MongoDB reads $ and . as operators.
   if (typeof value !== 'string') {
-    refuse(CODES.NOT_TEXT, field, `The field ${field} must be text.`);
+    refuse(ERROR_CODES.NOT_TEXT, field, `The field ${field} must be text.`);
   }
 
   const trimmed = value.trim();
 
   if (trimmed === '') {
     if (required) {
-      refuse(CODES.REQUIRED, field, `The field ${field} is required.`);
+      refuse(ERROR_CODES.REQUIRED, field, `The field ${field} is required.`);
     }
 
     return undefined;
   }
 
   if (rule.maxLength !== undefined && trimmed.length > rule.maxLength) {
-    refuse(CODES.TOO_LONG, field, `The field ${field} is longer than ${rule.maxLength}.`);
+    refuse(ERROR_CODES.TOO_LONG, field, `The field ${field} is longer than ${rule.maxLength}.`);
   }
 
   if (rule.pattern !== undefined && !PATTERNS[rule.pattern].test(trimmed)) {
-    refuse(CODES.INVALID_FORMAT, field, `The field ${field} is not in the expected format.`);
+    refuse(ERROR_CODES.INVALID_FORMAT, field, `The field ${field} is not in the expected format.`);
   }
 
   return trimmed;
@@ -120,7 +97,7 @@ function readChoice(body, field, allowed) {
   const value = readText(body, field, { required: true });
 
   if (!allowed.includes(value)) {
-    refuse(CODES.NOT_ALLOWED, field, `The field ${field} is not one of the accepted values.`);
+    refuse(ERROR_CODES.NOT_ALLOWED, field, `The field ${field} is not one of the accepted values.`);
   }
 
   return value;
@@ -131,14 +108,14 @@ function readPassword(body, field = 'password') {
 
   if (typeof password !== 'string' || password.length < PASSWORD.minimumLength) {
     refuse(
-      CODES.PASSWORD_TOO_SHORT,
+      ERROR_CODES.PASSWORD_TOO_SHORT,
       field,
       `The password must be at least ${PASSWORD.minimumLength} characters.`,
     );
   }
 
   if (Buffer.byteLength(password, 'utf8') > PASSWORD.maximumBytes) {
-    refuse(CODES.PASSWORD_TOO_LONG, field, 'The password is longer than can be used.');
+    refuse(ERROR_CODES.PASSWORD_TOO_LONG, field, 'The password is longer than can be used.');
   }
 
   for (const requirement of PASSWORD.requirements) {
@@ -155,14 +132,14 @@ async function readReference(body, field, model) {
   const id = readText(body, field, { required: true });
 
   if (!PATTERNS.objectId.test(id)) {
-    refuse(CODES.INVALID_FORMAT, field, `The field ${field} is not a valid reference.`);
+    refuse(ERROR_CODES.INVALID_FORMAT, field, `The field ${field} is not a valid reference.`);
   }
 
   const found = await model.findById(id).select('_id').lean();
 
   if (found === null) {
     refuse(
-      CODES.UNKNOWN_REFERENCE,
+      ERROR_CODES.UNKNOWN_REFERENCE,
       field,
       `The field ${field} does not name anything that exists.`,
     );
@@ -178,7 +155,6 @@ module.exports = {
   readReference,
   ValidationError,
   refuse,
-  CODES,
   FIELDS,
   PATTERNS,
   PASSWORD,

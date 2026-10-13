@@ -1,6 +1,7 @@
 const { randomBytes, createHash, timingSafeEqual } = require('node:crypto');
 const { Member, APPLICATION_STATUSES } = require('../models/Member');
-const { ValidationError, CODES, refuse, readText } = require('../config/memberRules');
+const { ValidationError, refuse, readText } = require('../config/memberRules');
+const { ERROR_CODES } = require('../config/errorCodes');
 
 const TOKEN_BYTES = 32;
 const DAYS_VALID = 30;
@@ -15,7 +16,7 @@ function digestOf(token) {
 
 function readToken(value) {
   if (typeof value !== 'string' || !TOKEN_SHAPE.test(value.trim())) {
-    refuse(CODES.INVALID_CODE, 'token', 'The resubmission link is not valid.');
+    refuse(ERROR_CODES.INVALID_CODE, 'token', 'The resubmission link is not valid.');
   }
 
   return value.trim();
@@ -23,7 +24,7 @@ function readToken(value) {
 
 function expired() {
   return new ValidationError(
-    CODES.INVALID_CODE,
+    ERROR_CODES.INVALID_CODE,
     'token',
     'The resubmission link is not valid or has expired.',
     404,
@@ -123,7 +124,7 @@ const REQUIRED = ['phone', 'location', 'businessName', 'businessDescription'];
 // address, an application status or anything else the chamber decides.
 function buildCorrections(body) {
   if (body === null || typeof body !== 'object' || Array.isArray(body)) {
-    refuse(CODES.BODY_MISSING, null, 'The resubmission body is missing.');
+    refuse(ERROR_CODES.BODY_MISSING, null, 'The resubmission body is missing.');
   }
 
   const changes = {};

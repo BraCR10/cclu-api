@@ -1,7 +1,8 @@
 const { Member } = require('../models/Member');
 const { normalizeMemberCode, isMemberCodeValid, formatMemberCode } = require('./memberCodeService');
 const { effectiveMemberState, MEMBER_STATES } = require('./accountService');
-const { ValidationError, CODES } = require('../config/memberRules');
+const { ValidationError } = require('../config/memberRules');
+const { ERROR_CODES } = require('../config/errorCodes');
 
 // What one member may learn about another from a code: enough to recognise the
 // business in front of them, and nothing that belongs to the account.
@@ -82,7 +83,7 @@ function findPublicByCode(code) {
 
 function notListed() {
   return new ValidationError(
-    CODES.UNKNOWN_REFERENCE,
+    ERROR_CODES.UNKNOWN_REFERENCE,
     'memberCode',
     'No affiliate is listed under that code.',
     404,

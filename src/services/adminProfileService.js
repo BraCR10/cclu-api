@@ -1,5 +1,6 @@
 const { Admin } = require('../models/Admin');
-const { readText, ValidationError, CODES, refuse } = require('../config/memberRules');
+const { readText, ValidationError, refuse } = require('../config/memberRules');
+const { ERROR_CODES } = require('../config/errorCodes');
 
 // What an administrator may see of their own account. Built field by field, so
 // the password hash cannot travel by being forgotten about.
@@ -16,7 +17,12 @@ async function readOwnProfile(identity, find = (id) => Admin.findById(id).lean()
   const admin = await find(identity.id);
 
   if (admin === null || admin === undefined) {
-    throw new ValidationError(CODES.UNKNOWN_REFERENCE, null, 'That account no longer exists.', 404);
+    throw new ValidationError(
+      ERROR_CODES.UNKNOWN_REFERENCE,
+      null,
+      'That account no longer exists.',
+      404,
+    );
   }
 
   return present(admin);
@@ -27,14 +33,19 @@ async function readOwnProfile(identity, find = (id) => Admin.findById(id).lean()
 // a password hash is simply never read.
 async function updateOwnProfile(identity, body, save = defaultSave) {
   if (body === null || typeof body !== 'object' || Array.isArray(body)) {
-    refuse(CODES.BODY_MISSING, null, 'The body is missing.');
+    refuse(ERROR_CODES.BODY_MISSING, null, 'The body is missing.');
   }
 
   const name = readText(body, 'name', { required: true });
   const admin = await save(identity.id, { name });
 
   if (admin === null || admin === undefined) {
-    throw new ValidationError(CODES.UNKNOWN_REFERENCE, null, 'That account no longer exists.', 404);
+    throw new ValidationError(
+      ERROR_CODES.UNKNOWN_REFERENCE,
+      null,
+      'That account no longer exists.',
+      404,
+    );
   }
 
   return present(admin);

@@ -3,7 +3,8 @@ const { Member } = require('../models/Member');
 const { Admin } = require('../models/Admin');
 const { PasswordResetRequest } = require('../models/PasswordResetRequest');
 const { ROLES } = require('../config/roles');
-const { readPassword, ValidationError, refuse, CODES } = require('../config/memberRules');
+const { readPassword, ValidationError, refuse } = require('../config/memberRules');
+const { ERROR_CODES } = require('../config/errorCodes');
 const { normalizeEmail } = require('./accountService');
 const passwordService = require('./passwordService');
 const emailService = require('./emailService');
@@ -26,7 +27,7 @@ function digestOf(token) {
 
 function readToken(value) {
   if (typeof value !== 'string' || !TOKEN_SHAPE.test(value.trim())) {
-    refuse(CODES.INVALID_CODE, 'token', 'The link is not valid.');
+    refuse(ERROR_CODES.INVALID_CODE, 'token', 'The link is not valid.');
   }
 
   return value.trim();
@@ -34,7 +35,7 @@ function readToken(value) {
 
 function expired() {
   return new ValidationError(
-    CODES.INVALID_CODE,
+    ERROR_CODES.INVALID_CODE,
     'token',
     'The link is not valid or has expired.',
     404,
@@ -133,7 +134,12 @@ async function requestResetFromSession(
   const account = await find(identity);
 
   if (account === null) {
-    throw new ValidationError(CODES.UNKNOWN_REFERENCE, null, 'That account no longer exists.', 404);
+    throw new ValidationError(
+      ERROR_CODES.UNKNOWN_REFERENCE,
+      null,
+      'That account no longer exists.',
+      404,
+    );
   }
 
   const currentPassword = body?.currentPassword;
@@ -143,7 +149,7 @@ async function requestResetFromSession(
 
   if (!matches) {
     throw new ValidationError(
-      CODES.INVALID_CURRENT_PASSWORD,
+      ERROR_CODES.INVALID_CURRENT_PASSWORD,
       'currentPassword',
       'The current password is not correct.',
       401,
@@ -213,7 +219,12 @@ async function completePasswordReset(body, locate = findRequest, accounts = ACCO
   const account = model === undefined ? null : await model.findById(request.account);
 
   if (account === null) {
-    throw new ValidationError(CODES.UNKNOWN_REFERENCE, null, 'That account no longer exists.', 404);
+    throw new ValidationError(
+      ERROR_CODES.UNKNOWN_REFERENCE,
+      null,
+      'That account no longer exists.',
+      404,
+    );
   }
 
   account.passwordHash = await passwordService.hashPassword(newPassword);
