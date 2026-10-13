@@ -1,7 +1,10 @@
+const { ERROR_CODES } = require('../config/errorCodes');
+
 function notFoundHandler(request, response) {
   response.status(404).json({
-    error: 'Not Found',
+    error: 'NotFound',
     message: `Route ${request.method} ${request.originalUrl} does not exist.`,
+    code: ERROR_CODES.ROUTE_NOT_FOUND,
   });
 }
 

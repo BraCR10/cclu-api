@@ -1,12 +1,12 @@
 const tokenService = require('../services/tokenService');
 const { SESSION_COOKIE_NAME } = require('../config/sessionCookie');
+const { ApplicationError, ERROR_CODES } = require('../config/errorCodes');
 
 function unauthorized() {
-  const error = new Error('Authentication required.');
-  error.name = 'Unauthorized';
-  error.statusCode = 401;
-
-  return error;
+  return new ApplicationError(ERROR_CODES.AUTHENTICATION_REQUIRED, 'Authentication required.', {
+    statusCode: 401,
+    name: 'Unauthorized',
+  });
 }
 
 function authenticate(request, response, next) {

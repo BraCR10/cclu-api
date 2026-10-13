@@ -268,3 +268,28 @@ test('a rejection stores the trimmed reason and draws no member code', async () 
   assert.equal($set.reviewedBy, REVIEWER_ID);
   assert.ok($set.reviewedAt instanceof Date);
 });
+
+test('every refusal of a decision carries a registered code', async () => {
+  const invalidIdentifier = await refusal(() => approveApplication('nope', REVIEWER_ID));
+  const missingReason = await refusal(() => rejectApplication(MEMBER_ID, REVIEWER_ID, {}));
+  const longReason = await refusal(() =>
+    rejectApplication(MEMBER_ID, REVIEWER_ID, { reason: 'x'.repeat(501) }),
+  );
+  const missing = await refusal(() =>
+    approveApplication(MEMBER_ID, REVIEWER_ID, async () => null, findingNothing),
+  );
+  const settled = await refusal(() =>
+    approveApplication(
+      MEMBER_ID,
+      REVIEWER_ID,
+      async () => null,
+      findingStatus(APPLICATION_STATUSES.APPROVED),
+    ),
+  );
+
+  assert.equal(invalidIdentifier.code, 'invalid_format');
+  assert.deepEqual([missingReason.code, missingReason.field], ['required', 'reason']);
+  assert.deepEqual([longReason.code, longReason.field], ['too_long', 'reason']);
+  assert.equal(missing.code, 'unknown_reference');
+  assert.equal(settled.code, 'already_decided');
+});

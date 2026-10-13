@@ -7,6 +7,7 @@ const {
   MAXIMUM_DOWNLOAD_URL_EXPIRY_SECONDS,
   objectStore,
 } = require('../config/fileStorage');
+const { ApplicationError, ERROR_CODES } = require('../config/errorCodes');
 
 const PURPOSES = Object.values(FILE_PURPOSES);
 const ACCEPTED_CONTENT_TYPES = Object.keys(CONTENT_TYPE_EXTENSIONS);
@@ -25,17 +26,18 @@ const STORED_KEY = new RegExp(
 
 const TOO_LARGE = 413;
 
-class FileStorageError extends Error {
-  constructor(message, statusCode = 400) {
-    super(message);
-    this.name = 'FileStorageError';
-    this.statusCode = statusCode;
+class FileStorageError extends ApplicationError {
+  constructor(code, message, statusCode = 400) {
+    super(code, message, { statusCode, name: 'FileStorageError' });
   }
 }
 
 function readPurpose(value) {
   if (typeof value !== 'string' || !PURPOSES.includes(value)) {
-    throw new FileStorageError('The file purpose is not one of the accepted values.');
+    throw new FileStorageError(
+      ERROR_CODES.NOT_ALLOWED,
+      'The file purpose is not one of the accepted values.',
+    );
   }
 
   return value;
@@ -43,7 +45,10 @@ function readPurpose(value) {
 
 function readOwnerId(value) {
   if (typeof value !== 'string' || !OWNER_ID_ONLY.test(value)) {
-    throw new FileStorageError('The file owner is not a valid reference.');
+    throw new FileStorageError(
+      ERROR_CODES.INVALID_FORMAT,
+      'The file owner is not a valid reference.',
+    );
   }
 
   return value;
@@ -53,7 +58,10 @@ function readContentType(value) {
   const contentType = typeof value === 'string' ? value.trim().toLowerCase() : '';
 
   if (!ACCEPTED_CONTENT_TYPES.includes(contentType)) {
-    throw new FileStorageError('The file type is not one the chamber accepts.');
+    throw new FileStorageError(
+      ERROR_CODES.FILE_TYPE_NOT_ALLOWED,
+      'The file type is not one the chamber accepts.',
+    );
   }
 
   return contentType;
@@ -61,11 +69,15 @@ function readContentType(value) {
 
 function readContent(value) {
   if (!Buffer.isBuffer(value) || value.length === 0) {
-    throw new FileStorageError('The file carries no content.');
+    throw new FileStorageError(ERROR_CODES.REQUIRED, 'The file carries no content.');
   }
 
   if (value.length > MAXIMUM_FILE_SIZE_BYTES) {
-    throw new FileStorageError('The file is larger than allowed.', TOO_LARGE);
+    throw new FileStorageError(
+      ERROR_CODES.FILE_TOO_LARGE,
+      'The file is larger than allowed.',
+      TOO_LARGE,
+    );
   }
 
   return value;
@@ -73,7 +85,7 @@ function readContent(value) {
 
 function readStoredKey(value) {
   if (typeof value !== 'string' || !STORED_KEY.test(value)) {
-    throw new FileStorageError('The file key is not valid.');
+    throw new FileStorageError(ERROR_CODES.INVALID_FORMAT, 'The file key is not valid.');
   }
 
   return value;
@@ -81,7 +93,10 @@ function readStoredKey(value) {
 
 function readExpirySeconds(value) {
   if (!Number.isInteger(value) || value <= 0 || value > MAXIMUM_DOWNLOAD_URL_EXPIRY_SECONDS) {
-    throw new FileStorageError('The download window is longer than allowed.');
+    throw new FileStorageError(
+      ERROR_CODES.NOT_ALLOWED,
+      'The download window is longer than allowed.',
+    );
   }
 
   return value;
@@ -99,7 +114,7 @@ function buildStorageKey({ purpose, ownerId, objectName, contentType }) {
 
 async function uploadFile(upload, store = objectStore(), newObjectName = randomObjectName) {
   if (upload === null || typeof upload !== 'object' || Array.isArray(upload)) {
-    throw new FileStorageError('The file is missing.');
+    throw new FileStorageError(ERROR_CODES.REQUIRED, 'The file is missing.');
   }
 
   // Read one field at a time. Anything else the caller attached, the uploaded

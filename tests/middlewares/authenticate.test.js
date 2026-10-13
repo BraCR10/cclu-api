@@ -60,3 +60,9 @@ test('authenticate does not continue the request when the token is rejected', ()
   assert.equal(continued, false);
   assert.equal(request.identity, undefined);
 });
+
+test('authenticate names the refusal with the authentication_required code', () => {
+  assert.throws(() => authenticate(requestWith({}), {}, () => {}), {
+    code: 'authentication_required',
+  });
+});

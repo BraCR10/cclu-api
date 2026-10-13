@@ -5,13 +5,13 @@ const memberAuthService = require('../services/memberAuthService');
 const accountService = require('../services/accountService');
 
 const tokenService = require('../services/tokenService');
+const { ApplicationError, ERROR_CODES } = require('../config/errorCodes');
 
 function invalidCredentials() {
-  const error = new Error('Invalid credentials.');
-  error.name = 'Unauthorized';
-  error.statusCode = 401;
-
-  return error;
+  return new ApplicationError(ERROR_CODES.INVALID_CREDENTIALS, 'Invalid credentials.', {
+    statusCode: 401,
+    name: 'Unauthorized',
+  });
 }
 
 // An attempt under the limits is invisible otherwise, and a run of them is the
@@ -43,12 +43,11 @@ async function signInAdmin(
 // was already correct, which is what keeps this from telling strangers who is
 // affiliated with the chamber.
 function refusedForState(outcome) {
-  const error = new Error('The registration does not allow signing in yet.');
-  error.name = 'Forbidden';
-  error.statusCode = 403;
-  error.reason = outcome;
-
-  return error;
+  return new ApplicationError(outcome, 'The registration does not allow signing in yet.', {
+    statusCode: 403,
+    name: 'Forbidden',
+    reason: outcome,
+  });
 }
 
 async function signInMember(

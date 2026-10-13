@@ -53,3 +53,12 @@ test('authorize does not continue a request it rejects', () => {
 
   assert.equal(continued, false);
 });
+
+test('authorize names each refusal with its own code', () => {
+  assert.throws(() => authorize(ROLES.ADMIN)(requestFor(ROLES.MEMBER), {}, () => {}), {
+    code: 'role_not_allowed',
+  });
+  assert.throws(() => authorize(ROLES.ADMIN)({}, {}, () => {}), {
+    code: 'authentication_required',
+  });
+});

@@ -64,3 +64,15 @@ test('requireActiveAccount asks about the identity the token carried', async () 
 
   assert.deepEqual(asked, [IDENTITY]);
 });
+
+test('requireActiveAccount names the refusal with the authentication_required code', async () => {
+  await assert.rejects(
+    requireActiveAccount(
+      { identity: IDENTITY },
+      {},
+      () => {},
+      async () => false,
+    ),
+    { code: 'authentication_required' },
+  );
+});

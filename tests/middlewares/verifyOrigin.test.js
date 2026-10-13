@@ -50,3 +50,9 @@ test('verifyOrigin refuses an origin that merely starts with the allowed one', (
     statusCode: 403,
   });
 });
+
+test('verifyOrigin names the refusal with the origin_not_allowed code', () => {
+  assert.throws(() => run(requestFrom('POST', 'https://attacker.example')), {
+    code: 'origin_not_allowed',
+  });
+});

@@ -117,3 +117,31 @@ test('getCurrentIdentity refuses a session whose account no longer exists', asyn
     (error) => error.statusCode === 401,
   );
 });
+
+test('a refused sign in carries the invalid_credentials code', async () => {
+  await assert.rejects(
+    authController.signInAdmin(
+      requestWith({ email: 'a@b.cr', password: 'x' }),
+      responseSpy(),
+      () => {},
+      async () => null,
+    ),
+    { code: 'invalid_credentials' },
+  );
+});
+
+// The state is the code, so a screen picks its sentence from the catalog like
+// any other error; the reason stays for clients that already read it.
+test('a member refused for the state of their account carries that state as the code', async () => {
+  for (const outcome of ['application_pending', 'application_rejected', 'account_suspended']) {
+    await assert.rejects(
+      authController.signInMember(
+        requestWith({ email: 'a@b.cr', password: 'x' }),
+        responseSpy(),
+        () => {},
+        async () => ({ outcome }),
+      ),
+      { statusCode: 403, code: outcome, reason: outcome },
+    );
+  }
+});

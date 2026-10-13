@@ -1,11 +1,12 @@
+const { ApplicationError, ERROR_CODES } = require('../config/errorCodes');
+
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 function forbidden() {
-  const error = new Error('Request origin is not allowed.');
-  error.name = 'Forbidden';
-  error.statusCode = 403;
-
-  return error;
+  return new ApplicationError(ERROR_CODES.ORIGIN_NOT_ALLOWED, 'Request origin is not allowed.', {
+    statusCode: 403,
+    name: 'Forbidden',
+  });
 }
 
 function verifyOrigin(request, response, next, allowedOrigin = process.env.WEB_ORIGIN) {

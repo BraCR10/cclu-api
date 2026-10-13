@@ -6,6 +6,7 @@ const {
   describeAttempt,
   skipsAccountLimit,
   accountKeyFor,
+  tooManyAttempts,
 } = require('../../src/middlewares/rateLimits');
 
 test('emailFrom takes the address the attempt was aimed at', () => {
@@ -62,4 +63,23 @@ test('the account limit counts each address in its own bucket', () => {
     accountKeyFor({ body: { email: 'a@cclu.cr' } }),
     accountKeyFor({ body: { email: 'b@cclu.cr' } }),
   );
+});
+
+test('a caller over the limit is answered 429 with the too_many_attempts code', () => {
+  const sent = {};
+  const response = {
+    status(code) {
+      sent.status = code;
+      return this;
+    },
+    json(body) {
+      sent.body = body;
+      return this;
+    },
+  };
+
+  tooManyAttempts({ rateLimit: { used: 20, limit: 10 } }, response);
+
+  assert.equal(sent.status, 429);
+  assert.equal(sent.body.code, 'too_many_attempts');
 });
