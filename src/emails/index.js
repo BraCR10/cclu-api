@@ -1,4 +1,6 @@
 const { applicationApproved } = require('./applicationApproved');
+const { applicationChangesRequested } = require('./applicationChangesRequested');
+const { applicationReceived } = require('./applicationReceived');
 const { applicationRejected } = require('./applicationRejected');
 const { passwordResetLink } = require('./passwordResetLink');
 
@@ -6,6 +8,8 @@ const { passwordResetLink } = require('./passwordResetLink');
 // Nothing in the sending component changes.
 const TEMPLATES = {
   applicationApproved,
+  applicationChangesRequested,
+  applicationReceived,
   applicationRejected,
   passwordResetLink,
 };

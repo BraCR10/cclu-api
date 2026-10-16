@@ -135,10 +135,11 @@ in the body: putting it there would hand it to any script on the page, which is
 the reach the cookie exists to deny.
 
 Members sign in through a route of their own, `POST /api/auth/member/login`,
-rather than sharing this one, because what the answer may reveal differs. A member is told their application
-is still pending once the password is right; an administrator is told nothing
-either way, since confirming that an address is an administrator is half of what
-someone guessing needs.
+rather than sharing this one, because what the answer may reveal differs. Once
+the password is right, a member is told the state of their application and an
+administrator the state of their account — invited, expired or inactive. Before
+it is right, neither is told anything: confirming that an address holds an
+account at all is half of what someone guessing needs.
 
 Three things protect the route, and each covers a different attack.
 
@@ -212,16 +213,75 @@ something.
 Fields that will be rendered as links are checked for their scheme here rather
 than trusted to whatever displays them later.
 
-`GET /api/cantons` and `GET /api/sectors` are public for the same reason the
+`GET /api/cantons` and `GET /api/activities` are public for the same reason the
 registration is. A form cannot offer a closed list without knowing what is in
 it, and that is also why the registration needs a limit: those listings hand
-anyone the two references a submission has to carry.
+anyone the references a submission has to carry.
+
+## Answering a registration
+
+A registration receives one of three answers, and all three are made through the
+administrator routes, which is how decisions are taken while the admin screens
+do not exist yet.
+
+| Answer            | Application status  | What the applicant gets |
+| ----------------- | ------------------- | ----------------------- |
+| Approved          | `approved`          | Their member code       |
+| Rejected          | `rejected`          | The reason, and a link  |
+| Changes requested | `changes_requested` | The reason, what to fix |
+
+**The update carries the expected state in its own filter**, so the read and the
+write are one operation and two administrators deciding at once cannot both
+succeed. An application that is not pending answers 409 with the state it is in,
+which is the only reason `applicationStatus` is read back.
+
+A rejection draws no member code. A code is the mark of belonging to the
+chamber, and an applicant who was refused never belonged.
+
+Asking for changes is the middle answer, and it is not a soft rejection: the
+application is kept, the applicant is expected to send it back, and it leaves the
+pending list for as long as that takes. The reason is required — an applicant
+told to fix something and not told what has nowhere to look — and every field the
+chamber names carries its own reason, which is the pair the correction screen
+shows. Both are restricted to the list the correction form is able to show;
+naming anything else would send them looking for a field that is not there.
+
+**Every decision is written before the message is attempted.** A mail server that
+is down must not undo a decision that already stands; the caller learns the
+notice did not go out and says so.
+
+### The link back
+
+A rejection and a request for changes issue the same token, so there is one way
+back in rather than two. Only the digest is stored, the token is 256 random bits
+hashed fast enough to be looked up by index, and it is spent the moment it is
+used: the application returns to pending review and the digest goes with it.
+
+What the link opens is the correction screen: the type of applicant, the
+identification, the business and the way to reach it, read against the same rules
+the registration answers to, so a value nobody could have registered cannot be
+corrected in either. Everything else the registration carries is preserved rather
+than corrected, which is why none of it is read here — the address and the
+password are named by their own flows, and the rest is what the applicant
+already got right.
+
+Changing what the applicant _is_ means the identification type has to go with
+it, which is the one rule the corrections share wholesale with the registration:
+the pairing is imported from it rather than written a second time. The identity
+that does not go with the chosen type is cleared, because a person is not a
+company and a company has no name of its own.
+
+The document number is unique across members, so a correction that typed somebody
+else's is refused in the same words a registration uses for an address that is
+already taken. Naming the member who holds it would turn a link handed to one
+applicant into a way of asking who else is affiliated.
 
 ## What a refusal may say
 
-A member is told their application is pending; an administrator is told nothing
-either way. The difference is not inconsistency, it is the reason there are two
-routes.
+A member is told their application is pending; an administrator is told their
+account is invited, expired or inactive. Each says what the person has to do
+about it, and either is only said once the password was right. The difference in
+vocabulary is not inconsistency, it is the reason there are two routes.
 
 Saying "your application is pending" is useful to the person waiting and useless
 to nobody else, right up until it can be obtained without knowing the password.

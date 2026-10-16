@@ -1,14 +1,5 @@
 const passwordResetService = require('../services/passwordResetService');
 
-async function requestFromSession(
-  request,
-  response,
-  next,
-  requestResetFromSession = passwordResetService.requestResetFromSession,
-) {
-  response.json(await requestResetFromSession(request.identity, request.body));
-}
-
 async function requestForgotten(
   request,
   response,
@@ -36,4 +27,4 @@ async function completeReset(
   response.json(await completePasswordReset(request.body));
 }
 
-module.exports = { requestFromSession, requestForgotten, checkLink, completeReset };
+module.exports = { requestForgotten, checkLink, completeReset };

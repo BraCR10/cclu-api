@@ -1,11 +1,26 @@
 const { randomBytes, createHash, timingSafeEqual } = require('node:crypto');
-const { Member, APPLICATION_STATUSES } = require('../models/Member');
-const { ValidationError, refuse, readText } = require('../config/memberRules');
+const {
+  Member,
+  APPLICATION_STATUSES,
+  MEMBER_TYPES,
+  IDENTIFICATION_TYPES,
+} = require('../models/Member');
+const { Canton } = require('../models/Canton');
+const { Activity } = require('../models/Activity');
+const { IDENTIFICATION_TYPES_BY_MEMBER_TYPE } = require('./memberRegistrationService');
+const {
+  ValidationError,
+  refuse,
+  readText,
+  readChoice,
+  readReference,
+} = require('../config/memberRules');
 const { ERROR_CODES } = require('../config/errorCodes');
 
 const TOKEN_BYTES = 32;
 const DAYS_VALID = 30;
 const TOKEN_SHAPE = /^[0-9a-f]{64}$/;
+const DUPLICATE_KEY = 11000;
 
 // A password needs a slow hash because a person chose it and the space is
 // small. This token is 256 random bits, so there is nothing to guess and a fast
@@ -31,9 +46,10 @@ function expired() {
   );
 }
 
-// Issued when a registration is rejected, and it is the only proof the person
-// coming back owns it. Without one, anybody who learned a rejected address
-// could resubmit in their name and set a password of their own.
+// Issued when a registration is rejected or sent back for corrections, and it is
+// the only proof the person coming back owns it. Without one, anybody who
+// learned a rejected address could resubmit in their name and set a password of
+// their own.
 async function issueResubmissionToken(memberId, save = defaultSave) {
   const token = randomBytes(TOKEN_BYTES).toString('hex');
   const expiresAt = new Date(Date.now() + DAYS_VALID * 24 * 60 * 60 * 1000);
@@ -50,26 +66,61 @@ function defaultSave(memberId, fields) {
   return Member.updateOne({ _id: memberId }, { $set: fields });
 }
 
+// The reviewer travels with the answer, so the applicant is told who decided
+// rather than that somebody did.
 function findByDigest(digest) {
-  return Member.findOne({ resubmissionTokenHash: digest });
+  return Member.findOne({ resubmissionTokenHash: digest }).populate('reviewedBy', 'name email');
 }
 
-// What the person may see of their own rejected registration: the fields they
-// are here to correct, and why it was refused.
-const CORRECTABLE = [
-  'phone',
-  'location',
-  'businessName',
-  'businessDescription',
-  'whatsappNumber',
-  'instagram',
-  'facebook',
-  'linkedin',
-  'website',
-  'logoUrl',
+// The two answers that leave the applicant with something to do: a rejection to
+// try again, and a request to fix what the chamber named. A link that outlived
+// either would let somebody resubmit over an application already dealt with.
+const CORRECTABLE_STATUSES = [
+  APPLICATION_STATUSES.REJECTED,
+  APPLICATION_STATUSES.CHANGES_REQUESTED,
 ];
 
-async function findRejectedByToken(rawToken, find = findByDigest) {
+// What the correction screen shows: who is applying, the business, and how to
+// reach it. Everything else the registration carries is preserved rather than
+// corrected, which is why none of it is read here. The form keeps the same list
+// in cclu-web, at src/modules/members/api/correction.ts.
+const CORRECTABLE_FIELDS = [
+  'memberType',
+  'identificationType',
+  'identificationNumber',
+  'legalName',
+  'name',
+  'businessName',
+  'managerName',
+  'activity',
+  'activityOther',
+  'canton',
+  'district',
+  'phone',
+  'whatsappNumber',
+];
+
+// What names the applicant, and therefore which of the two the form asks for.
+// The one that does not go with the chosen type is cleared rather than kept: a
+// person is not a company, and a company has no name of its own.
+const IDENTITY_FIELDS_BY_MEMBER_TYPE = {
+  [MEMBER_TYPES.BUSINESS]: ['legalName'],
+  [MEMBER_TYPES.ASSOCIATION]: ['legalName'],
+  [MEMBER_TYPES.INDEPENDENT_PROFESSIONAL]: ['name'],
+};
+
+const IDENTITY_FIELDS = ['legalName', 'name'];
+
+const REQUIRED_TEXT_FIELDS = ['businessName', 'managerName', 'district', 'phone', 'whatsappNumber'];
+
+const OPTIONAL_TEXT_FIELDS = ['activityOther'];
+
+const REFERENCE_FIELDS = [
+  { field: 'canton', model: Canton, required: true },
+  { field: 'activity', model: Activity, required: false },
+];
+
+async function findCorrectableByToken(rawToken, find = findByDigest) {
   const token = readToken(rawToken);
   const member = await find(digestOf(token));
 
@@ -93,36 +144,53 @@ async function findRejectedByToken(rawToken, find = findByDigest) {
     throw expired();
   }
 
-  // Only a rejection opens this door. An application already approved or back
-  // under review has nothing to resubmit.
-  if (member.applicationStatus !== APPLICATION_STATUSES.REJECTED) {
+  // Only these two states open the door. An application already approved, or one
+  // back under review, has nothing to resubmit.
+  if (!CORRECTABLE_STATUSES.includes(member.applicationStatus)) {
     throw expired();
   }
 
   return member;
 }
 
-async function readRejectedRegistration(rawToken, find = findByDigest) {
-  const member = await findRejectedByToken(rawToken, find);
+// The administrator who answered, named the way the panel names them: the name
+// they were invited with, and the address when they have none.
+function reviewerOf(reviewedBy) {
+  if (reviewedBy === null || typeof reviewedBy !== 'object') {
+    return null;
+  }
+
+  return reviewedBy.name ?? reviewedBy.email ?? null;
+}
+
+// What the applicant sees when the link opens: every field they may correct, why
+// the chamber is asking, what it said about each field it named, and who decided.
+// Everything else travels along, which is what keeps the rest of the
+// registration intact.
+async function readCorrectableRegistration(rawToken, find = findByDigest) {
+  const member = await findCorrectableByToken(rawToken, find);
   const registration = {};
 
-  for (const field of CORRECTABLE) {
+  for (const field of CORRECTABLE_FIELDS) {
     registration[field] = member[field] ?? null;
   }
 
   return {
     ...registration,
     email: member.email,
-    businessName: member.businessName,
     reason: member.statusReason ?? null,
+    fields: member.changesRequestedFields ?? [],
+    applicationStatus: member.applicationStatus,
+    reviewedAt: member.reviewedAt ?? null,
+    reviewedBy: reviewerOf(member.reviewedBy),
   };
 }
 
-const REQUIRED = ['phone', 'location', 'businessName', 'businessDescription'];
-
-// The corrections are read one field at a time, so the body cannot carry a new
-// address, an application status or anything else the chamber decides.
-function buildCorrections(body) {
+// The corrections are read one field at a time against the rules a registration
+// answers to, so a value nobody could have registered cannot be corrected in
+// either. The body carries no address, no password, no application status and
+// nothing else the chamber decides, because none of those is read here.
+async function buildCorrections(body, references = REFERENCE_FIELDS) {
   if (body === null || typeof body !== 'object' || Array.isArray(body)) {
     refuse(ERROR_CODES.BODY_MISSING, null, 'The resubmission body is missing.');
   }
@@ -130,15 +198,42 @@ function buildCorrections(body) {
   const changes = {};
   const unset = {};
 
-  for (const field of REQUIRED) {
+  // What the applicant is decides which of the fields below they are asked for,
+  // so the choices come first, exactly as the registration reads them.
+  const memberType = readChoice(body, 'memberType', Object.values(MEMBER_TYPES));
+  const identificationType = readChoice(
+    body,
+    'identificationType',
+    Object.values(IDENTIFICATION_TYPES),
+  );
+
+  if (!IDENTIFICATION_TYPES_BY_MEMBER_TYPE[memberType].includes(identificationType)) {
+    refuse(
+      ERROR_CODES.NOT_ALLOWED,
+      'identificationType',
+      'That identification type does not go with that member type.',
+    );
+  }
+
+  changes.memberType = memberType;
+  changes.identificationType = identificationType;
+  changes.identificationNumber = readText(body, 'identificationNumber', { required: true });
+
+  for (const field of IDENTITY_FIELDS_BY_MEMBER_TYPE[memberType]) {
     changes[field] = readText(body, field, { required: true });
   }
 
-  for (const field of CORRECTABLE.filter((name) => !REQUIRED.includes(name))) {
-    if (!(field in body)) {
-      continue;
+  for (const field of IDENTITY_FIELDS) {
+    if (!(field in changes)) {
+      unset[field] = '';
     }
+  }
 
+  for (const field of REQUIRED_TEXT_FIELDS) {
+    changes[field] = readText(body, field, { required: true });
+  }
+
+  for (const field of OPTIONAL_TEXT_FIELDS) {
     const value = readText(body, field, { required: false });
 
     if (value === undefined) {
@@ -148,14 +243,45 @@ function buildCorrections(body) {
     }
   }
 
+  const found = await Promise.all(
+    references.map(({ field, model, required }) =>
+      readReference(body, field, model, { required: required ?? true }),
+    ),
+  );
+
+  references.forEach(({ field }, index) => {
+    if (found[index] !== undefined) {
+      changes[field] = found[index];
+    }
+  });
+
+  // The chamber classifies every member, so the activity is either one from the
+  // catalog or one written out, and never neither.
+  if (changes.activity === undefined && changes.activityOther === undefined) {
+    refuse(ERROR_CODES.REQUIRED, 'activity', 'An activity is required.');
+  }
+
+  // One chosen from the catalog replaces the one that was written out: that is
+  // what the catalog is for, and the approval would otherwise file the written
+  // one a second time.
+  if (changes.activity !== undefined) {
+    delete changes.activityOther;
+    unset.activityOther = '';
+  }
+
   return { changes, unset };
 }
 
 // The rejected registration is reused rather than replaced, which is what keeps
 // the same address from colliding with its own earlier application.
-async function resubmitRegistration(rawToken, body, find = findByDigest) {
-  const member = await findRejectedByToken(rawToken, find);
-  const { changes, unset } = buildCorrections(body);
+async function resubmitRegistration(
+  rawToken,
+  body,
+  find = findByDigest,
+  references = REFERENCE_FIELDS,
+) {
+  const member = await findCorrectableByToken(rawToken, find);
+  const { changes, unset } = await buildCorrections(body, references);
 
   Object.assign(member, changes);
 
@@ -165,6 +291,7 @@ async function resubmitRegistration(rawToken, body, find = findByDigest) {
 
   member.applicationStatus = APPLICATION_STATUSES.PENDING_REVIEW;
   member.statusReason = undefined;
+  member.changesRequestedFields = undefined;
   member.reviewedBy = null;
   member.reviewedAt = null;
 
@@ -173,7 +300,24 @@ async function resubmitRegistration(rawToken, body, find = findByDigest) {
   member.resubmissionTokenHash = null;
   member.resubmissionExpiresAt = null;
 
-  await member.save();
+  try {
+    await member.save();
+  } catch (error) {
+    // The document identifier is unique across members, so a correction that
+    // typed somebody else's is refused in the same words a registration uses
+    // for an address that is already taken: naming the member who holds it
+    // would turn this link into a way of asking who is affiliated.
+    if (error.code === DUPLICATE_KEY) {
+      throw new ValidationError(
+        ERROR_CODES.ALREADY_REGISTERED,
+        'identificationNumber',
+        'The registration could not be completed. Contact the chamber for help.',
+        409,
+      );
+    }
+
+    throw error;
+  }
 
   return { id: String(member._id), applicationStatus: member.applicationStatus };
 }
@@ -182,9 +326,11 @@ module.exports = {
   issueResubmissionToken,
   resubmitRegistration,
   buildCorrections,
-  readRejectedRegistration,
-  findRejectedByToken,
+  readCorrectableRegistration,
+  findCorrectableByToken,
   digestOf,
-  CORRECTABLE,
+  CORRECTABLE_FIELDS,
+  CORRECTABLE_STATUSES,
+  REQUIRED_TEXT_FIELDS,
   DAYS_VALID,
 };

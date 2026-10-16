@@ -93,6 +93,20 @@ const limitRegistrations = rateLimit({
   handler: tooManyAttempts,
 });
 
+// A registration carries up to two files, and somebody who mistypes their
+// cédula uploads the certification again. Counted rather than skipped, for the
+// same reason a registration is: a stranger is asking the chamber to keep
+// something.
+const UPLOADS_PER_ADDRESS = 20;
+
+const limitUploads = rateLimit({
+  windowMs: WINDOW_MS,
+  limit: UPLOADS_PER_ADDRESS,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: tooManyAttempts,
+});
+
 // Checking a code is cheap to ask and cheap to answer, which is what makes it
 // worth throttling: the limit is what keeps the roll from being read one code
 // at a time by someone who already holds an account.
@@ -110,6 +124,7 @@ module.exports = {
   limitByAddress,
   limitByAccount,
   limitRegistrations,
+  limitUploads,
   limitCodeChecks,
   emailFrom,
   addressOf,

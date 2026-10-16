@@ -5,3 +5,6 @@ postman.environment*.json
 *.postman_environment.json
 npm-debug.log
 coverage/
+
+# Files a development machine stores when no bucket is configured.
+.file-storage/

@@ -12,6 +12,7 @@ const {
   DOWNLOAD_URL_EXPIRY_SECONDS,
   MAXIMUM_DOWNLOAD_URL_EXPIRY_SECONDS,
   readFileStorageConfiguration,
+  hasObjectStoreCredentials,
 } = require('../../src/config/fileStorage');
 
 const MEMBER_ID = '65f0c3a1b2c3d4e5f6a7b8c9';
@@ -302,30 +303,24 @@ test('removing a file names that exact key and nothing else', async () => {
   assert.deepEqual(removed, [{ key: storedKey() }]);
 });
 
-test('an upload refuses to store anything when the storage is not configured', async () => {
-  const saved = new Map();
+// A bucket is what the chamber pays for; the disk is what every machine that
+// has not been given one falls back to, so neither driver is a special case.
+test('the credentials decide the driver, and one missing variable is enough to lose it', () => {
+  const configured = Object.fromEntries(
+    REQUIRED_ENVIRONMENT_VARIABLES.map((name) => [name, 'configured']),
+  );
+
+  assert.equal(hasObjectStoreCredentials(configured), true);
 
   for (const name of REQUIRED_ENVIRONMENT_VARIABLES) {
-    saved.set(name, process.env[name]);
-    delete process.env[name];
+    assert.equal(
+      hasObjectStoreCredentials({ ...configured, [name]: '' }),
+      false,
+      `${name} did not take the driver away`,
+    );
   }
 
-  try {
-    const error = await refusal(() => uploadFile(validUpload()));
-
-    assert.equal(error.name, 'FileStorageConfigurationError');
-    assert.equal(error.statusCode, 500);
-
-    for (const name of REQUIRED_ENVIRONMENT_VARIABLES) {
-      assert.equal(error.message.includes(name), true);
-    }
-  } finally {
-    for (const [name, value] of saved) {
-      if (value !== undefined) {
-        process.env[name] = value;
-      }
-    }
-  }
+  assert.equal(hasObjectStoreCredentials({}), false);
 });
 
 test('a configuration with nothing set names every variable that is missing', async () => {

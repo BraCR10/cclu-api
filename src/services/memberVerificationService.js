@@ -6,13 +6,14 @@ const { ERROR_CODES } = require('../config/errorCodes');
 
 // What one member may learn about another from a code: enough to recognise the
 // business in front of them, and nothing that belongs to the account.
-const VISIBLE_FIELDS = 'businessName memberType memberCode applicationStatus accountStatus';
+const VISIBLE_FIELDS =
+  'businessName memberType memberCode applicationStatus accountStatus activity activityOther';
 
 function findByCode(code) {
   return Member.findOne({ memberCode: code })
     .select(VISIBLE_FIELDS)
     .populate('canton', 'name province')
-    .populate('sector', 'name')
+    .populate('activity', 'name')
     .lean();
 }
 
@@ -45,7 +46,7 @@ async function verifyMemberCode(body, find = findByCode) {
       memberCode: formatMemberCode(member.memberCode),
       businessName: member.businessName,
       memberType: member.memberType,
-      sector: member.sector?.name ?? null,
+      activity: member.activity?.name ?? member.activityOther ?? null,
       canton: member.canton?.name ?? null,
     },
   };
@@ -60,6 +61,8 @@ const PUBLIC_FIELDS = [
   'businessDescription',
   'memberType',
   'memberCode',
+  'activity',
+  'activityOther',
   'location',
   'phone',
   'whatsappNumber',
@@ -77,7 +80,7 @@ function findPublicByCode(code) {
   return Member.findOne({ memberCode: code })
     .select(PUBLIC_FIELDS)
     .populate('canton', 'name province')
-    .populate('sector', 'name')
+    .populate('activity', 'name')
     .lean();
 }
 
@@ -116,7 +119,7 @@ async function readPublicProfile(rawCode, find = findPublicByCode) {
     businessName: member.businessName,
     businessDescription: member.businessDescription,
     memberType: member.memberType,
-    sector: member.sector?.name ?? null,
+    activity: member.activity?.name ?? member.activityOther ?? null,
     canton: member.canton?.name ?? null,
     province: member.canton?.province ?? null,
     location: member.location,

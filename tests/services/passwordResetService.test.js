@@ -1,14 +1,12 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
-  requestResetFromSession,
   requestForgottenPassword,
   completePasswordReset,
   readResetRequest,
   findAccountByEmail,
   resetUrlFor,
   digestOf,
-  MINUTES_VALID,
 } = require('../../src/services/passwordResetService');
 const { ValidationError } = require('../../src/config/memberRules');
 const { hashPassword, verifyPassword } = require('../../src/services/passwordService');
@@ -41,86 +39,6 @@ function collector() {
     sendEmail: async (template, recipient, data) => sent.push({ template, recipient, data }),
   };
 }
-
-test('a link is only issued once the current password was right', async () => {
-  const found = await account();
-  const { saved, sent, save, sendEmail } = collector();
-
-  const answer = await requestResetFromSession(
-    { id: found._id, role: ROLES.MEMBER },
-    { currentPassword: CURRENT_PASSWORD },
-    async () => found,
-    save,
-    sendEmail,
-  );
-
-  assert.deepEqual(answer, { minutesValid: MINUTES_VALID });
-  assert.equal(saved.length, 1);
-  assert.equal(sent.length, 1);
-  assert.equal(sent[0].template, 'passwordResetLink');
-  assert.equal(sent[0].recipient, found.email);
-});
-
-// Holding somebody's open session must not be enough to make the chamber send
-// them a link.
-test('a wrong current password issues nothing and sends nothing', async () => {
-  const found = await account();
-  const { saved, sent, save, sendEmail } = collector();
-
-  await assert.rejects(
-    requestResetFromSession(
-      { id: found._id, role: ROLES.MEMBER },
-      { currentPassword: 'otra-cosa' },
-      async () => found,
-      save,
-      sendEmail,
-    ),
-    (error) => {
-      assert.equal(error.statusCode, 401);
-      assert.equal(error.field, 'currentPassword');
-      return true;
-    },
-  );
-
-  assert.equal(saved.length, 0);
-  assert.equal(sent.length, 0);
-});
-
-// The token is what travels; the digest is what is kept. A copy of the
-// collection has to open nothing.
-test('the token never reaches the database and the link never reaches the record', async () => {
-  const found = await account();
-  const { saved, sent, save, sendEmail } = collector();
-
-  await requestResetFromSession(
-    { id: found._id, role: ROLES.MEMBER },
-    { currentPassword: CURRENT_PASSWORD },
-    async () => found,
-    save,
-    sendEmail,
-  );
-
-  const token = sent[0].data.resetUrl.split('/').pop();
-
-  assert.match(token, /^[0-9a-f]{64}$/);
-  assert.equal(saved[0].fields.tokenDigest, digestOf(token));
-  assert.ok(!JSON.stringify(saved[0].fields).includes(token));
-});
-
-test('the record carries no attempt counter, because there is nothing to guess', async () => {
-  const found = await account();
-  const { saved, save, sendEmail } = collector();
-
-  await requestResetFromSession(
-    { id: found._id, role: ROLES.MEMBER },
-    { currentPassword: CURRENT_PASSWORD },
-    async () => found,
-    save,
-    sendEmail,
-  );
-
-  assert.ok(!('attempts' in saved[0].fields));
-});
 
 // Told apart, this becomes a way of asking the chamber who belongs to it.
 test('a forgotten password answers the same for an address that is not an account', async () => {

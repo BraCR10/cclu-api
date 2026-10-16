@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const cantons = require('../../scripts/data/cantons.json');
-const sectors = require('../../scripts/data/sectors.json');
+const activities = require('../../scripts/data/activities.json');
 
 // The chamber sits in La Unión, and these two provinces are the area it draws
 // from. A canton outside them would offer a member a place the chamber does
@@ -38,7 +38,7 @@ test('the canton the chamber is named after is in the list', () => {
 // seed, leaving the catalog partly written.
 test('no name is repeated in either catalog', () => {
   assert.equal(new Set(cantons.map((canton) => canton.name)).size, cantons.length);
-  assert.equal(new Set(sectors.map((sector) => sector.name)).size, sectors.length);
+  assert.equal(new Set(activities.map((activity) => activity.name)).size, activities.length);
 });
 
 test('every entry carries the fields its model requires', () => {
@@ -48,26 +48,17 @@ test('every entry carries the fields its model requires', () => {
     assert.ok(PROVINCES.includes(canton.province), `${canton.name} names an unexpected province`);
   }
 
-  for (const sector of sectors) {
-    assert.equal(typeof sector.name, 'string');
-    assert.ok(sector.name.trim().length > 0);
-    assert.deepEqual(Object.keys(sector), ['name']);
+  for (const activity of activities) {
+    assert.equal(typeof activity.name, 'string');
+    assert.ok(activity.name.trim().length > 0);
+    assert.deepEqual(Object.keys(activity), ['name']);
   }
 });
 
-test('the ten sectors the registration form offers are the ones defined', () => {
-  assert.equal(sectors.length, 10);
-  assert.ok(
-    sectors.some((sector) => sector.name === 'Otro'),
-    'a business that fits nothing else has nowhere to go',
-  );
-});
-
-// Written out rather than derived from the seed, so changing one of them has
-// to face the other. The chamber settled on these ten and the directory filters
-// by them; a form offering a different set would split one business across two
-// names.
-const SETTLED_SECTORS = [
+// Written out rather than derived from the seed, so changing one of them has to
+// face the other. These are what the form offers until the chamber loads the
+// municipality's patent roll, which is a far longer list.
+const SETTLED_ACTIVITIES = [
   'comercios',
   'alimentos y bebidas',
   'servicios profesionales',
@@ -77,12 +68,17 @@ const SETTLED_SECTORS = [
   'manufactura',
   'construcción',
   'agropecuario',
-  'otro',
 ];
 
-test('the sectors are the ten that were settled on, in their order', () => {
+test('the activities the registration form offers are the ones defined, in their order', () => {
   assert.deepEqual(
-    sectors.map((sector) => sector.name.toLowerCase()),
-    SETTLED_SECTORS,
+    activities.map((activity) => activity.name.toLowerCase()),
+    SETTLED_ACTIVITIES,
   );
+});
+
+// "Otro" is not a name anybody trades under, and the form answers it with its
+// own escape hatch: an applicant writes the activity out instead.
+test('the catalog carries no catch-all entry', () => {
+  assert.ok(!activities.some((activity) => activity.name.toLowerCase() === 'otro'));
 });

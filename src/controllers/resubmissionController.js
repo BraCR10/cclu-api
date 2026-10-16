@@ -2,14 +2,14 @@ const resubmissionService = require('../services/resubmissionService');
 
 // Public on purpose. The token in the link is the proof, and asking for a
 // session would lock out exactly the person this is for: someone whose
-// registration was refused and who therefore cannot sign in.
-async function getRejectedRegistration(
+// registration was refused or sent back and who therefore cannot sign in.
+async function getCorrectionRequest(
   request,
   response,
   next,
-  readRejectedRegistration = resubmissionService.readRejectedRegistration,
+  readCorrectableRegistration = resubmissionService.readCorrectableRegistration,
 ) {
-  response.json(await readRejectedRegistration(request.params.token));
+  response.json(await readCorrectableRegistration(request.params.token));
 }
 
 async function resubmit(
@@ -21,4 +21,4 @@ async function resubmit(
   response.json(await resubmitRegistration(request.params.token, request.body));
 }
 
-module.exports = { getRejectedRegistration, resubmit };
+module.exports = { getCorrectionRequest, resubmit };

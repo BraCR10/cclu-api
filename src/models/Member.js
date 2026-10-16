@@ -3,7 +3,15 @@ const { ACCOUNT_STATUSES } = require('../config/accountStatus');
 
 const MEMBER_TYPES = {
   BUSINESS: 'business',
+  ASSOCIATION: 'association',
   INDEPENDENT_PROFESSIONAL: 'independent_professional',
+};
+
+// Whether a client can walk into the branch. It decides whether the address is
+// required at all.
+const BRANCH_MODALITIES = {
+  PHYSICAL: 'physical',
+  VIRTUAL: 'virtual',
 };
 
 // dimex keeps its own name. It is a Costa Rican document for foreign residents,
@@ -22,6 +30,28 @@ const APPLICATION_STATUSES = {
   REJECTED: 'rejected',
 };
 
+// Kept one by one rather than as a single flag: the chamber has to be able to
+// say which of the three was accepted.
+const consentSchema = new mongoose.Schema(
+  {
+    statutes: { type: Boolean, default: false },
+    marketplaceTerms: { type: Boolean, default: false },
+    privacyPolicy: { type: Boolean, default: false },
+  },
+  { _id: false },
+);
+
+// What the chamber pointed at, and what it said about it. The pair travels
+// together because a field named without a reason leaves the applicant looking
+// at it without knowing what to change.
+const correctionSchema = new mongoose.Schema(
+  {
+    field: { type: String, required: true },
+    message: { type: String, required: true, trim: true },
+  },
+  { _id: false },
+);
+
 const memberSchema = new mongoose.Schema(
   {
     email: {
@@ -36,21 +66,7 @@ const memberSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    canton: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Canton',
-      required: true,
-    },
-    location: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    sector: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Sector',
-      required: true,
-    },
+    // Step 1. What kind of affiliate this is, and the document that proves it.
     memberType: {
       type: String,
       required: true,
@@ -67,15 +83,113 @@ const memberSchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
+    // A person's own name. It is what a profesional independiente is called,
+    // because there is no company behind them to be named after.
+    name: {
+      type: String,
+      trim: true,
+    },
+    // The razón social, as it appears in the Registro Nacional. Private by
+    // design, which is why the directory does not display it.
+    legalName: {
+      type: String,
+      trim: true,
+    },
+    legalRepresentativeName: {
+      type: String,
+      trim: true,
+    },
+    legalRepresentativeIdentification: {
+      type: String,
+      trim: true,
+    },
+    // The personería jurídica an empresa or an asociación is checked against,
+    // stored the way every other file is.
+    certificationFileKey: {
+      type: String,
+      trim: true,
+    },
+    certificationIssuedAt: {
+      type: Date,
+      default: null,
+    },
+
+    // Step 2. The business as the public sees it.
     businessName: {
       type: String,
       required: true,
+      trim: true,
+    },
+    managerName: {
+      type: String,
+      trim: true,
+    },
+    activity: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Activity',
+      default: null,
+    },
+    // An activity the catalog does not carry yet. Named here, and it joins the
+    // catalog when the chamber approves the registration.
+    activityOther: {
+      type: String,
       trim: true,
     },
     businessDescription: {
       type: String,
       required: true,
       trim: true,
+    },
+    logoFileKey: {
+      type: String,
+      trim: true,
+    },
+
+    // Step 2. One registration carries one branch; the rest are added from the
+    // panel once it is approved.
+    branchModality: {
+      type: String,
+      required: true,
+      enum: Object.values(BRANCH_MODALITIES),
+    },
+    branchName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    canton: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Canton',
+      required: true,
+    },
+    district: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    // Required of a branch with a door, optional of one without.
+    location: {
+      type: String,
+      trim: true,
+    },
+    institutionalPhone: {
+      type: String,
+      trim: true,
+    },
+
+    // Step 3. How the chamber and the clients reach the business.
+    billingEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
+    },
+    consents: {
+      type: consentSchema,
+      default: () => ({}),
+    },
+    consentedAt: {
+      type: Date,
+      default: null,
     },
     logoUrl: {
       type: String,
@@ -87,6 +201,7 @@ const memberSchema = new mongoose.Schema(
     },
     whatsappNumber: {
       type: String,
+      required: true,
       trim: true,
     },
     instagram: {
@@ -120,6 +235,13 @@ const memberSchema = new mongoose.Schema(
     statusReason: {
       type: String,
       trim: true,
+    },
+    // What the chamber named when it asked for corrections, and what is wrong
+    // with each one. Nothing here is a label: the field is the identifier the
+    // API stores, and the message is what the applicant reads.
+    changesRequestedFields: {
+      type: [correctionSchema],
+      default: [],
     },
     // Who decided and when. The whole system rests on this decision, so it does
     // not get to be anonymous.
@@ -162,6 +284,7 @@ const Member = mongoose.model('Member', memberSchema);
 module.exports = {
   Member,
   MEMBER_TYPES,
+  BRANCH_MODALITIES,
   IDENTIFICATION_TYPES,
   APPLICATION_STATUSES,
 };

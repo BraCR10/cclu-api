@@ -1,4 +1,8 @@
-const { SESSION_COOKIE_NAME, sessionCookieOptions } = require('../config/sessionCookie');
+const {
+  SESSION_COOKIE_NAME,
+  sessionCookieOptions,
+  sessionLifetime,
+} = require('../config/sessionCookie');
 const { describeAttempt } = require('../middlewares/rateLimits');
 const adminAuthService = require('../services/adminAuthService');
 const memberAuthService = require('../services/memberAuthService');
@@ -20,34 +24,55 @@ function recordFailedSignIn(request) {
   console.warn('Failed sign in', describeAttempt(request));
 }
 
+// "Mantener la sesión iniciada" means one thing: the session should outlive the
+// browser. Anything other than a yes is a no.
+function readRememberSession(body) {
+  return body !== null && typeof body === 'object' && body.rememberSession === true;
+}
+
+// The token never reaches the response body. Putting it there would hand it to
+// any script on the page, which is the reach the cookie denies. Both clocks come
+// from one decision, so the cookie cannot outlive the token inside it.
+function establishSession(request, response, identity) {
+  const { expiresIn, maxAgeSeconds } = sessionLifetime(readRememberSession(request.body));
+
+  response.cookie(
+    SESSION_COOKIE_NAME,
+    tokenService.issueToken(identity, process.env.JWT_SECRET, expiresIn),
+    sessionCookieOptions(maxAgeSeconds),
+  );
+  response.status(204).end();
+}
+
+// The state is only ever explained to somebody whose password was already
+// correct, which is what keeps this from telling strangers who is affiliated
+// with the chamber or who holds a panel account.
+function refusedForState(outcome) {
+  return new ApplicationError(outcome, 'The account does not allow signing in yet.', {
+    statusCode: 403,
+    name: 'Forbidden',
+    reason: outcome,
+  });
+}
+
 async function signInAdmin(
   request,
   response,
   next,
   authenticateAdmin = adminAuthService.authenticateAdmin,
 ) {
-  const identity = await authenticateAdmin(request.body);
+  const result = await authenticateAdmin(request.body);
 
-  if (identity === null) {
+  if (result.outcome === adminAuthService.OUTCOMES.INVALID_CREDENTIALS) {
     recordFailedSignIn(request);
     throw invalidCredentials();
   }
 
-  // The token never reaches the response body. Putting it there would hand it
-  // to any script on the page, which is the reach the cookie denies.
-  response.cookie(SESSION_COOKIE_NAME, tokenService.issueToken(identity), sessionCookieOptions());
-  response.status(204).end();
-}
+  if (result.outcome !== adminAuthService.OUTCOMES.AUTHENTICATED) {
+    throw refusedForState(result.outcome);
+  }
 
-// The state of the application is only ever explained to someone whose password
-// was already correct, which is what keeps this from telling strangers who is
-// affiliated with the chamber.
-function refusedForState(outcome) {
-  return new ApplicationError(outcome, 'The registration does not allow signing in yet.', {
-    statusCode: 403,
-    name: 'Forbidden',
-    reason: outcome,
-  });
+  establishSession(request, response, result.identity);
 }
 
 async function signInMember(
@@ -67,12 +92,7 @@ async function signInMember(
     throw refusedForState(result.outcome);
   }
 
-  response.cookie(
-    SESSION_COOKIE_NAME,
-    tokenService.issueToken(result.identity),
-    sessionCookieOptions(),
-  );
-  response.status(204).end();
+  establishSession(request, response, result.identity);
 }
 
 async function getCurrentIdentity(

@@ -17,5 +17,11 @@ adminRoutes.get('/applications/pending', applicationReviewController.getPendingA
 adminRoutes.get('/applications/decided', applicationReviewController.getDecidedApplications);
 adminRoutes.post('/applications/:memberId/approve', applicationReviewController.approveApplication);
 adminRoutes.post('/applications/:memberId/reject', applicationReviewController.rejectApplication);
+// The middle answer between approving and rejecting: the applicant keeps their
+// application and is told what to fix.
+adminRoutes.post(
+  '/applications/:memberId/request-changes',
+  applicationReviewController.requestChangesApplication,
+);
 
 module.exports = { adminRoutes };

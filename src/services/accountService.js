@@ -1,6 +1,10 @@
 const { Member, APPLICATION_STATUSES } = require('../models/Member');
 const { Admin } = require('../models/Admin');
-const { ACCOUNT_STATUSES } = require('../config/accountStatus');
+const {
+  ACCOUNT_STATUSES,
+  effectiveAdminState,
+  canUseAdminAccount,
+} = require('../config/accountStatus');
 const { ROLES } = require('../config/roles');
 
 // One value that answers what a person actually wants to know. accountStatus
@@ -56,14 +60,22 @@ const ACCOUNT_RULES = {
   },
 
   [ROLES.ADMIN]: {
-    find: (id) => Admin.findById(id).select('accountStatus').lean(),
-    isUsable: (account) => account.accountStatus === ACCOUNT_STATUSES.ACTIVE,
+    find: (id) => Admin.findById(id).select('accountStatus invitationExpiresAt').lean(),
+    isUsable: canUseAdminAccount,
     describe: async (id) => {
-      const admin = await Admin.findById(id).select('name email').lean();
+      const admin = await Admin.findById(id)
+        .select('name email accountStatus invitationExpiresAt')
+        .lean();
 
       // The address stands in where no name was stored, so a screen always has
       // something to greet somebody by.
-      return admin === null ? null : { email: admin.email, displayName: admin.name || admin.email };
+      return admin === null
+        ? null
+        : {
+            email: admin.email,
+            displayName: admin.name || admin.email,
+            state: effectiveAdminState(admin),
+          };
     },
   },
 };

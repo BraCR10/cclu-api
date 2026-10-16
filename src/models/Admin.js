@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { ACCOUNT_STATUSES } = require('../config/accountStatus');
+const { ADMIN_ACCOUNT_STATUSES } = require('../config/accountStatus');
 
 const adminSchema = new mongoose.Schema(
   {
@@ -24,8 +24,15 @@ const adminSchema = new mongoose.Schema(
     accountStatus: {
       type: String,
       required: true,
-      enum: Object.values(ACCOUNT_STATUSES),
-      default: ACCOUNT_STATUSES.ACTIVE,
+      enum: Object.values(ADMIN_ACCOUNT_STATUSES),
+      default: ADMIN_ACCOUNT_STATUSES.ACTIVE,
+    },
+    // When an invitation stops being usable. Read rather than trusted, so a
+    // state that was written as pending answers as expired once the moment has
+    // passed.
+    invitationExpiresAt: {
+      type: Date,
+      default: null,
     },
   },
   { timestamps: true },

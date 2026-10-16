@@ -22,7 +22,7 @@
       "value": ""
     },
     {
-      "key": "sectorId",
+      "key": "activityId",
       "value": ""
     },
     {
@@ -31,6 +31,22 @@
     },
     {
       "key": "memberPassword",
+      "value": ""
+    },
+    {
+      "key": "uploadOwnerId",
+      "value": ""
+    },
+    {
+      "key": "fileKey",
+      "value": ""
+    },
+    {
+      "key": "memberId",
+      "value": ""
+    },
+    {
+      "key": "resubmissionToken",
       "value": ""
     }
   ],
@@ -149,14 +165,151 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"comercio@ejemplo.cr\",\n  \"phone\": \"22000000\",\n  \"canton\": \"{{cantonId}}\",\n  \"location\": \"Frente al parque\",\n  \"sector\": \"{{sectorId}}\",\n  \"memberType\": \"business\",\n  \"identificationType\": \"legal_entity_id\",\n  \"identificationNumber\": \"3101000000\",\n  \"businessName\": \"Nombre comercial\",\n  \"businessDescription\": \"Descripcion breve\",\n  \"password\": \"una-contrasena-larga\"\n}"
+              "raw": "{\n  \"memberType\": \"business\",\n  \"identificationType\": \"legal_entity_id\",\n  \"identificationNumber\": \"3101000000\",\n  \"legalName\": \"Panadería La Unión Sociedad Anónima\",\n  \"legalRepresentativeName\": \"Mariana Solís Quesada\",\n  \"legalRepresentativeIdentification\": \"112340567\",\n  \"certificationFileKey\": \"member-certifications/ejemplo.pdf\",\n  \"certificationIssuedAt\": \"2026-09-15\",\n  \"businessName\": \"Nombre comercial\",\n  \"managerName\": \"Mariana Solís Quesada\",\n  \"activity\": \"{{activityId}}\",\n  \"businessDescription\": \"Descripcion breve\",\n  \"branchModality\": \"physical\",\n  \"branchName\": \"Sucursal San Juan\",\n  \"canton\": \"{{cantonId}}\",\n  \"district\": \"San Juan\",\n  \"location\": \"Frente al parque\",\n  \"institutionalPhone\": \"22001122\",\n  \"email\": \"comercio@ejemplo.cr\",\n  \"phone\": \"22000000\",\n  \"whatsappNumber\": \"88001122\",\n  \"billingEmail\": \"facturacion@ejemplo.cr\",\n  \"password\": \"una-contrasena-larga1!\",\n  \"consents\": {\n    \"statutes\": true,\n    \"marketplaceTerms\": true,\n    \"privacyPolicy\": true\n  }\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/members",
               "host": ["{{baseUrl}}"],
               "path": ["api", "members"]
             },
-            "description": "Public, since nobody has an account yet. Answers 201 with the identifier alone. Role and application status are set by the server and ignored if sent. A repeated identifier answers 409 with a message that names nothing."
+            "description": "Public, since nobody has an account yet. Answers 201 with the identifier alone, and writes to the applicant on the address they registered with. Role and application status are set by the server and ignored if sent. A repeated identifier answers 409 with a message that names nothing. An empresa or an asociación sends the razón social, its legal representative and the personería jurídica; a profesional independiente sends their own name instead."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Applications",
+      "description": "The three answers a registration can receive. Until the admin screens exist, these requests are how a decision is made: the applicant is told by email, and a rejection or a request for changes hands them a link to send it back.",
+      "item": [
+        {
+          "name": "List pending applications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/applications/pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "applications", "pending"]
+            },
+            "description": "What waits for a decision, oldest first, so whoever has waited longest is seen first. Needs an administrator session; the password hash is never part of the answer."
+          },
+          "response": []
+        },
+        {
+          "name": "List decided applications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/applications/decided",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "applications", "decided"]
+            },
+            "description": "Approved, rejected and asked-for-changes applications, most recent first. Asking for changes is an answer too: the chamber has looked at the application and the next move is the applicant's."
+          },
+          "response": []
+        },
+        {
+          "name": "Approve an application",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/applications/{{memberId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "applications", "{{memberId}}", "approve"]
+            },
+            "description": "Draws the member code, leaves the account able to sign in and writes the applicant with their code. The code is unique, so a collision is answered by drawing another one. An application that is not pending answers 409 with the state it is in."
+          },
+          "response": []
+        },
+        {
+          "name": "Reject an application",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"La cédula jurídica no se pudo verificar.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/applications/{{memberId}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "applications", "{{memberId}}", "reject"]
+            },
+            "description": "Closes the application and tells the applicant why. No member code is drawn: a code is the mark of belonging to the chamber, and a rejected applicant never belonged. The message carries a personal link to correct and send it again."
+          },
+          "response": []
+        },
+        {
+          "name": "Request changes to an application",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"La cédula jurídica no coincide con el nombre comercial.\",\n  \"fields\": [\n    {\n      \"field\": \"identificationNumber\",\n      \"message\": \"no coincide con la razón social registrada.\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/applications/{{memberId}}/request-changes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "applications", "{{memberId}}", "request-changes"]
+            },
+            "description": "The answer between approving and rejecting: the application is kept and the applicant is told what to fix. A field outside the list the correction form can show answers 400, because asking for one would send the applicant looking for a field that is not there, and a field named without a reason of its own answers 400 for the same kind of reason. The applicant is told the reason, every field with what is wrong with it, and the link."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Corrections",
+      "description": "Reached only by the link a rejection or a request for changes carries. Public on purpose: somebody whose registration was refused cannot sign in, so the token in the link is the proof that the application is theirs.",
+      "item": [
+        {
+          "name": "Read what the link opens",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/resubmission/{{resubmissionToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "resubmission", "{{resubmissionToken}}"]
+            },
+            "description": "Every field the applicant may correct, with its stored value, plus the reason, what the chamber said about each field it named, who decided and when, and the address, which the link cannot change. A link that expired, was already used, or belongs to an application that is no longer awaiting the applicant answers 404 with the same message."
+          },
+          "response": []
+        },
+        {
+          "name": "Send the corrections",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"memberType\": \"business\",\n  \"identificationType\": \"legal_entity_id\",\n  \"identificationNumber\": \"3-102-650901\",\n  \"legalName\": \"Granja Orgánica San Ramón Limitada\",\n  \"businessName\": \"Granja Orgánica San Ramón\",\n  \"managerName\": \"José Pablo Ureña Mata\",\n  \"activity\": \"{{activityId}}\",\n  \"canton\": \"{{cantonId}}\",\n  \"district\": \"San Ramón\",\n  \"phone\": \"8710 3345\",\n  \"whatsappNumber\": \"8710 3345\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/resubmission/{{resubmissionToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "resubmission", "{{resubmissionToken}}"]
+            },
+            "description": "Reads the fields the correction screen shows against the same rules the registration answers to, and sends the application back to pending review. The address, the password, the consents and everything the screen does not show are not read here: they are preserved rather than corrected. A member type and an identification type that do not go together answer 400, and the identity that does not go with the chosen type is cleared. The link is spent on the way out, so sending twice answers 404."
           },
           "response": []
         }
@@ -180,16 +333,69 @@
           "response": []
         },
         {
-          "name": "List sectors",
+          "name": "List activities",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/sectors",
+              "raw": "{{baseUrl}}/api/activities",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "sectors"]
+              "path": ["api", "activities"]
             },
-            "description": "Closed list the registration form offers. Public."
+            "description": "The accepted economic activities the registration form offers. Public. An applicant whose activity is missing writes it out instead, and it joins this list when the chamber approves the registration."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Files",
+      "item": [
+        {
+          "name": "Upload a file",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "purpose",
+                  "value": "membership-certifications",
+                  "type": "text"
+                },
+                {
+                  "key": "ownerId",
+                  "value": "{{uploadOwnerId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/files",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "files"]
+            },
+            "description": "Public, because a registration carries its uploads before the applicant has an account. Answers 201 with the key, which is what the registration sends. The purpose decides the folder: membership-certifications, member-logos or payment-receipts. The owner names the member or administrator the file belongs to; a registration that has no account yet uses the identifier its form generated."
+          },
+          "response": []
+        },
+        {
+          "name": "Open a file",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/files/{{fileKey}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "files", "{{fileKey}}"]
+            },
+            "description": "Streams the file. The key is the capability: it carries 256 random bits, so an address that holds one was only ever handed it. Send the whole key percent-encoded, slashes included."
           },
           "response": []
         }

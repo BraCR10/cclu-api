@@ -36,9 +36,19 @@ async function rejectApplication(
   response.json(await reject(request.params.memberId, request.identity.id, request.body));
 }
 
+async function requestChangesApplication(
+  request,
+  response,
+  next,
+  requestChanges = applicationReviewService.requestChangesApplication,
+) {
+  response.json(await requestChanges(request.params.memberId, request.identity.id, request.body));
+}
+
 module.exports = {
   getPendingApplications,
   getDecidedApplications,
   approveApplication,
   rejectApplication,
+  requestChangesApplication,
 };

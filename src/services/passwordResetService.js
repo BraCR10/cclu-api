@@ -48,12 +48,6 @@ function resetUrlFor(token, origin = process.env.WEB_ORIGIN) {
   return origin === undefined ? undefined : `${origin.replace(/\/+$/, '')}/password/reset/${token}`;
 }
 
-function findAccountById(identity) {
-  const model = ACCOUNTS[identity?.role];
-
-  return model === undefined ? null : model.findById(identity.id).select('email passwordHash');
-}
-
 // Registration and create-admin both refuse an address the other role holds,
 // but that is a rule about new accounts and says nothing about what is already
 // stored. An address that opens two of them has no single answer here, and
@@ -119,44 +113,6 @@ async function issueResetLink(account, role, save, sendEmail) {
   });
 
   return { minutesValid: MINUTES_VALID };
-}
-
-// The current password is asked for first and the request goes no further
-// without it, so holding somebody's open session is not enough to make the
-// chamber send them a link.
-async function requestResetFromSession(
-  identity,
-  body,
-  find = findAccountById,
-  save = saveRequest,
-  sendEmail = emailService.sendEmail,
-) {
-  const account = await find(identity);
-
-  if (account === null) {
-    throw new ValidationError(
-      ERROR_CODES.UNKNOWN_REFERENCE,
-      null,
-      'That account no longer exists.',
-      404,
-    );
-  }
-
-  const currentPassword = body?.currentPassword;
-  const matches =
-    typeof currentPassword === 'string' &&
-    (await passwordService.verifyPassword(currentPassword, account.passwordHash));
-
-  if (!matches) {
-    throw new ValidationError(
-      ERROR_CODES.INVALID_CURRENT_PASSWORD,
-      'currentPassword',
-      'The current password is not correct.',
-      401,
-    );
-  }
-
-  return issueResetLink(account, identity.role, save, sendEmail);
 }
 
 // Somebody here has forgotten their password, so there is nothing to ask them
@@ -237,7 +193,6 @@ async function completePasswordReset(body, locate = findRequest, accounts = ACCO
 }
 
 module.exports = {
-  requestResetFromSession,
   requestForgottenPassword,
   checkResetLink,
   completePasswordReset,
