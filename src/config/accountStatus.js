@@ -6,4 +6,43 @@ const ACCOUNT_STATUSES = {
   SUSPENDED: 'suspended',
 };
 
-module.exports = { ACCOUNT_STATUSES };
+// An administrator can be more things than a member can. The panel has no way to
+// create itself, so an administrator arrives through an invitation, and an
+// invitation is either not accepted yet or has run out of time.
+const ADMIN_ACCOUNT_STATUSES = {
+  ACTIVE: 'active',
+  INVITATION_PENDING: 'invitation_pending',
+  INVITATION_EXPIRED: 'invitation_expired',
+  INACTIVE: 'inactive',
+};
+
+// Asked every time an administrator acts, rather than stored once and left to
+// go stale: an invitation that ran out of time says so on its own, without
+// anybody having to write the new state down.
+function effectiveAdminState(admin, now = new Date()) {
+  if (admin === null || admin === undefined) {
+    return ADMIN_ACCOUNT_STATUSES.INACTIVE;
+  }
+
+  if (
+    admin.accountStatus === ADMIN_ACCOUNT_STATUSES.INVITATION_PENDING &&
+    admin.invitationExpiresAt instanceof Date &&
+    admin.invitationExpiresAt.getTime() <= now.getTime()
+  ) {
+    return ADMIN_ACCOUNT_STATUSES.INVITATION_EXPIRED;
+  }
+
+  return admin.accountStatus ?? ADMIN_ACCOUNT_STATUSES.INACTIVE;
+}
+
+// The only state that opens the panel.
+function canUseAdminAccount(admin, now = new Date()) {
+  return effectiveAdminState(admin, now) === ADMIN_ACCOUNT_STATUSES.ACTIVE;
+}
+
+module.exports = {
+  ACCOUNT_STATUSES,
+  ADMIN_ACCOUNT_STATUSES,
+  effectiveAdminState,
+  canUseAdminAccount,
+};

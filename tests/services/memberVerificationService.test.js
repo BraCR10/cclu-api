@@ -17,7 +17,7 @@ const affiliate = (overrides = {}) => ({
   memberType: 'business',
   applicationStatus: 'approved',
   accountStatus: 'active',
-  sector: { name: 'Alimentos y bebidas' },
+  activity: { name: 'Alimentos y bebidas' },
   canton: { name: 'La Unión' },
   ...overrides,
 });
@@ -76,7 +76,7 @@ test('an affiliate in good standing is named, grouped for reading aloud', async 
       memberCode: formatMemberCode(VALID_CODE),
       businessName: 'Panadería Tres Ríos',
       memberType: 'business',
-      sector: 'Alimentos y bebidas',
+      activity: 'Alimentos y bebidas',
       canton: 'La Unión',
     },
   });
@@ -112,22 +112,22 @@ test('nothing belonging to the account escapes with the answer', async () => {
   );
 
   assert.deepEqual(Object.keys(answer.member).sort(), [
+    'activity',
     'businessName',
     'canton',
     'memberCode',
     'memberType',
-    'sector',
   ]);
 });
 
-test('an affiliate without a sector or canton still verifies', async () => {
+test('an affiliate without an activity or canton still verifies', async () => {
   const answer = await verifyMemberCode(
     { code: VALID_CODE },
-    finding(affiliate({ sector: null, canton: null })),
+    finding(affiliate({ activity: null, canton: null })),
   );
 
   assert.equal(answer.valid, true);
-  assert.equal(answer.member.sector, null);
+  assert.equal(answer.member.activity, null);
 });
 
 const { readPublicProfile } = require('../../src/services/memberVerificationService');
@@ -148,7 +148,7 @@ const wholeDocument = (overrides = {}) => ({
   createdAt: new Date('2026-03-04T12:00:00.000Z'),
   applicationStatus: 'approved',
   accountStatus: 'active',
-  sector: { name: 'Alimentos y bebidas' },
+  activity: { name: 'Alimentos y bebidas' },
   canton: { name: 'La Unión', province: 'Cartago' },
   email: 'socio@example.cr',
   identificationType: 'legal_entity_id',
@@ -235,7 +235,7 @@ test('the listing carries what a directory is for', async () => {
 
   assert.equal(profile.businessName, 'Panadería Tres Ríos');
   assert.equal(profile.memberCode, formatMemberCode(VALID_CODE));
-  assert.equal(profile.sector, 'Alimentos y bebidas');
+  assert.equal(profile.activity, 'Alimentos y bebidas');
   assert.equal(profile.canton, 'La Unión');
   assert.equal(profile.province, 'Cartago');
   assert.equal(profile.phone, '22791234');

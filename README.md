@@ -46,21 +46,17 @@ The decisions below are settled by the prototype; the API must enforce them.
 - A password changes only through an emailed link, never with the current password in session.
 - Only the account owner changes their email, and the change is confirmed by a link sent to the new address.
 - There is no membership withdrawal. An expired paid plan drops to Gratuita.
+- A registration receives three answers: approved, rejected, or changes requested. Asking for changes keeps the application and names what to fix.
 - Moderation only inactivates a publication, and a reason is required. There is no permanent block.
 - Administrator states: Activo, Invitación pendiente, Invitación expirada, Inactivo.
 
 ### Known divergences from the prototype (to be removed in code)
 
-- The `Sector` model and `GET /api/sectors` still exist, and registration
-  requires a sector.
 - `POST /api/members/verification` still verifies a member code for a signed-in
   member or administrator.
-- `POST /api/auth/password/request` asks a signed-in account for its current
-  password before mailing the link.
-- Member types are `business` and `independent_professional`; there is no
-  Asociación.
-- Account status is `active` or `suspended` for administrators too; there is no
-  invitation pending, invitation expired or inactive state.
+- The activity catalog ships with a starting set of names rather than the
+  municipality's patent roll, and a branch writes its district out because the
+  district list is not loaded yet.
 
 ## Repositories
 

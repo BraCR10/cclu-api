@@ -157,4 +157,34 @@ async function deleteFile(key, store = objectStore()) {
   await store.deleteObject({ key: storedKey });
 }
 
-module.exports = { uploadFile, createDownloadUrl, deleteFile, FileStorageError };
+// The extension the key was written under is what the answer carries, so a
+// browser opens the file instead of downloading a nameless stream.
+const CONTENT_TYPE_BY_EXTENSION = Object.fromEntries(
+  Object.entries(CONTENT_TYPE_EXTENSIONS).map(([contentType, extension]) => [
+    extension,
+    contentType,
+  ]),
+);
+
+function contentTypeFor(key) {
+  const storedKey = readStoredKey(key);
+
+  return CONTENT_TYPE_BY_EXTENSION[storedKey.split('.').pop()] ?? 'application/octet-stream';
+}
+
+// The bytes themselves, for whoever opens a file through the API rather than
+// through an address the bucket signed.
+async function readFile(key, store = objectStore()) {
+  const storedKey = readStoredKey(key);
+
+  return store.readObject({ key: storedKey });
+}
+
+module.exports = {
+  uploadFile,
+  createDownloadUrl,
+  deleteFile,
+  readFile,
+  contentTypeFor,
+  FileStorageError,
+};

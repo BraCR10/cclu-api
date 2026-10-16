@@ -1,6 +1,5 @@
 const { Member, MEMBER_TYPES } = require('../models/Member');
 const { Canton } = require('../models/Canton');
-const { Sector } = require('../models/Sector');
 const {
   readText,
   readChoice,
@@ -13,13 +12,16 @@ const { effectiveMemberState } = require('./accountService');
 
 // Named one by one. A field absent from these lists cannot be changed here, so
 // a body carrying an application status or a member code simply goes unread.
-const EDITABLE_TEXT_FIELDS = ['phone', 'location', 'businessName', 'businessDescription'];
-const OPTIONAL_TEXT_FIELDS = ['whatsappNumber', 'instagram', 'facebook', 'linkedin'];
-const OPTIONAL_LINK_FIELDS = ['logoUrl', 'website'];
-const EDITABLE_REFERENCE_FIELDS = [
-  { field: 'canton', model: Canton },
-  { field: 'sector', model: Sector },
+const EDITABLE_TEXT_FIELDS = [
+  'phone',
+  'whatsappNumber',
+  'location',
+  'businessName',
+  'businessDescription',
 ];
+const OPTIONAL_TEXT_FIELDS = ['instagram', 'facebook', 'linkedin'];
+const OPTIONAL_LINK_FIELDS = ['logoUrl', 'website'];
+const EDITABLE_REFERENCE_FIELDS = [{ field: 'canton', model: Canton }];
 const EDITABLE_CHOICE_FIELDS = [{ field: 'memberType', allowed: Object.values(MEMBER_TYPES) }];
 
 // What the member sees of their own record. The password hash and the reviewer
@@ -29,6 +31,23 @@ const PROFILE_FIELDS = [
   ...OPTIONAL_TEXT_FIELDS,
   ...OPTIONAL_LINK_FIELDS,
   'email',
+  'name',
+  'legalName',
+  'legalRepresentativeName',
+  'legalRepresentativeIdentification',
+  'certificationFileKey',
+  'certificationIssuedAt',
+  'managerName',
+  'activity',
+  'activityOther',
+  'logoFileKey',
+  'branchModality',
+  'branchName',
+  'district',
+  'institutionalPhone',
+  'billingEmail',
+  'consents',
+  'consentedAt',
   'memberType',
   'identificationType',
   'identificationNumber',
@@ -43,7 +62,7 @@ function findProfile(memberId) {
   return Member.findById(memberId)
     .select(PROFILE_FIELDS)
     .populate('canton', 'name province')
-    .populate('sector', 'name')
+    .populate('activity', 'name')
     .lean();
 }
 
@@ -126,7 +145,7 @@ async function updateProfile(
     Member.findByIdAndUpdate(id, update, { returnDocument: 'after', runValidators: true })
       .select(PROFILE_FIELDS)
       .populate('canton', 'name province')
-      .populate('sector', 'name')
+      .populate('activity', 'name')
       .lean(),
   references = EDITABLE_REFERENCE_FIELDS,
 ) {

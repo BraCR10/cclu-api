@@ -52,14 +52,16 @@ tells you which.
 
 **Optional at startup.**
 
-| Variable      | Purpose                                                  | Example |
-| ------------- | -------------------------------------------------------- | ------- |
-| `PORT`        | Port for the API. Defaults to 4000 if unset              | `4000`  |
-| `TRUST_PROXY` | `true` only when the API answers through a reverse proxy | `false` |
+| Variable                  | Purpose                                                                       | Example |
+| ------------------------- | ----------------------------------------------------------------------------- | ------- |
+| `PORT`                    | Port for the API. Defaults to 4000 if unset                                   | `4000`  |
+| `TRUST_PROXY`             | `true` only when the API answers through a reverse proxy                      | `false` |
+| `REMEMBERED_SESSION_DAYS` | How long a session lasts when somebody asks to stay signed in. Defaults to 30 | `30`    |
 
 **Read when the first mail is sent.** The API starts without them. Until they
 are set, approving or rejecting an application still succeeds but its mail is
-only logged as not delivered, and requesting a password link fails. Any SMTP server works; [Ethereal](https://ethereal.email) gives a test inbox
+only logged as not delivered, a registration still succeeds and its confirmation
+is logged the same way, and requesting a password link fails. Any SMTP server works; [Ethereal](https://ethereal.email) gives a test inbox
 for local development.
 
 | Variable        | Purpose                                                 | Example                                             |
@@ -71,8 +73,12 @@ for local development.
 | `SMTP_PASSWORD` | SMTP password                                           | The password your provider gives you                |
 | `MAIL_FROM`     | Sender the recipient sees, in the `Name <address>` form | `Cámara de Comercio de La Unión <no-reply@cclu.cr>` |
 
-**Read when the first file is stored.** No endpoint stores a file yet, so the
-API runs without them today. Any S3 compatible provider works.
+**Read when the first file is stored.** Without them the disk answers instead,
+under `FILE_STORAGE_DIRECTORY` (`.file-storage` by default), which is what a
+development machine has; `API_PUBLIC_URL` says which address to hand a stored
+file out under, and defaults to `http://localhost:4000`. A deployment that
+stores files sets all five variables and the files live in the bucket instead of
+on the machine. Any S3 compatible provider works.
 
 | Variable               | Purpose                                                      | Example                            |
 | ---------------------- | ------------------------------------------------------------ | ---------------------------------- |
@@ -96,10 +102,11 @@ npm run seed-catalogs
 ADMIN_PASSWORD='<password>' npm run create-admin -- <email> [name]
 ```
 
-`seed-catalogs` loads the cantons and sectors from `scripts/data/` into the
+`seed-catalogs` loads the cantons and activities from `scripts/data/` into the
 database. The registration form offers only what this loads, so registering
 fails until it has run. It upserts by name, so running it again updates the same
-entries rather than duplicating them.
+entries rather than duplicating them. The activities it ships with are a starting
+set: the official one is the municipality's patent roll.
 
 `create-admin` creates the first administrator, since the panel has no way to
 sign up. The password is read from `ADMIN_PASSWORD` rather than from the

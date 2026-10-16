@@ -5,9 +5,12 @@ const {
   DeleteObjectCommand,
 } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const { createLocalStore } = require('./localFileStorage');
 
 // The storage provider is named in this file and nowhere else. The chamber can
 // move to another host by changing these values, without touching a service.
+// Without them the disk answers instead, which is what a development machine
+// has; a deployment that stores files sets all five.
 const REQUIRED_ENVIRONMENT_VARIABLES = [
   'S3_ENDPOINT',
   'S3_REGION',
@@ -21,6 +24,7 @@ const REQUIRED_ENVIRONMENT_VARIABLES = [
 const FILE_PURPOSES = {
   PAYMENT_RECEIPT: 'payment-receipts',
   MEMBER_LOGO: 'member-logos',
+  MEMBERSHIP_CERTIFICATION: 'membership-certifications',
 };
 
 // The accepted types and the extension each one is stored under. The name that
@@ -105,6 +109,16 @@ function createObjectStore(configuration = readFileStorageConfiguration()) {
       return getSignedUrl(client, command, { expiresIn: expiresInSeconds });
     },
 
+    // The bytes, for the caller that opens a file through the API rather than
+    // through an address the bucket signed.
+    async readObject({ key }) {
+      const answer = await client.send(
+        new GetObjectCommand({ Bucket: configuration.bucket, Key: key }),
+      );
+
+      return Buffer.from(await answer.Body.transformToByteArray());
+    },
+
     async deleteObject({ key }) {
       await client.send(new DeleteObjectCommand({ Bucket: configuration.bucket, Key: key }));
     },
@@ -113,11 +127,16 @@ function createObjectStore(configuration = readFileStorageConfiguration()) {
 
 let configuredObjectStore = null;
 
+// Whether a bucket was named, which is what decides between the two drivers.
+function hasObjectStoreCredentials(environment = process.env) {
+  return REQUIRED_ENVIRONMENT_VARIABLES.every((name) => Boolean(environment[name]));
+}
+
 // Built on first use rather than on import, so a process that never touches a
 // file starts without storage credentials and a missing one fails where it is.
 function objectStore() {
   if (configuredObjectStore === null) {
-    configuredObjectStore = createObjectStore();
+    configuredObjectStore = hasObjectStoreCredentials() ? createObjectStore() : createLocalStore();
   }
 
   return configuredObjectStore;
@@ -132,6 +151,7 @@ module.exports = {
   MAXIMUM_DOWNLOAD_URL_EXPIRY_SECONDS,
   FileStorageConfigurationError,
   readFileStorageConfiguration,
+  hasObjectStoreCredentials,
   createObjectStore,
   objectStore,
 };

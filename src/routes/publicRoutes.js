@@ -1,27 +1,36 @@
 const express = require('express');
 const memberController = require('../controllers/memberController');
 const catalogController = require('../controllers/catalogController');
+const fileController = require('../controllers/fileController');
 const memberProfileController = require('../controllers/memberProfileController');
 const resubmissionController = require('../controllers/resubmissionController');
-const { limitRegistrations } = require('../middlewares/rateLimits');
+const { limitRegistrations, limitUploads } = require('../middlewares/rateLimits');
+const { readUpload } = require('../middlewares/readUpload');
 
 const publicRoutes = express.Router();
 
 // Registration is open by definition: nobody has an account yet.
 publicRoutes.post('/members', limitRegistrations, memberController.signUp);
 
-// The form cannot offer a canton or a sector without first knowing which exist.
+// The form cannot offer a canton or an activity without first knowing which
+// exist.
 publicRoutes.get('/cantons', catalogController.getCantons);
-publicRoutes.get('/sectors', catalogController.getSectors);
+publicRoutes.get('/activities', catalogController.getActivities);
+
+// A registration carries a personería jurídica and a logo before the applicant
+// has an account, so storing one is open for the same reason registering is.
+// Reading one back needs the key, which is the only thing that opens it.
+publicRoutes.post('/files', limitUploads, readUpload, fileController.uploadFile);
+publicRoutes.get('/files/:key', fileController.openFile);
 
 // The address a card's QR carries. It is a permanent contract: a card already
 // issued cannot be reissued, so this path never changes.
 publicRoutes.get('/directory/:memberCode', memberProfileController.getPublicProfile);
 
-// Reached by the link in a rejection message. Somebody whose registration was
-// refused cannot sign in, so requiring a session would shut out the only person
-// this exists for; the token is what proves the registration is theirs.
-publicRoutes.get('/resubmission/:token', resubmissionController.getRejectedRegistration);
+// Reached by the link a rejection or a request for changes carries. Somebody in
+// that position cannot sign in, so requiring a session would shut out the only
+// person this exists for; the token is what proves the registration is theirs.
+publicRoutes.get('/resubmission/:token', resubmissionController.getCorrectionRequest);
 publicRoutes.post('/resubmission/:token', limitRegistrations, resubmissionController.resubmit);
 
 // Guessing at codes is pointless against a sparse space of thirty three million

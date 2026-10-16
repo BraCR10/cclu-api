@@ -2,6 +2,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { sendEmail, notify, EmailDeliveryError } = require('../../src/services/emailService');
 const { renderTemplate, UnknownTemplateError, TEMPLATE_NAMES } = require('../../src/emails');
+const { FIELD_LABELS } = require('../../src/emails/applicationChangesRequested');
+const { CORRECTABLE_FIELDS } = require('../../src/services/resubmissionService');
 const { readMailerConfig, MailerConfigurationError } = require('../../src/config/mailer');
 
 const CONFIGURED = {
@@ -82,8 +84,93 @@ test('a rejection reason written by an administrator is escaped too', () => {
   assert.ok(message.html.includes('&lt;img'));
 });
 
+test('a reason to correct is escaped like any other reason', () => {
+  const message = renderTemplate('applicationChangesRequested', {
+    businessName: 'Panadería',
+    reason: '<img src=x onerror="steal()">',
+    fields: [{ field: 'district', message: 'algo.' }],
+  });
+
+  assert.ok(!message.html.includes('<img'));
+  assert.ok(message.html.includes('&lt;img'));
+});
+
+// The reason for a field is what the applicant fixes it by, so it is on the
+// field rather than only in the letter.
+test('what is wrong with a field travels with the field', () => {
+  const message = renderTemplate('applicationChangesRequested', {
+    businessName: 'Granja Orgánica San Ramón',
+    reason: 'La cédula jurídica no coincide con el nombre comercial.',
+    fields: [
+      {
+        field: 'identificationNumber',
+        message: 'no coincide con la razón social registrada.',
+      },
+      { field: 'phone', message: 'tiene un dígito de más.' },
+    ],
+  });
+
+  assert.ok(
+    message.text.includes(
+      '- número de identificación: no coincide con la razón social registrada.',
+    ),
+  );
+  assert.ok(message.text.includes('- teléfono: tiene un dígito de más.'));
+  assert.ok(message.html.includes('no coincide con la razón social registrada.'));
+});
+
+// A field the chamber may ask to have corrected but that the message cannot name
+// would reach the applicant as the identifier the API stores.
+test('every field a correction may touch has a name to show', () => {
+  for (const field of CORRECTABLE_FIELDS) {
+    assert.equal(typeof FIELD_LABELS[field], 'string', `${field} has no name in the message`);
+  }
+
+  for (const field of Object.keys(FIELD_LABELS)) {
+    assert.ok(CORRECTABLE_FIELDS.includes(field), `${field} is not a field a correction may touch`);
+  }
+});
+
+test('the fields to correct are listed by name rather than by identifier', () => {
+  const message = renderTemplate('applicationChangesRequested', {
+    businessName: 'Panadería',
+    reason: 'La dirección no se pudo verificar.',
+    fields: [
+      { field: 'district', message: 'no coincide con el cantón.' },
+      { field: 'phone', message: 'tiene un dígito de más.' },
+    ],
+  });
+
+  assert.ok(message.text.includes('distrito'));
+  assert.ok(!message.text.includes('district'));
+  assert.ok(!message.html.includes('district'));
+});
+
+test('a correction with no field named says nothing about fields', () => {
+  const message = renderTemplate('applicationChangesRequested', {
+    businessName: 'Panadería',
+    reason: 'La dirección no se pudo verificar.',
+  });
+
+  assert.ok(!message.text.includes('Datos por corregir'));
+  assert.ok(!message.text.includes('undefined'));
+  assert.ok(!message.html.includes('undefined'));
+});
+
 const TEMPLATE_FIXTURES = {
   applicationApproved: { businessName: 'A', memberCode: 'MA7K2Q4' },
+  applicationChangesRequested: {
+    businessName: 'A',
+    reason: 'No verificable.',
+    fields: [{ field: 'district', message: 'no coincide con el cantón.' }],
+    resubmitUrl: 'https://cclu.example/resubmit/abc',
+  },
+  applicationReceived: {
+    name: 'Mariana',
+    businessName: 'A',
+    email: 'comercio@cclu.cr',
+    daysToReview: 5,
+  },
   applicationRejected: { businessName: 'A', reason: 'No verificable.' },
   passwordResetLink: { resetUrl: 'https://cclu.example/password/reset/abc', minutesValid: 30 },
 };

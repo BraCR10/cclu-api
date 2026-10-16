@@ -3,15 +3,17 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const connectDatabase = require('../src/config/database');
 const { Canton } = require('../src/models/Canton');
-const { Sector } = require('../src/models/Sector');
+const { Activity } = require('../src/models/Activity');
 const cantons = require('./data/cantons.json');
-const sectors = require('./data/sectors.json');
+const activities = require('./data/activities.json');
 
-// The lists live in JSON beside this script, so adding a cantón or a sector is
-// an edit to data rather than to the application.
+// The lists live in JSON beside this script, so adding a cantón or an activity
+// is an edit to data rather than to the application. The activities are a
+// starting set: the official one is the municipality's patent roll, which the
+// chamber keeps from the panel.
 const CATALOGS = [
   { label: 'cantons', model: Canton, entries: cantons },
-  { label: 'sectors', model: Sector, entries: sectors },
+  { label: 'activities', model: Activity, entries: activities },
 ];
 
 // Upsert keyed on the name, which is the unique index. Running the seed twice

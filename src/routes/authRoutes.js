@@ -34,14 +34,7 @@ const privateAuthRoutes = express.Router();
 
 privateAuthRoutes.get('/me', authController.getCurrentIdentity);
 
-// One flow for both roles: the steps are the same and building it twice would
-// be two places for the rule to be applied differently. The current password is
-// asked for here so that holding somebody's open session is not enough to make
-// the chamber send them a link.
-privateAuthRoutes.post(
-  '/password/request',
-  limitByAddress,
-  passwordResetController.requestFromSession,
-);
+// A password is never changed from inside a session. There is one flow, the
+// emailed link, and it exists because the person who needs it cannot sign in.
 
 module.exports = { publicAuthRoutes, privateAuthRoutes };

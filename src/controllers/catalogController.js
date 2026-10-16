@@ -4,8 +4,8 @@ async function getCantons(request, response) {
   response.json(await catalogService.listCantons());
 }
 
-async function getSectors(request, response) {
-  response.json(await catalogService.listSectors());
+async function getActivities(request, response) {
+  response.json(await catalogService.listActivities());
 }
 
-module.exports = { getCantons, getSectors };
+module.exports = { getCantons, getActivities };

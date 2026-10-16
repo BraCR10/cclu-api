@@ -47,8 +47,11 @@ test('signInAdmin answers 204 and puts the session in a cookie, never in the bod
     response,
     () => {},
     async () => ({
-      id: '65f0c3a1b2c3d4e5f6a7b8c9',
-      role: ROLES.ADMIN,
+      outcome: 'authenticated',
+      identity: {
+        id: '65f0c3a1b2c3d4e5f6a7b8c9',
+        role: ROLES.ADMIN,
+      },
     }),
   );
 
@@ -67,7 +70,7 @@ test('signInAdmin answers 401 and sets no cookie when the credentials are refuse
       requestWith({ email: 'a@b.cr', password: 'x' }),
       response,
       () => {},
-      async () => null,
+      async () => ({ outcome: 'invalid_credentials' }),
     ),
     { statusCode: 401 },
   );
@@ -124,7 +127,7 @@ test('a refused sign in carries the invalid_credentials code', async () => {
       requestWith({ email: 'a@b.cr', password: 'x' }),
       responseSpy(),
       () => {},
-      async () => null,
+      async () => ({ outcome: 'invalid_credentials' }),
     ),
     { code: 'invalid_credentials' },
   );
@@ -144,4 +147,56 @@ test('a member refused for the state of their account carries that state as the 
       { statusCode: 403, code: outcome, reason: outcome },
     );
   }
+});
+
+test('an administrator refused for the state of their account carries that state too', async () => {
+  for (const outcome of ['invitation_pending', 'invitation_expired', 'account_inactive']) {
+    await assert.rejects(
+      authController.signInAdmin(
+        requestWith({ email: 'a@b.cr', password: 'x' }),
+        responseSpy(),
+        () => {},
+        async () => ({ outcome }),
+      ),
+      { statusCode: 403, code: outcome, reason: outcome },
+    );
+  }
+});
+
+// Two clocks are set from one answer, so the cookie cannot outlive the token it
+// carries, and a session nobody asked to keep dies with the browser.
+test('a session asked to outlive the browser is given a clock, and one that is not is not', async () => {
+  const jwt = require('jsonwebtoken');
+  const remembered = responseSpy();
+  const plain = responseSpy();
+  const signIn = (body, response) =>
+    authController.signInAdmin(
+      requestWith(body),
+      response,
+      () => {},
+      async () => ({
+        outcome: 'authenticated',
+        identity: { id: '65f0c3a1b2c3d4e5f6a7b8c9', role: ROLES.ADMIN },
+      }),
+    );
+
+  await signIn({ email: 'a@b.cr', password: 'x', rememberSession: true }, remembered);
+  await signIn({ email: 'a@b.cr', password: 'x', rememberSession: false }, plain);
+
+  const rememberedCookie = remembered.sent.cookies[0].options;
+  const plainCookie = plain.sent.cookies[0].options;
+
+  assert.ok(rememberedCookie.maxAge > 0, 'the remembered cookie carries no clock');
+  assert.equal(plainCookie.maxAge, undefined, 'a session nobody asked to keep was given a clock');
+
+  const rememberedSpan =
+    jwt.decode(remembered.sent.cookies[0].value).exp -
+    jwt.decode(remembered.sent.cookies[0].value).iat;
+  const plainSpan =
+    jwt.decode(plain.sent.cookies[0].value).exp - jwt.decode(plain.sent.cookies[0].value).iat;
+
+  assert.ok(
+    rememberedSpan > plainSpan,
+    'the remembered token was not signed for longer than the ordinary one',
+  );
 });
