@@ -8,9 +8,9 @@ const { AuditEntry, AUDIT_ACTIONS, SYSTEM_ACTOR } = require('../models/AuditEntr
 const clock = require('../config/clock');
 const { isValidInstant, lastValidDay, latestTrustedExpiry } = require('../config/chamberCalendar');
 const emailService = require('./emailService');
+const membershipPolicyService = require('./membershipPolicyService');
 
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
-const REMINDER_DAYS_AHEAD = 7;
 
 const MEMBER_FIELDS = 'email businessName';
 
@@ -37,6 +37,7 @@ function lapseEntryFor(membership, freePlan) {
 
 const defaultExpiryStore = {
   findFreePlan: () => Plan.findOne({ key: PLAN_KEYS.FREE }).select('key').lean(),
+  readNoticeDays: () => membershipPolicyService.readNoticeDays(),
 
   // Every paid plan access is already refused for: past its expiry, or with an
   // expiry that cannot be trusted. The same cases isExpiredPaidPlan counts.
@@ -159,8 +160,8 @@ async function lapseExpiredMemberships(
   return lapsed;
 }
 
-// Reminds each member whose paid plan runs out within the week, once per
-// expiry. A message that does not leave releases its claim, so the next run
+// Reminds each member whose paid plan runs out within the notice the chamber
+// set, once per expiry. A message that does not leave releases its claim, so the next run
 // tries again instead of the reminder being lost. An address no message could
 // reach is not claimed at all, so it is not retried every hour for nothing.
 async function remindExpiringMemberships(
@@ -169,7 +170,8 @@ async function remindExpiringMemberships(
   send = emailService.sendEmail,
   isAddress = emailService.isDeliverableAddress,
 ) {
-  const until = new Date(now.getTime() + REMINDER_DAYS_AHEAD * DAY_IN_MILLISECONDS);
+  const noticeDays = await store.readNoticeDays();
+  const until = new Date(now.getTime() + noticeDays * DAY_IN_MILLISECONDS);
   let reminded = 0;
 
   for (const membership of await store.findExpiring(now, until)) {
@@ -199,7 +201,6 @@ async function remindExpiringMemberships(
 }
 
 module.exports = {
-  REMINDER_DAYS_AHEAD,
   lapseExpiredMemberships,
   remindExpiringMemberships,
 };
