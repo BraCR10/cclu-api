@@ -234,6 +234,10 @@ as `{ "fees": { "lite": 6000 } }`:
 - Gratuita always costs nothing.
 - An amount equal to the current one is not a change.
 
+Each fee is updated only if it still holds the amount the administrator saw.
+If another administrator saved first, the request answers 409
+`changed_meanwhile` for that fee and the whole transaction is undone.
+
 The seed writes a fee only when it creates the plan, so seeding again never
 undoes what the chamber set.
 
@@ -256,6 +260,19 @@ production, the database user should only be granted `find` and `insert` on
 this collection, which is what stops a rewrite on purpose. Other decisions the
 chamber has to answer for later belong in the same collection, under an action
 of their own.
+
+## Pagination
+
+Every list that grows answers one page. The query is `?page=1&pageSize=10`, and
+the answer is `{ items, page, pageSize, total, pageCount }`. The helper in
+`src/config/pagination.js` reads and checks both parameters:
+
+- Missing parameters fall back to page 1 and 10 items.
+- A value that is not a whole number in range, or a size above 50, answers
+  `invalid_format` naming the parameter, rather than quietly serving page 1.
+
+Closed catalogs that feed a select, such as cantons, activities and plans, are
+not paged.
 
 ## Answering a registration
 
