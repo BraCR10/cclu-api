@@ -1,6 +1,7 @@
 const express = require('express');
 const applicationReviewController = require('../controllers/applicationReviewController');
 const adminProfileController = require('../controllers/adminProfileController');
+const planController = require('../controllers/planController');
 const { authorize } = require('../middlewares/authorize');
 const { ROLES } = require('../config/roles');
 
@@ -23,5 +24,8 @@ adminRoutes.post(
   '/applications/:memberId/request-changes',
   applicationReviewController.requestChangesApplication,
 );
+
+adminRoutes.patch('/plans/fees', planController.updateFees);
+adminRoutes.get('/plans/fee-changes', planController.getFeeChanges);
 
 module.exports = { adminRoutes };
