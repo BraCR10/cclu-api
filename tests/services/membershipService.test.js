@@ -70,10 +70,13 @@ test('a paid plan past its expiry reads as Gratuita before the job has moved it'
 
   assert.equal(before.plan.key, 'pro');
   assert.equal(before.validUntil, '2026-11-17');
+  assert.equal(before.expiresAt, expiresAt);
   assert.equal(after.plan.key, 'free');
   assert.equal(after.validUntil, null);
+  assert.equal(after.expiresAt, null);
   assert.deepEqual(after.lapsed, {
     plan: { key: 'pro', name: 'Pro Pymex' },
+    expiresAt,
     validUntil: '2026-11-17',
   });
 });

@@ -314,7 +314,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "members", "me", "membership"]
             },
-            "description": "Member session. The plan the member holds now, worked out against the clock: a paid plan past its expiry reads as Gratuita with its lapse, even before the hourly job has moved it. validUntil is the last valid day in Costa Rica (YYYY-MM-DD), null on Gratuita. A member without a membership is granted Gratuita on the first read."
+            "description": "Member session. The plan the member holds now, worked out against the clock: a paid plan past its expiry reads as Gratuita with its lapse, even before the hourly job has moved it. expiresAt is the instant the plan ends, in UTC, for a screen to show on the viewer's clock; validUntil is its last valid day in Costa Rica (YYYY-MM-DD), for messages from the chamber. Both are null on Gratuita. A member without a membership is granted Gratuita on the first read."
           },
           "response": []
         }

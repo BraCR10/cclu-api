@@ -299,7 +299,7 @@ audit log.
   short. `npm run grant-free-memberships` does the same for every approved
   member at once.
 - **The answer is the effective plan**, worked out against the clock as the next
-  section describes, with `validUntil`, the last day the plan is valid, and
+  section describes, with `expiresAt` and `validUntil`, when the plan ends, and
   `lapsed`, the paid plan that ran out, until the next one is approved.
 
 ### The hourly run
@@ -387,10 +387,21 @@ calendar day stored in a date field, not an instant: read back, its first ten
 characters are the day, and treating it as an instant shows the day before in
 Costa Rica.
 
-**Screens show the last valid day, never the expiry.** The expiry falls on the
-following day, so formatting it would tell a member their plan lasts a day
-longer than it does. The API sends `validUntil` as `YYYY-MM-DD`, and a value
-with no time is shown from its own parts, without converting it between zones.
+**The API works in one time; each person reads their own.** Every instant
+leaves the API in UTC, and the web shows it in the time zone of whoever is
+looking, so a member travelling in China reads Chinese time. A term travels
+both ways: `expiresAt`, the instant it ends, and `validUntil`, its last day on
+the chamber's calendar.
+
+- **Screens use `expiresAt`.** Where the plan ends at midnight on the viewer's
+  own calendar, as in Costa Rica, they show the day before it: "vigente hasta
+  el 17 de noviembre". Anywhere else they show the local date and time it ends,
+  because a date alone would be wrong there: the same plan ends at 10:00 p. m.
+  on the 17th in Los Angeles and at 2:00 p. m. on the 18th in Beijing.
+- **Messages from the chamber use `validUntil`.** A mail cannot know where it
+  will be read, so it names the chamber's day.
+- **Access is never local.** Whatever zone the screen shows, the API decides
+  against its own clock.
 
 ## Pagination
 

@@ -49,15 +49,23 @@ function presentPlan(plan) {
   };
 }
 
+// Both the instant and the day travel. The instant is when the plan ends, which
+// a screen shows on the clock of whoever is looking. The day is the last one it
+// is valid on the chamber's calendar, which is what a message from the chamber
+// names.
+function presentTerm(expiresAt) {
+  return isValidInstant(expiresAt)
+    ? { expiresAt, validUntil: lastValidDay(expiresAt) }
+    : { expiresAt: null, validUntil: null };
+}
+
 function presentLapse(plan, expiredAt) {
-  return { plan: { key: plan.key, name: plan.name }, validUntil: lastValidDay(expiredAt) };
+  return { plan: { key: plan.key, name: plan.name }, ...presentTerm(expiredAt) };
 }
 
 // What the member is shown is the plan they hold now. A paid plan past its
 // expiry reads as Gratuita with its lapse, even before the hourly job has moved
-// it, so the screen never promises what the API would refuse. The expiry
-// itself is not sent: the last valid day is what a person reads, and the
-// instant would name the day after.
+// it, so the screen never promises what the API would refuse.
 function present(membership, member, freePlan, now) {
   const { lapsed } = membership;
   const common = { memberCode: formatMemberCode(member.memberCode) };
@@ -67,7 +75,7 @@ function present(membership, member, freePlan, now) {
       ...common,
       plan: presentPlan(freePlan),
       startedAt: isValidInstant(membership.expiresAt) ? membership.expiresAt : null,
-      validUntil: null,
+      ...presentTerm(null),
       lapsed: presentLapse(membership.plan, membership.expiresAt),
     };
   }
@@ -76,7 +84,7 @@ function present(membership, member, freePlan, now) {
     ...common,
     plan: presentPlan(membership.plan),
     startedAt: membership.startedAt,
-    validUntil: membership.plan.key === PLAN_KEYS.FREE ? null : lastValidDay(membership.expiresAt),
+    ...presentTerm(membership.plan.key === PLAN_KEYS.FREE ? null : membership.expiresAt),
     lapsed:
       lapsed === null || lapsed === undefined ? null : presentLapse(lapsed.plan, lapsed.expiredAt),
   };
