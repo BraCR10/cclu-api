@@ -51,7 +51,7 @@ test('a member without a membership is granted Gratuita when they first ask', as
   const membership = await readOwnMembership(MEMBER_ID, store);
 
   assert.equal(membership.plan.key, 'free');
-  assert.equal(membership.memberCode, 'MA7K2Q4');
+  assert.equal(membership.memberCode, 'M-A7K2-Q4');
   assert.equal(membership.expiresAt, null);
 });
 

@@ -2,6 +2,7 @@ const { Membership } = require('../models/Membership');
 const { Member, APPLICATION_STATUSES } = require('../models/Member');
 const { Plan, PLAN_KEYS } = require('../models/Plan');
 const { ApplicationError, ERROR_CODES } = require('../config/errorCodes');
+const { formatMemberCode } = require('./memberCodeService');
 
 const DUPLICATE_KEY = 11000;
 
@@ -48,7 +49,7 @@ function present(membership, member) {
   const { lapsed } = membership;
 
   return {
-    memberCode: member.memberCode,
+    memberCode: formatMemberCode(member.memberCode),
     plan: presentPlan(membership.plan),
     startedAt: membership.startedAt,
     expiresAt: membership.expiresAt,
