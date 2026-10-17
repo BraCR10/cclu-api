@@ -4,6 +4,10 @@ const AUDIT_ACTIONS = {
   PLAN_FEE_CHANGED: 'plan.fee_changed',
   MEMBERSHIP_LAPSED: 'membership.lapsed',
   MEMBERSHIP_NOTICE_CHANGED: 'membership.notice_changed',
+  MEMBERSHIP_RENEWED: 'membership.renewed',
+  PAYMENT_SUBMITTED: 'payment.submitted',
+  PAYMENT_APPROVED: 'payment.approved',
+  PAYMENT_REJECTED: 'payment.rejected',
 };
 
 // The actor of an action no person took, such as a plan running out overnight.

@@ -5,6 +5,9 @@ const { applicationRejected } = require('./applicationRejected');
 const { membershipExpiring } = require('./membershipExpiring');
 const { membershipLapsed } = require('./membershipLapsed');
 const { passwordResetLink } = require('./passwordResetLink');
+const { paymentApproved } = require('./paymentApproved');
+const { paymentReceived } = require('./paymentReceived');
+const { paymentRejected } = require('./paymentRejected');
 
 // A new kind of notification is a new file beside this one and a line here.
 // Nothing in the sending component changes.
@@ -16,6 +19,9 @@ const TEMPLATES = {
   membershipExpiring,
   membershipLapsed,
   passwordResetLink,
+  paymentApproved,
+  paymentReceived,
+  paymentRejected,
 };
 
 class UnknownTemplateError extends Error {

@@ -174,6 +174,14 @@ const TEMPLATE_FIXTURES = {
   applicationRejected: { businessName: 'A', reason: 'No verificable.' },
   membershipExpiring: { businessName: 'A', planName: 'Pro Pymex', validUntil: '2026-11-17' },
   membershipLapsed: { businessName: 'A', planName: 'Pro Pymex' },
+  paymentReceived: {
+    businessName: 'A',
+    planName: 'Pro Pymex',
+    amount: '₡10.000',
+    reference: 'MA7K2Q4 Membresia',
+  },
+  paymentApproved: { businessName: 'A', planName: 'Pro Pymex', validUntil: '2026-11-17' },
+  paymentRejected: { businessName: 'A', planName: 'Pro Pymex', reason: 'El detalle no coincide.' },
   passwordResetLink: { resetUrl: 'https://cclu.example/password/reset/abc', minutesValid: 30 },
 };
 

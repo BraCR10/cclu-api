@@ -57,6 +57,11 @@ function lastValidDay(expiresAt) {
   return inChamberZone(expiresAt).minus({ milliseconds: 1 }).toISODate();
 }
 
+// The day an instant falls on in Costa Rica, as YYYY-MM-DD.
+function calendarDayOf(instant) {
+  return isValidInstant(instant) ? inChamberZone(instant).toISODate() : null;
+}
+
 // The latest expiry a plan can legitimately carry at this moment.
 function latestTrustedExpiry(now) {
   return inChamberZone(now)
@@ -74,4 +79,5 @@ module.exports = {
   expiryFrom,
   lastValidDay,
   latestTrustedExpiry,
+  calendarDayOf,
 };

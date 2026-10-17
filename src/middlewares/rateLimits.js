@@ -120,7 +120,20 @@ const limitCodeChecks = rateLimit({
   handler: tooManyAttempts,
 });
 
+// A payment carries a receipt to keep for good, and only one can be pending at
+// a time. The limit is for the requests that try anyway.
+const PAYMENTS_PER_ADDRESS = 10;
+
+const limitPayments = rateLimit({
+  windowMs: WINDOW_MS,
+  limit: PAYMENTS_PER_ADDRESS,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: tooManyAttempts,
+});
+
 module.exports = {
+  limitPayments,
   limitByAddress,
   limitByAccount,
   limitRegistrations,
