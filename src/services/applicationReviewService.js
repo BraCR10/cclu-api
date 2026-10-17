@@ -4,6 +4,7 @@ const { generateMemberCode } = require('./memberCodeService');
 const { issueResubmissionToken, CORRECTABLE_FIELDS } = require('./resubmissionService');
 const emailService = require('./emailService');
 const { ApplicationError, ERROR_CODES } = require('../config/errorCodes');
+const { readPagination, paginated } = require('../config/pagination');
 
 const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
 const MAXIMUM_REASON_LENGTH = 500;
@@ -186,24 +187,44 @@ function readCorrections(body) {
 
 // The oldest application is decided first. Whoever has waited longest is seen
 // first, rather than whoever happens to sort last.
-function listPendingApplications() {
-  return Member.find({ applicationStatus: APPLICATION_STATUSES.PENDING_REVIEW })
-    .select(APPLICATION_FIELDS)
-    .populate('canton', 'name province')
-    .populate('activity', 'name')
-    .sort({ createdAt: 1 })
-    .lean();
+const PENDING = { applicationStatus: APPLICATION_STATUSES.PENDING_REVIEW };
+
+async function listPendingApplications(query) {
+  const pagination = readPagination(query);
+  const [items, total] = await Promise.all([
+    Member.find(PENDING)
+      .select(APPLICATION_FIELDS)
+      .populate('canton', 'name province')
+      .populate('activity', 'name')
+      .sort({ createdAt: 1 })
+      .skip(pagination.skip)
+      .limit(pagination.pageSize)
+      .lean(),
+    Member.countDocuments(PENDING),
+  ]);
+
+  return paginated(items, total, pagination);
 }
 
 // Most recent first: the decision someone is asking about is almost always the
 // one just made.
-function listDecidedApplications() {
-  return Member.find({ applicationStatus: { $in: REVIEWED_STATUSES } })
-    .select(DECIDED_FIELDS)
-    .populate('reviewedBy', 'email')
-    .populate('activity', 'name')
-    .sort({ reviewedAt: -1 })
-    .lean();
+const DECIDED = { applicationStatus: { $in: REVIEWED_STATUSES } };
+
+async function listDecidedApplications(query) {
+  const pagination = readPagination(query);
+  const [items, total] = await Promise.all([
+    Member.find(DECIDED)
+      .select(DECIDED_FIELDS)
+      .populate('reviewedBy', 'email')
+      .populate('activity', 'name')
+      .sort({ reviewedAt: -1 })
+      .skip(pagination.skip)
+      .limit(pagination.pageSize)
+      .lean(),
+    Member.countDocuments(DECIDED),
+  ]);
+
+  return paginated(items, total, pagination);
 }
 
 function updateMatchingApplication(filter, changes) {

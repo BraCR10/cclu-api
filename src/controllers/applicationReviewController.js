@@ -6,7 +6,7 @@ async function getPendingApplications(
   next,
   listPendingApplications = applicationReviewService.listPendingApplications,
 ) {
-  response.json(await listPendingApplications());
+  response.json(await listPendingApplications(request.query));
 }
 
 async function getDecidedApplications(
@@ -15,7 +15,7 @@ async function getDecidedApplications(
   next,
   listDecidedApplications = applicationReviewService.listDecidedApplications,
 ) {
-  response.json(await listDecidedApplications());
+  response.json(await listDecidedApplications(request.query));
 }
 
 async function approveApplication(

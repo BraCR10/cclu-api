@@ -1,0 +1,54 @@
+[
+  {
+    "key": "free",
+    "name": "Gratuita",
+    "position": 1,
+    "monthlyFee": 0,
+    "entitlements": {
+      "publishInMarketplace": false,
+      "publishJobs": false,
+      "banner": "none",
+      "onlineWorkshops": false,
+      "massMailing": false
+    }
+  },
+  {
+    "key": "lite",
+    "name": "Lite MiPyme",
+    "position": 2,
+    "monthlyFee": 5000,
+    "entitlements": {
+      "publishInMarketplace": true,
+      "publishJobs": true,
+      "banner": "none",
+      "onlineWorkshops": false,
+      "massMailing": false
+    }
+  },
+  {
+    "key": "pro",
+    "name": "Pro Pymex",
+    "position": 3,
+    "monthlyFee": 10000,
+    "entitlements": {
+      "publishInMarketplace": true,
+      "publishJobs": true,
+      "banner": "one_month",
+      "onlineWorkshops": true,
+      "massMailing": true
+    }
+  },
+  {
+    "key": "premium",
+    "name": "Premium Empresarial",
+    "position": 4,
+    "monthlyFee": 20000,
+    "entitlements": {
+      "publishInMarketplace": true,
+      "publishJobs": true,
+      "banner": "unlimited",
+      "onlineWorkshops": true,
+      "massMailing": true
+    }
+  }
+]

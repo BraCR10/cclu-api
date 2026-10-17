@@ -3,6 +3,7 @@ const memberController = require('../controllers/memberController');
 const catalogController = require('../controllers/catalogController');
 const fileController = require('../controllers/fileController');
 const memberProfileController = require('../controllers/memberProfileController');
+const planController = require('../controllers/planController');
 const resubmissionController = require('../controllers/resubmissionController');
 const { limitRegistrations, limitUploads } = require('../middlewares/rateLimits');
 const { readUpload } = require('../middlewares/readUpload');
@@ -16,6 +17,9 @@ publicRoutes.post('/members', limitRegistrations, memberController.signUp);
 // exist.
 publicRoutes.get('/cantons', catalogController.getCantons);
 publicRoutes.get('/activities', catalogController.getActivities);
+
+// A visitor compares the plans before having an account.
+publicRoutes.get('/plans', planController.getPlans);
 
 // A registration carries a personería jurídica and a logo before the applicant
 // has an account, so storing one is open for the same reason registering is.
