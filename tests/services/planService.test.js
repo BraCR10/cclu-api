@@ -118,7 +118,7 @@ test('an administrator without a name is attributed by address', async () => {
   assert.equal(store.applied[0].actor.name, 'laura@example.cr');
 });
 
-test('the history answers with the plan key, both amounts and who changed it', async () => {
+test('the history answers one page with the plan key, both amounts and who changed it', async () => {
   const entries = [
     {
       _id: 'e1',
@@ -129,18 +129,35 @@ test('the history answers with the plan key, both amounts and who changed it', a
       changes: [{ field: 'monthlyFee', before: 18000, after: 20000 }],
     },
   ];
+  let asked = null;
 
-  const [change] = await listFeeChanges(
-    async () => entries,
-    async () => storedPlans(),
+  const answer = await listFeeChanges(
+    { page: '3', pageSize: '1' },
+    {
+      findEntries: async (pagination) => {
+        asked = pagination;
+        return entries;
+      },
+      countEntries: async () => 5,
+      findPlans: async () => storedPlans(),
+    },
   );
 
-  assert.deepEqual(change, {
-    id: 'e1',
-    occurredAt: new Date('2026-01-15T16:12:00Z'),
-    plan: { key: 'premium', name: 'Premium Empresarial' },
-    previousFee: 18000,
-    newFee: 20000,
-    changedBy: 'Laura Jiménez',
+  assert.deepEqual(asked, { page: 3, pageSize: 1, skip: 2 });
+  assert.deepEqual(answer, {
+    items: [
+      {
+        id: 'e1',
+        occurredAt: new Date('2026-01-15T16:12:00Z'),
+        plan: { key: 'premium', name: 'Premium Empresarial' },
+        previousFee: 18000,
+        newFee: 20000,
+        changedBy: 'Laura Jiménez',
+      },
+    ],
+    page: 3,
+    pageSize: 1,
+    total: 5,
+    pageCount: 5,
   });
 });

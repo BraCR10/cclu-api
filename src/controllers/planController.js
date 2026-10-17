@@ -9,7 +9,7 @@ async function updateFees(request, response, next, change = planService.changeFe
 }
 
 async function getFeeChanges(request, response, next, list = planService.listFeeChanges) {
-  response.json(await list());
+  response.json(await list(request.query));
 }
 
 module.exports = { getPlans, updateFees, getFeeChanges };

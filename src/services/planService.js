@@ -3,12 +3,12 @@ const { Plan, PLAN_KEYS } = require('../models/Plan');
 const { Admin } = require('../models/Admin');
 const { AuditEntry, AUDIT_ACTIONS } = require('../models/AuditEntry');
 const { ValidationError, refuse } = require('../config/memberRules');
-const { ERROR_CODES } = require('../config/errorCodes');
+const { ApplicationError, ERROR_CODES } = require('../config/errorCodes');
+const { readPagination, paginated } = require('../config/pagination');
 
 // A ceiling well above any fee the chamber charges, so a mistyped extra zero
 // is refused instead of being billed.
 const MAXIMUM_MONTHLY_FEE = 1_000_000;
-const FEE_CHANGE_HISTORY_LIMIT = 50;
 
 function present(plan) {
   return {
@@ -84,11 +84,22 @@ const defaultFeeStore = {
   applyFeeChanges: (changes, actor) =>
     mongoose.connection.transaction(async (session) => {
       for (const change of changes) {
-        await Plan.updateOne(
-          { _id: change.plan._id },
+        // Matched on the fee this administrator saw, so a change saved by
+        // someone else in between is not overwritten and never logged with the
+        // wrong previous amount. Throwing here undoes the whole transaction.
+        const { matchedCount } = await Plan.updateOne(
+          { _id: change.plan._id, monthlyFee: change.previousFee },
           { $set: { monthlyFee: change.newFee } },
           { session },
         );
+
+        if (matchedCount === 0) {
+          throw new ApplicationError(
+            ERROR_CODES.CHANGED_MEANWHILE,
+            'Another administrator changed this fee first.',
+            { statusCode: 409, field: `fees.${change.plan.key}` },
+          );
+        }
       }
 
       await AuditEntry.insertMany(
@@ -137,18 +148,29 @@ function presentFeeChange(entry, keysById) {
   };
 }
 
-async function listFeeChanges(
-  findEntries = () =>
-    AuditEntry.find({ action: AUDIT_ACTIONS.PLAN_FEE_CHANGED })
-      .sort({ occurredAt: -1 })
-      .limit(FEE_CHANGE_HISTORY_LIMIT)
-      .lean(),
-  findPlans = () => Plan.find().select('key').lean(),
-) {
-  const [entries, plans] = await Promise.all([findEntries(), findPlans()]);
+const FEE_CHANGES = { action: AUDIT_ACTIONS.PLAN_FEE_CHANGED };
+
+const defaultFeeChangeStore = {
+  findEntries: ({ skip, pageSize }) =>
+    AuditEntry.find(FEE_CHANGES).sort({ occurredAt: -1 }).skip(skip).limit(pageSize).lean(),
+  countEntries: () => AuditEntry.countDocuments(FEE_CHANGES),
+  findPlans: () => Plan.find().select('key').lean(),
+};
+
+async function listFeeChanges(query, store = defaultFeeChangeStore) {
+  const pagination = readPagination(query);
+  const [entries, total, plans] = await Promise.all([
+    store.findEntries(pagination),
+    store.countEntries(),
+    store.findPlans(),
+  ]);
   const keysById = new Map(plans.map((plan) => [String(plan._id), plan.key]));
 
-  return entries.map((entry) => presentFeeChange(entry, keysById));
+  return paginated(
+    entries.map((entry) => presentFeeChange(entry, keysById)),
+    total,
+    pagination,
+  );
 }
 
 module.exports = {
