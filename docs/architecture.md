@@ -218,6 +218,45 @@ registration is. A form cannot offer a closed list without knowing what is in
 it, and that is also why the registration needs a limit: those listings hand
 anyone the references a submission has to carry.
 
+## Plans and fees
+
+Every member is on one of four plans: Gratuita, Lite MiPyme, Pro Pymex and
+Premium Empresarial. A plan carries its monthly fee in whole colones and its
+**entitlements**, the flags that say what it unlocks. Screens and services ask
+those flags rather than comparing plan names. `GET /api/plans` is public,
+because a visitor compares plans before having an account.
+
+An administrator changes fees with `PATCH /api/admin/plans/fees` and a body such
+as `{ "fees": { "lite": 6000 } }`:
+
+- Every key is checked before anything is written, so one bad amount changes
+  nothing.
+- Gratuita always costs nothing.
+- An amount equal to the current one is not a change.
+
+The seed writes a fee only when it creates the plan, so seeding again never
+undoes what the chamber set.
+
+### The audit log
+
+Each fee that moves leaves an entry in `auditentries`. The fee and its entry are
+written in one transaction, because a fee that changed without a trace is what
+the log exists to rule out. `GET /api/admin/plans/fee-changes` reads the log
+back, newest first.
+
+An entry records three things:
+
+- **Action:** what happened.
+- **Actor:** who did it, copied at that moment, so renaming an administrator
+  does not rewrite history.
+- **Subject:** what it happened to, with the fields that changed.
+
+Entries are only ever inserted. The model refuses every update and delete. In
+production, the database user should only be granted `find` and `insert` on
+this collection, which is what stops a rewrite on purpose. Other decisions the
+chamber has to answer for later belong in the same collection, under an action
+of their own.
+
 ## Answering a registration
 
 A registration receives one of three answers, and all three are made through the
