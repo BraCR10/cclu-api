@@ -34,6 +34,7 @@ function memoryStore(memberships) {
     memberships,
     auditEntries,
     findFreePlan: async () => FREE,
+    readNoticeDays: async () => 7,
     findExpired: async (now) =>
       memberships.filter((item) => isExpiredPaidPlan(item, now)).map((item) => ({ ...item })),
     lapse: async (snapshot, freePlan, endedAt) => {
@@ -218,4 +219,15 @@ test('an address no message could reach is never claimed for a reminder', async 
   assert.equal(await remindExpiringMemberships(NOW, store, mail.deliver), 0);
   assert.equal(store.memberships[0].reminderSentFor, null);
   assert.equal(mail.sent.length, 0);
+});
+
+test('the reminder follows the notice the chamber set', async () => {
+  const store = memoryStore([membership({ expiresAt: new Date(NOW.getTime() + 10 * DAY) })]);
+  const mail = recordingMail();
+
+  assert.equal(await remindExpiringMemberships(NOW, store, mail.deliver), 0);
+
+  store.readNoticeDays = async () => 14;
+
+  assert.equal(await remindExpiringMemberships(NOW, store, mail.deliver), 1);
 });

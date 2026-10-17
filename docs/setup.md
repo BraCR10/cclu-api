@@ -106,12 +106,14 @@ ADMIN_PASSWORD='<password>' npm run create-admin -- <email> [name]
 ```
 
 `seed-catalogs` loads the cantons, the activities and the four plans from
-`scripts/data/` into the database. The registration form offers only what this
+`scripts/data/` into the database, and creates the membership policy with a
+seven-day expiry notice. The registration form offers only what this
 loads, and approving an application needs the plans, so both fail until it has
 run. It upserts each entry by its name or key, so running it again updates the
 same entries rather than duplicating them. A plan's fee is written only when the
 plan is created, so seeding again never undoes a fee the chamber changed from
-the panel. The activities it ships with are a starting set: the official one is
+the panel, and the notice is written only when the policy is created. The
+activities it ships with are a starting set: the official one is
 the municipality's patent roll.
 
 `create-admin` creates the first administrator, since the panel has no way to
@@ -136,7 +138,7 @@ npm start
 ```
 
 Once connected, the API runs the membership job at start and every hour after:
-it moves expired paid plans to Gratuita and sends the seven-day reminders. To
+it moves expired paid plans to Gratuita and sends the reminders within the expiry notice. To
 run it now instead of waiting, use `npm run run-membership-expiry`. Access never
 waits for it; see [Time and access](architecture.md#time-and-access).
 

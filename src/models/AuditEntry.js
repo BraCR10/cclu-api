@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const AUDIT_ACTIONS = {
   PLAN_FEE_CHANGED: 'plan.fee_changed',
   MEMBERSHIP_LAPSED: 'membership.lapsed',
+  MEMBERSHIP_NOTICE_CHANGED: 'membership.notice_changed',
 };
 
 // The actor of an action no person took, such as a plan running out overnight.

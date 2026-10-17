@@ -667,6 +667,84 @@
             "description": "Administrator session. The fee history from the audit log, newest first, paged as { items, page, pageSize, total, pageCount }."
           },
           "response": []
+        },
+        {
+          "name": "Read the expiry notice",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/plans/policy",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "plans", "policy"]
+            },
+            "description": "Administrator session. How many days before an expiry members are reminded and the panel counts a plan as expiring soon, with the allowed range."
+          },
+          "response": []
+        },
+        {
+          "name": "Change the expiry notice",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expiryNoticeDays\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/plans/policy",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "plans", "policy"]
+            },
+            "description": "Administrator session. A whole number of days from 1 to 30. Written against the value seen, with its audit entry in one transaction; a value another administrator changed first answers 409 changed_meanwhile."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Memberships",
+      "item": [
+        {
+          "name": "List memberships",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/memberships?status=active&plan=&search=&page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "memberships"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "active"
+                },
+                {
+                  "key": "plan",
+                  "value": ""
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Administrator session. Paid memberships only. status is active (default) or inactive; plan is lite, pro or premium; search matches the business name or the start of the member code. Answers the page with counts { active, expiring, inactive } and the notice in force. A lapsed member is listed as inactive with the plan that ran out."
+          },
+          "response": []
         }
       ]
     }

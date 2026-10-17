@@ -2,6 +2,7 @@ const express = require('express');
 const applicationReviewController = require('../controllers/applicationReviewController');
 const adminProfileController = require('../controllers/adminProfileController');
 const planController = require('../controllers/planController');
+const adminMembershipController = require('../controllers/adminMembershipController');
 const { authorize } = require('../middlewares/authorize');
 const { ROLES } = require('../config/roles');
 
@@ -27,5 +28,9 @@ adminRoutes.post(
 
 adminRoutes.patch('/plans/fees', planController.updateFees);
 adminRoutes.get('/plans/fee-changes', planController.getFeeChanges);
+adminRoutes.get('/plans/policy', adminMembershipController.getPolicy);
+adminRoutes.patch('/plans/policy', adminMembershipController.updatePolicy);
+
+adminRoutes.get('/memberships', adminMembershipController.getMemberships);
 
 module.exports = { adminRoutes };

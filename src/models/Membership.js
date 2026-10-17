@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { PAYMENT_FREQUENCIES } = require('../config/chamberCalendar');
 
 const MEMBERSHIP_STATUSES = {
   ACTIVE: 'active',
@@ -51,6 +52,17 @@ const membershipSchema = new mongoose.Schema(
     },
     lapsed: {
       type: lapseSchema,
+      default: null,
+    },
+    // How the current paid term was paid for, and when that payment was
+    // approved. Written by the approval of a payment; null on Gratuita.
+    frequency: {
+      type: String,
+      enum: [...Object.keys(PAYMENT_FREQUENCIES), null],
+      default: null,
+    },
+    lastPaymentAt: {
+      type: Date,
       default: null,
     },
     // The expiry the reminder was already sent for. Compared with expiresAt,

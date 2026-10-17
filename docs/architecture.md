@@ -273,10 +273,11 @@ A change nobody made by hand, such as a plan running out overnight, is recorded
 with the system as its actor: `{ role: 'system', name: 'system' }` and no
 account identifier. Only that role may leave the identifier out.
 
-| Action              | Written by                      | Subject      |
-| ------------------- | ------------------------------- | ------------ |
-| `plan.fee_changed`  | An administrator changing a fee | `Plan`       |
-| `membership.lapsed` | The hourly membership run       | `Membership` |
+| Action                      | Written by                                  | Subject            |
+| --------------------------- | ------------------------------------------- | ------------------ |
+| `plan.fee_changed`          | An administrator changing a fee             | `Plan`             |
+| `membership.lapsed`         | The hourly membership run                   | `Membership`       |
+| `membership.notice_changed` | An administrator changing the expiry notice | `MembershipPolicy` |
 
 Entries are only ever inserted. The model refuses every update and delete. In
 production, the database user should only be granted `find` and `insert` on
@@ -313,7 +314,9 @@ start. `npm run run-membership-expiry` runs it by hand.
    conditional on the plan and the expiry it read, and it is written with its
    audit entry in one transaction. A payment approved in between is not undone,
    and a second run finds nothing left to move. The member is mailed.
-2. **Plans expiring within seven days get one reminder.** The reminder is
+2. **Plans expiring within the notice get one reminder.** The notice is the
+   chamber's to set (see [The expiry notice](#the-expiry-notice)), seven days
+   until it does. The reminder is
    claimed on the membership before the mail is sent, naming the expiry, so two
    runs cannot both send it and a renewal makes the next one due. A mail that
    fails releases the claim, so the next run tries again. An address no mail
@@ -326,6 +329,42 @@ The run is safe to repeat, which is why it lives in the API rather than in the
 host's scheduler: a restart, a second instance or a missed hour only means it
 runs again. **It decides no access.** If it stops, plans still end on time; only
 the data, the audit entry and the mails wait.
+
+### The expiry notice
+
+How many days before an expiry the member is reminded, and the panel counts the
+plan as expiring soon, is one value, so the two never disagree. It lives in the
+single `MembershipPolicy` document, from 1 to 30 days, and the seed creates it
+at seven without overwriting a value the chamber set.
+
+`GET /api/admin/plans/policy` reads it and `PATCH /api/admin/plans/policy`
+changes it with `{ "expiryNoticeDays": 10 }`. Like a fee, the change is written
+against the value the administrator saw, with its audit entry in one
+transaction, and answers 409 `changed_meanwhile` if someone else changed it
+first.
+
+### The administration list
+
+`GET /api/admin/memberships?status=active|inactive&plan=&search=&page=&pageSize=`
+lists paid memberships, and only paid ones: a member who has always been on
+Gratuita is not in it.
+
+- **The state is binary.** `active` is a paid plan still in force, by the same
+  rule as access. `inactive` is everything access is refused for: a plan past its
+  expiry whether or not the hourly run has moved it yet, one whose expiry cannot
+  be trusted, and a member who lapsed to Gratuita. A lapsed member stays listed
+  until they pay again, which makes it the chamber's list to win them back.
+- **Expiring soon is a count, not a state.** `counts.expiring` is how many active
+  plans end within the notice. Active plans are listed soonest to expire first,
+  so those are at the top anyway; inactive ones most recently ended first.
+- **A lapsed member is shown with the plan that ran out**, not Gratuita, and the
+  plan filter matches that plan.
+- **The search** matches the business name anywhere, or the start of the member
+  code with its dashes ignored. It is escaped, so it is read as the characters
+  typed. `status` and `plan` outside their lists are refused.
+
+The answer is the page, the three counts and the notice in force, from one
+aggregation that joins each membership to its member.
 
 ## Time and access
 
