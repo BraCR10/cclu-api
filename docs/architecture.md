@@ -380,6 +380,13 @@ frequency)` adds the months on the Costa Rican calendar and returns the
 | Stored expiry (`expiresAt`)   | `2026-11-18T06:00:00Z`               |
 | Access                        | while now is before the expiry       |
 
+**A day a person types is stored as midnight UTC of that day.** The
+certification's issue date arrives as `YYYY-MM-DD`, `readCalendarDate` refuses
+a day that does not exist, and the date is kept at `T00:00:00.000Z`. It is a
+calendar day stored in a date field, not an instant: read back, its first ten
+characters are the day, and treating it as an instant shows the day before in
+Costa Rica.
+
 **Screens show the last valid day, never the expiry.** The expiry falls on the
 following day, so formatting it would tell a member their plan lasts a day
 longer than it does. The API sends `validUntil` as `YYYY-MM-DD`, and a value
