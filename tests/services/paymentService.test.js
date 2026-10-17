@@ -14,7 +14,7 @@ const PRO_PLAN = { _id: 'plan-pro', key: 'pro', name: 'Pro Pymex', monthlyFee: 1
 // Everything a submission touches, held in memory so a test can see what was
 // written and what was not.
 function memoryStore(overrides = {}) {
-  const written = { receipts: [], payments: [], audit: [] };
+  const written = { receipts: [], payments: [], audit: [], deleted: [] };
 
   return {
     written,
@@ -39,6 +39,9 @@ function memoryStore(overrides = {}) {
       };
       written.receipts.push(stored);
       return stored;
+    },
+    deleteReceipt: async (key) => {
+      written.deleted.push(key);
     },
     createPayment: async (document, auditEntry) => {
       written.payments.push(document);
@@ -101,6 +104,8 @@ test('two payments arriving together leave one pending and refuse the other', as
   await assert.rejects(submitPayment(MEMBER_ID, { plan: 'pro' }, RECEIPT, store, quietly, NOW), {
     code: 'payment_pending',
   });
+  // The receipt stored for the payment that was refused does not stay behind.
+  assert.deepEqual(store.written.deleted, [store.written.receipts[0].key]);
 });
 
 test('a receipt that already paid for a term is refused, and nothing is stored', async () => {

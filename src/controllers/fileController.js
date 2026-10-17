@@ -27,12 +27,22 @@ async function uploadFile(request, response, next, upload = fileStorageService.u
 // checked against, the browser is told not to guess another, and a PDF or an
 // image opened in a tab runs nothing.
 function sendStoredFile(response, key, content) {
-  response.set('Content-Type', fileStorageService.contentTypeFor(key));
+  const contentType = fileStorageService.contentTypeFor(key);
+
+  response.set('Content-Type', contentType);
   response.set('X-Content-Type-Options', 'nosniff');
-  response.set(
-    'Content-Security-Policy',
-    "sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'",
-  );
+
+  // The browser's PDF viewer does not render a document under a sandbox
+  // policy, so a PDF goes without it. It is still only ever a PDF: its bytes
+  // were checked to start as one, and nosniff keeps the browser from reading it
+  // as anything else.
+  if (contentType !== 'application/pdf') {
+    response.set(
+      'Content-Security-Policy',
+      "sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'",
+    );
+  }
+
   response.set('Content-Disposition', 'inline');
   response.set('Cache-Control', 'private, no-store');
   response.send(content);

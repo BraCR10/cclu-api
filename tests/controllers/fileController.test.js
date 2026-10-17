@@ -98,3 +98,18 @@ test('the route open to people without an account cannot store a receipt', async
 
   assert.deepEqual(allowed.sort(), ['member-logos', 'membership-certifications']);
 });
+
+test('a PDF is served without the sandbox the browser viewer cannot render under', async () => {
+  const response = recordingResponse();
+
+  await openFileAsAdmin(
+    { params: { key: CERTIFICATION } },
+    response,
+    () => {},
+    async () => Buffer.from('%PDF-'),
+  );
+
+  assert.equal(response.headers['Content-Security-Policy'], undefined);
+  assert.equal(response.headers['X-Content-Type-Options'], 'nosniff');
+  assert.equal(response.headers['Content-Type'], 'application/pdf');
+});

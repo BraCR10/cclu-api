@@ -156,6 +156,8 @@ const defaultPaymentStore = {
       [FILE_PURPOSES.PAYMENT_RECEIPT],
     ),
 
+  deleteReceipt: (key) => fileStorageService.deleteFile(key),
+
   // The payment and its audit entry are written together or not at all.
   createPayment: (document, auditEntry) =>
     mongoose.connection.transaction(async (session) => {
@@ -306,6 +308,10 @@ async function submitPayment(
       },
     );
   } catch (error) {
+    // The receipt was stored for a payment that does not exist. It is nobody's
+    // record, so it goes rather than sit in the bucket unreferenced.
+    await store.deleteReceipt(stored.key).catch(() => {});
+
     // Two submissions at once both passed the check above; the index let one in.
     if (error.code === DUPLICATE_KEY) {
       throw conflict(ERROR_CODES.PAYMENT_PENDING, 'A payment is already waiting for review.');
