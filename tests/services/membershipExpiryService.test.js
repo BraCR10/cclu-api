@@ -166,3 +166,13 @@ test('a renewal makes the reminder due again for the new expiry', async () => {
   const later = new Date(NOW.getTime() + 28 * DAY);
   assert.equal(await remindExpiringMemberships(later, store, mail.deliver), 1);
 });
+
+// The manual run starts from a script that loads nothing but this service, so
+// every model it populates has to be registered by the service itself.
+test('the run registers every model it populates', () => {
+  const mongoose = require('mongoose');
+
+  for (const name of ['Member', 'Plan', 'Membership', 'AuditEntry']) {
+    assert.ok(mongoose.modelNames().includes(name), `${name} is not registered`);
+  }
+});

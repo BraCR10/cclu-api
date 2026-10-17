@@ -1,5 +1,8 @@
 const mongoose = require('mongoose');
 const { Membership } = require('../models/Membership');
+// Registered here because the run populates members, and a script that starts
+// it has loaded nothing else.
+require('../models/Member');
 const { Plan, PLAN_KEYS } = require('../models/Plan');
 const { AuditEntry, AUDIT_ACTIONS, SYSTEM_ACTOR } = require('../models/AuditEntry');
 const clock = require('../config/clock');
