@@ -30,16 +30,18 @@ testable without starting a server.
 
 ## Supporting folders
 
-Three folders sit beside the layers rather than inside the chain.
+Four folders sit beside the layers rather than inside the chain.
 
 | Folder        | Holds                                                                                    | Imported by                        |
 | ------------- | ---------------------------------------------------------------------------------------- | ---------------------------------- |
 | `middlewares` | Request pipeline: session, roles, origin check, rate limits, errors                      | `app.js`, routes, `authController` |
 | `config`      | Fixed values and environment reading: roles, statuses, rules, error codes, mail, storage | any layer                          |
 | `emails`      | The templates for each outgoing mail and the layout they share                           | `emailService` only                |
+| `jobs`        | Work the API starts on a timer, such as the hourly membership run                        | `server.js` and `scripts/` only    |
 
 `src/app.js` wires middlewares and routers together, and `src/server.js` checks
-the environment, connects to the database and starts listening.
+the environment, connects to the database, starts listening and starts the jobs.
+A job calls services like a controller does; it holds no rule of its own.
 
 ## Services
 
@@ -50,7 +52,7 @@ service file, named after what it decides: `memberRegistrationService`,
 A service may call another service when it needs that service's rule rather
 than a copy of it. `passwordResetService` asks `accountService` and
 `emailService`; `applicationReviewService` asks `memberCodeService`,
-`resubmissionService` and `emailService`. A rule written once in a service is
+`resubmissionService`, `membershipService` and `emailService`. A rule written once in a service is
 called from there, never copied into a second one.
 
 ## Worked example
@@ -110,6 +112,18 @@ memberRoutes.get('/me', authorize(ROLES.MEMBER), memberProfileController.getOwnP
 `authenticate` reads the session cookie, verifies the signature and attaches
 `request.identity` as `{ id, role }`. `authorize` reads that identity and
 refuses a role it was not given.
+
+A route that needs something a plan unlocks adds a third middleware after
+`authorize`. It is described in [Time and access](#time-and-access).
+
+```js
+memberRoutes.post(
+  '/me/publications',
+  authorize(ROLES.MEMBER),
+  requireEntitlement('publishInMarketplace'),
+  publicationController.create,
+);
+```
 
 A public route, mounted above the gate, runs neither. There is no public role: a visitor holds no
 token, and a role nobody is ever issued is a value that can only ever be wrong.
@@ -255,11 +269,121 @@ An entry records three things:
   does not rewrite history.
 - **Subject:** what it happened to, with the fields that changed.
 
+A change nobody made by hand, such as a plan running out overnight, is recorded
+with the system as its actor: `{ role: 'system', name: 'system' }` and no
+account identifier. Only that role may leave the identifier out.
+
+| Action              | Written by                      | Subject      |
+| ------------------- | ------------------------------- | ------------ |
+| `plan.fee_changed`  | An administrator changing a fee | `Plan`       |
+| `membership.lapsed` | The hourly membership run       | `Membership` |
+
 Entries are only ever inserted. The model refuses every update and delete. In
 production, the database user should only be granted `find` and `insert` on
 this collection, which is what stops a rewrite on purpose. Other decisions the
 chamber has to answer for later belong in the same collection, under an action
 of their own.
+
+## Memberships
+
+Every approved member holds exactly one membership: the plan they are on, when
+it started and, for a paid plan, when it expires. It is the current state, one
+document per member under a unique index. What happened before lives in the
+audit log.
+
+- **Approval grants Gratuita.** The grant only writes when the membership is
+  missing, so approving twice, seeding again or two requests racing each other
+  leave the one membership that is there.
+- **Reading grants it too.** `GET /api/members/me/membership` creates Gratuita
+  for a member approved before memberships existed, or whose grant was cut
+  short. `npm run grant-free-memberships` does the same for every approved
+  member at once.
+- **The answer is the effective plan**, worked out against the clock as the next
+  section describes, with `validUntil`, the last day the plan is valid, and
+  `lapsed`, the paid plan that ran out, until the next one is approved.
+
+### The hourly run
+
+`src/jobs/membershipExpiryJob.js` runs inside the API every hour, and once at
+start. `npm run run-membership-expiry` runs it by hand.
+
+1. **Expired paid plans move to Gratuita.** The update is conditional on the
+   plan and the expiry it read, and it is written with its audit entry in one
+   transaction. A payment approved in between is not undone, and a second run
+   finds nothing left to move. The member is mailed.
+2. **Plans expiring within seven days get one reminder.** The reminder is
+   claimed on the membership before the mail is sent, naming the expiry, so two
+   runs cannot both send it and a renewal makes the next one due. A mail that
+   fails releases the claim, so the next run tries again.
+
+The run is safe to repeat, which is why it lives in the API rather than in the
+host's scheduler: a restart, a second instance or a missed hour only means it
+runs again. **It decides no access.** If it stops, plans still end on time; only
+the data, the audit entry and the mails wait.
+
+## Time and access
+
+Plans grant access by date, so a mistake here gives somebody a paid plan that
+never ends. These rules close that.
+
+**The clock decides, never stored data alone.** A paid plan holds while the
+current time is before its expiry. `effectivePlan` in `entitlementService`
+returns Gratuita from the expiry itself onward, whatever plan is stored, and
+every reader goes through it: the middleware, the membership screen and the
+public listings.
+
+**One enforcement point.** `requireEntitlement(name)` reads the member's
+effective plan on every request and answers 403 `plan_required`, with the
+entitlement as `reason`, when the plan does not include it. A name that is not
+an entitlement throws while the routes are built, so a misspelling stops the
+server instead of granting nothing, or everything. It costs one indexed read,
+and a second only when the plan has run out. The browser hides what a plan does
+not include, but only the API refuses.
+
+**Public listings filter by the same rule.** The marketplace and the job board
+have no session, and the member they show is not the visitor, so the middleware
+cannot guard them. When they are built, their queries keep only members whose
+plan is current, so an expired plan does not keep its public reach. The
+directory is not filtered this way: every plan, Gratuita included, is listed
+there.
+
+**It fails closed.** A paid plan whose expiry is missing, unreadable or further
+away than the longest term plus one month counts as Gratuita.
+
+**Only the server's clock counts.** `src/config/clock.js` is the one source of
+the current time for these decisions. No date a member sends, including the date
+on a payment receipt, decides an expiry. The session token carries the role and
+the identifier only, so a token issued on a paid plan does not keep it alive.
+
+### Days and time zones
+
+The chamber counts days in Costa Rica, `America/Costa_Rica`. The zone is named,
+not written as an offset, so a change to the country's rules arrives with the
+time zone database. `src/config/chamberCalendar.js` is the only place that
+counts days.
+
+- **A plan is valid through the end of its last day.** `expiryFrom(approvedAt,
+frequency)` adds the months on the Costa Rican calendar and returns the
+  exclusive end: midnight opening the following day. Access holds while now is
+  before it.
+- **Months clamp.** 31 January plus a month is valid through 28 February.
+- **The frequency is a closed list:** monthly, quarterly, semiannual and annual
+  are 1, 3, 6 and 12 months. A number sent by anyone is never used as a term.
+- **Instants are stored and sent in UTC.** Only the calendar arithmetic uses the
+  zone, and it runs once, when a payment is approved.
+
+| Event                         | Value                                |
+| ----------------------------- | ------------------------------------ |
+| Approved, monthly             | 17 October 2026, 15:40 in Costa Rica |
+| Stored approval instant       | `2026-10-17T21:40:00Z`               |
+| Last valid day (`validUntil`) | `2026-11-17`                         |
+| Stored expiry (`expiresAt`)   | `2026-11-18T06:00:00Z`               |
+| Access                        | while now is before the expiry       |
+
+**Screens show the last valid day, never the expiry.** The expiry falls on the
+following day, so formatting it would tell a member their plan lasts a day
+longer than it does. The API sends `validUntil` as `YYYY-MM-DD`, and a value
+with no time is shown from its own parts, without converting it between zones.
 
 ## Pagination
 
@@ -301,6 +425,8 @@ told to fix something and not told what has nowhere to look — and every field 
 chamber names carries its own reason, which is the pair the correction screen
 shows. Both are restricted to the list the correction form is able to show;
 naming anything else would send them looking for a field that is not there.
+
+An approval also grants the member Gratuita (see [Memberships](#memberships)).
 
 **Every decision is written before the message is attempted.** A mail server that
 is down must not undo a decision that already stands; the caller learns the

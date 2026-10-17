@@ -46,6 +46,8 @@ The decisions below are settled by the prototype; the API must enforce them.
 - A password changes only through an emailed link, never with the current password in session.
 - Only the account owner changes their email, and the change is confirmed by a link sent to the new address.
 - There is no membership withdrawal. An expired paid plan drops to Gratuita.
+- A paid plan is valid through the end of its last day in Costa Rica, counted from
+  the approval of its payment. Paying early does not add to the current term.
 - A registration receives three answers: approved, rejected, or changes requested. Asking for changes keeps the application and names what to fix.
 - Moderation only inactivates a publication, and a reason is required. There is no permanent block.
 - Administrator states: Activo, Invitación pendiente, Invitación expirada, Inactivo.

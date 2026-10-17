@@ -17,14 +17,14 @@ failure and exited zero would let broken code merge.
 
 ## What must have unit tests
 
-| Layer         | Tested                                    |
-| ------------- | ----------------------------------------- |
-| `services`    | **Yes.** Business rules live here         |
-| `middlewares` | **Yes** when they decide something        |
-| `controllers` | Only when they choose between responses   |
-| `routes`      | No. They declare paths and delegate       |
-| `models`      | No. Schema definitions carry no decisions |
-| `config`      | No                                        |
+| Layer         | Tested                                      |
+| ------------- | ------------------------------------------- |
+| `services`    | **Yes.** Business rules live here           |
+| `middlewares` | **Yes** when they decide something          |
+| `controllers` | Only when they choose between responses     |
+| `routes`      | No. They declare paths and delegate         |
+| `models`      | No. Schema definitions carry no decisions   |
+| `config`      | Only when it decides, such as counting days |
 
 The question to ask is not "which layer is this" but **"does this code make a
 decision?"** A function that maps a value, picks a status code, validates an
