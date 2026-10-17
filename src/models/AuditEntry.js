@@ -74,6 +74,14 @@ function refuseRewrite() {
 // to find and insert on this collection is what stops it on purpose.
 auditEntrySchema.pre(REWRITING_OPERATIONS, { document: true, query: true }, refuseRewrite);
 
+// A bulk write may only carry inserts. Anything else would rewrite history
+// through the one path the query hooks above do not see.
+auditEntrySchema.pre('bulkWrite', function refuseBulkRewrite(operations) {
+  if (operations.some((operation) => !('insertOne' in operation))) {
+    refuseRewrite();
+  }
+});
+
 auditEntrySchema.pre('save', function refuseResave() {
   if (!this.isNew) {
     refuseRewrite();

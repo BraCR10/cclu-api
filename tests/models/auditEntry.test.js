@@ -20,3 +20,11 @@ test('an audit entry already stored cannot be saved again', async () => {
 
   await assert.rejects(entry.save({ validateBeforeSave: false }), APPEND_ONLY);
 });
+
+test('a bulk write that updates or deletes an audit entry is refused', async () => {
+  await assert.rejects(
+    AuditEntry.bulkWrite([{ updateOne: { filter: {}, update: { $set: { action: 'x' } } } }]),
+    APPEND_ONLY,
+  );
+  await assert.rejects(AuditEntry.bulkWrite([{ deleteMany: { filter: {} } }]), APPEND_ONLY);
+});
