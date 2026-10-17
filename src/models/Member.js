@@ -279,6 +279,11 @@ const memberSchema = new mongoose.Schema(
 // and sparse: only a rejected registration carries one.
 memberSchema.index({ resubmissionTokenHash: 1 }, { sparse: true });
 
+// The two application lists filter by status and sort by date, and each page
+// also counts its list. Without these, every page reads the whole collection.
+memberSchema.index({ applicationStatus: 1, createdAt: 1 });
+memberSchema.index({ applicationStatus: 1, reviewedAt: -1 });
+
 const Member = mongoose.model('Member', memberSchema);
 
 module.exports = {
