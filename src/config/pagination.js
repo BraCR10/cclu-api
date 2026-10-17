@@ -3,6 +3,9 @@ const { ERROR_CODES } = require('./errorCodes');
 
 const DEFAULT_PAGE_SIZE = 10;
 const MAXIMUM_PAGE_SIZE = 50;
+// Far past any list the chamber will hold, and low enough that the items to
+// skip stay an exact integer instead of overflowing into an approximation.
+const MAXIMUM_PAGE = 100_000;
 
 // Absent means the default. Anything else has to be a whole number in range,
 // so a typo is refused instead of quietly answering the first page.
@@ -27,7 +30,7 @@ function readPositiveInteger(query, field, fallback, maximum) {
 }
 
 function readPagination(query) {
-  const page = readPositiveInteger(query, 'page', 1, Number.MAX_SAFE_INTEGER);
+  const page = readPositiveInteger(query, 'page', 1, MAXIMUM_PAGE);
   const pageSize = readPositiveInteger(query, 'pageSize', DEFAULT_PAGE_SIZE, MAXIMUM_PAGE_SIZE);
 
   return { page, pageSize, skip: (page - 1) * pageSize };
@@ -38,4 +41,4 @@ function paginated(items, total, { page, pageSize }) {
   return { items, page, pageSize, total, pageCount: Math.ceil(total / pageSize) };
 }
 
-module.exports = { DEFAULT_PAGE_SIZE, MAXIMUM_PAGE_SIZE, readPagination, paginated };
+module.exports = { DEFAULT_PAGE_SIZE, MAXIMUM_PAGE_SIZE, MAXIMUM_PAGE, readPagination, paginated };
