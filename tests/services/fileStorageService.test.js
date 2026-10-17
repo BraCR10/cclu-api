@@ -4,6 +4,7 @@ const {
   uploadFile,
   createDownloadUrl,
   deleteFile,
+  isPublicKey,
 } = require('../../src/services/fileStorageService');
 const {
   REQUIRED_ENVIRONMENT_VARIABLES,
@@ -13,6 +14,7 @@ const {
   MAXIMUM_DOWNLOAD_URL_EXPIRY_SECONDS,
   readFileStorageConfiguration,
   hasObjectStoreCredentials,
+  assertProductionStorage,
 } = require('../../src/config/fileStorage');
 
 const MEMBER_ID = '65f0c3a1b2c3d4e5f6a7b8c9';
@@ -21,6 +23,19 @@ const OBJECT_NAME = '0123456789abcdef0123456789abcdef';
 const SIGNED_URL = 'https://storage.example/signed-for-a-short-while';
 
 const fixedObjectName = () => OBJECT_NAME;
+
+// The first bytes each accepted type is recognised by, followed by filler.
+const PNG = Buffer.concat([
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  Buffer.from('the bytes of a receipt'),
+]);
+const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.from('a photograph')]);
+const PDF = Buffer.from('%PDF-1.7 a scanned receipt');
+const WEBP = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WEBPVP8 ')]);
+
+function sized(header, size) {
+  return Buffer.concat([header, Buffer.alloc(size - header.length)]);
+}
 
 function recordingStore() {
   const stored = [];
@@ -51,7 +66,7 @@ function validUpload(overrides = {}) {
     purpose: FILE_PURPOSES.PAYMENT_RECEIPT,
     ownerId: MEMBER_ID,
     contentType: 'image/png',
-    content: Buffer.from('the bytes of a receipt'),
+    content: PNG,
     fileName: 'comprobante.png',
     ...overrides,
   };
@@ -76,7 +91,7 @@ test('an upload answers with the stored key and nothing that can be opened', asy
 
   const answer = await uploadFile(validUpload(), store, fixedObjectName);
 
-  assert.deepEqual(Object.keys(answer), ['key']);
+  assert.deepEqual(Object.keys(answer).sort(), ['contentType', 'key', 'sha256', 'size']);
   assert.equal(answer.key.startsWith('http'), false);
 });
 
@@ -109,7 +124,7 @@ test('the extension comes from the content type and never from the name that was
   const { store } = recordingStore();
 
   const { key } = await uploadFile(
-    validUpload({ contentType: 'application/pdf', fileName: 'comprobante.png.exe' }),
+    validUpload({ contentType: 'application/pdf', content: PDF, fileName: 'comprobante.png.exe' }),
     store,
     fixedObjectName,
   );
@@ -154,7 +169,7 @@ test('a content type is read the same whatever case it arrives in', async () => 
   const { store } = recordingStore();
 
   const { key } = await uploadFile(
-    validUpload({ contentType: ' IMAGE/JPEG ' }),
+    validUpload({ contentType: ' IMAGE/JPEG ', content: JPEG }),
     store,
     fixedObjectName,
   );
@@ -176,7 +191,7 @@ test('a file larger than the maximum is refused and nothing is stored', async ()
 test('a file of exactly the maximum size is still stored', async () => {
   const { store, stored } = recordingStore();
 
-  await uploadFile(validUpload({ content: Buffer.alloc(MAXIMUM_FILE_SIZE_BYTES) }), store);
+  await uploadFile(validUpload({ content: sized(PNG, MAXIMUM_FILE_SIZE_BYTES) }), store);
 
   assert.equal(stored.length, 1);
 });
@@ -360,4 +375,93 @@ test('every refusal of an upload carries a registered code', async () => {
   assert.equal(tooLarge.code, 'file_too_large');
   assert.equal(empty.code, 'required');
   assert.equal(missing.code, 'required');
+});
+
+// The declared type is written by whoever uploads. Only the bytes decide.
+test('a file whose bytes are not what it claims to be is refused and nothing is stored', async () => {
+  const { store, stored } = recordingStore();
+
+  for (const upload of [
+    validUpload({ content: Buffer.from('<html><script>alert(1)</script></html>') }),
+    validUpload({ content: PDF }),
+    validUpload({ contentType: 'application/pdf', content: PNG }),
+    validUpload({ contentType: 'image/jpeg', content: Buffer.from([0xff, 0xd8]) }),
+  ]) {
+    const error = await refusal(() => uploadFile(upload, store));
+
+    assert.equal(error.code, 'file_type_not_allowed');
+  }
+
+  assert.equal(stored.length, 0);
+});
+
+test('each kind of file accepts only its own types', async () => {
+  const { store } = recordingStore();
+
+  const webpReceipt = await refusal(() =>
+    uploadFile(validUpload({ contentType: 'image/webp', content: WEBP }), store),
+  );
+  const pdfLogo = await refusal(() =>
+    uploadFile(
+      validUpload({
+        purpose: FILE_PURPOSES.MEMBER_LOGO,
+        contentType: 'application/pdf',
+        content: PDF,
+      }),
+      store,
+    ),
+  );
+  const webpLogo = await uploadFile(
+    validUpload({ purpose: FILE_PURPOSES.MEMBER_LOGO, contentType: 'image/webp', content: WEBP }),
+    store,
+  );
+
+  assert.equal(webpReceipt.code, 'file_type_not_allowed');
+  assert.equal(pdfLogo.code, 'file_type_not_allowed');
+  assert.equal(webpLogo.key.endsWith('.webp'), true);
+});
+
+test('a caller only stores the kinds of file it was allowed to', async () => {
+  const { store, stored } = recordingStore();
+
+  const error = await refusal(() =>
+    uploadFile(validUpload(), store, fixedObjectName, [FILE_PURPOSES.MEMBER_LOGO]),
+  );
+
+  assert.equal(error.code, 'not_allowed');
+  assert.equal(stored.length, 0);
+});
+
+test('the same file always carries the same fingerprint', async () => {
+  const { store } = recordingStore();
+
+  const first = await uploadFile(validUpload(), store);
+  const second = await uploadFile(validUpload(), store);
+  const other = await uploadFile(
+    validUpload({ contentType: 'application/pdf', content: PDF }),
+    store,
+  );
+
+  assert.equal(first.sha256, second.sha256);
+  assert.notEqual(first.sha256, other.sha256);
+  assert.equal(first.size, PNG.length);
+});
+
+test('only logos are files anybody may see', () => {
+  assert.equal(isPublicKey(`${FILE_PURPOSES.MEMBER_LOGO}/${MEMBER_ID}/${OBJECT_NAME}.png`), true);
+  assert.equal(isPublicKey(storedKey()), false);
+  assert.equal(
+    isPublicKey(`${FILE_PURPOSES.MEMBERSHIP_CERTIFICATION}/${MEMBER_ID}/${OBJECT_NAME}.pdf`),
+    false,
+  );
+});
+
+test('production refuses to start without its buckets', () => {
+  const configured = Object.fromEntries(
+    REQUIRED_ENVIRONMENT_VARIABLES.map((name) => [name, 'set']),
+  );
+
+  assert.throws(() => assertProductionStorage({ NODE_ENV: 'production' }), /buckets/);
+  assert.doesNotThrow(() => assertProductionStorage({ NODE_ENV: 'production', ...configured }));
+  assert.doesNotThrow(() => assertProductionStorage({ NODE_ENV: 'development' }));
 });

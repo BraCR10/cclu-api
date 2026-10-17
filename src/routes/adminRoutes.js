@@ -2,6 +2,7 @@ const express = require('express');
 const applicationReviewController = require('../controllers/applicationReviewController');
 const adminProfileController = require('../controllers/adminProfileController');
 const planController = require('../controllers/planController');
+const fileController = require('../controllers/fileController');
 const adminMembershipController = require('../controllers/adminMembershipController');
 const { authorize } = require('../middlewares/authorize');
 const { ROLES } = require('../config/roles');
@@ -32,5 +33,7 @@ adminRoutes.get('/plans/policy', adminMembershipController.getPolicy);
 adminRoutes.patch('/plans/policy', adminMembershipController.updatePolicy);
 
 adminRoutes.get('/memberships', adminMembershipController.getMemberships);
+
+adminRoutes.get('/files/:key', fileController.openFileAsAdmin);
 
 module.exports = { adminRoutes };

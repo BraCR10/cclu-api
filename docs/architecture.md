@@ -456,6 +456,39 @@ the answer is `{ items, page, pageSize, total, pageCount }`. The helper in
 Closed catalogs that feed a select, such as cantons, activities and plans, are
 not paged.
 
+## Files
+
+Every stored file has a purpose, and the purpose decides three things: the
+bucket it goes to, the types it may be, and who may read it.
+
+| Purpose                     | Bucket  | Types          | Read by                                 |
+| --------------------------- | ------- | -------------- | --------------------------------------- |
+| `member-logos`              | public  | JPG, PNG, WebP | Anybody                                 |
+| `membership-certifications` | private | PDF, JPG, PNG  | Administrators, through the panel route |
+| `payment-receipts`          | private | JPG, PNG, PDF  | Its member and administrators           |
+
+- **Two buckets, not a permission per file.** Nothing in the private bucket is
+  public, so one misconfigured object cannot expose a receipt. Only the API
+  reads it, after deciding who is asking.
+- **The bytes decide the type.** The type the client declares has to agree with
+  the signature the file starts with (`FF D8 FF`, `89 50 4E 47`, `RIFF…WEBP`,
+  `%PDF-`) and be one its purpose allows. A page renamed to `.png` is refused.
+- **5 MB at most.** The key is the purpose, the owner and 128 random bits; the
+  name the file arrived with takes no part in it.
+- **Every file leaves with the same headers:** its checked type,
+  `X-Content-Type-Options: nosniff`, a `sandbox` content security policy and
+  `Cache-Control: private, no-store`, so nothing opened in a tab runs.
+
+`POST /api/files` is open to people without an account, because a registration
+carries a logo and a certification before the account exists, so it stores only
+those two purposes. `GET /api/files/:key` serves public files only, and answers
+404 for any other key. Administrators open private files with
+`GET /api/admin/files/:key`. Receipts are stored and read with their payment.
+
+The disk replaces the buckets on a development machine, under
+`FILE_STORAGE_DIRECTORY/public` and `/private`. Production refuses to start
+without the buckets.
+
 ## Answering a registration
 
 A registration receives one of three answers, and all three are made through the
