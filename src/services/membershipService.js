@@ -71,12 +71,18 @@ function present(membership, member, freePlan, now) {
   const common = { memberCode: formatMemberCode(member.memberCode) };
 
   if (isExpiredPaidPlan(membership, now)) {
+    // Refused because its expiry passed, the plan ended then. Refused because
+    // its expiry could not be trusted, there is no date worth showing: a
+    // future one would read as a plan that "ended" next year.
+    const { expiresAt } = membership;
+    const endedAt = isValidInstant(expiresAt) && expiresAt <= now ? expiresAt : null;
+
     return {
       ...common,
       plan: presentPlan(freePlan),
-      startedAt: isValidInstant(membership.expiresAt) ? membership.expiresAt : null,
+      startedAt: endedAt,
       ...presentTerm(null),
-      lapsed: presentLapse(membership.plan, membership.expiresAt),
+      lapsed: presentLapse(membership.plan, endedAt),
     };
   }
 

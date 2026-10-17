@@ -90,3 +90,23 @@ test('a member who is not approved has no plan to read', async () => {
 
   await assert.rejects(readOwnMembership(MEMBER_ID, store), { code: 'not_allowed' });
 });
+
+test('a paid plan refused for an untrustworthy expiry shows no date it ended on', async () => {
+  const pro = { key: 'pro', name: 'Pro Pymex', monthlyFee: 10000, entitlements: {} };
+  const store = {
+    findMember: async () => APPROVED,
+    findMembership: async () => ({
+      plan: pro,
+      startedAt: new Date(),
+      expiresAt: new Date('2031-01-01T06:00:00Z'),
+      lapsed: null,
+    }),
+    findFreePlan: async () => FREE,
+  };
+
+  const membership = await readOwnMembership(MEMBER_ID, store, new Date('2026-10-17T12:00:00Z'));
+
+  assert.equal(membership.plan.key, 'free');
+  assert.equal(membership.lapsed.expiresAt, null);
+  assert.equal(membership.lapsed.validUntil, null);
+});

@@ -33,15 +33,13 @@ function isTermCurrent(expiresAt, now) {
   );
 }
 
+// The one rule for whether a member still holds the paid plan stored on their
+// membership. The stored plan only says what was paid for; when this answers
+// true the member holds Gratuita, whether or not the hourly job has moved the
+// record yet. The middleware and the membership screen ask it, and the hourly
+// run's query matches the same cases.
 function isExpiredPaidPlan(membership, now) {
   return membership.plan.key !== PLAN_KEYS.FREE && !isTermCurrent(membership.expiresAt, now);
-}
-
-// The plan a member actually holds now. The stored plan only says what was
-// paid for; the hourly job moves expired ones back to Gratuita, but access
-// never waits for it.
-function effectivePlan(membership, freePlan, now) {
-  return isExpiredPaidPlan(membership, now) ? freePlan : membership.plan;
 }
 
 const PLAN_FIELDS = 'key name monthlyFee entitlements';
@@ -71,6 +69,5 @@ module.exports = {
   grants,
   isTermCurrent,
   isExpiredPaidPlan,
-  effectivePlan,
   readEffectivePlan,
 };

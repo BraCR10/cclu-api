@@ -4,6 +4,7 @@ const {
   lapseExpiredMemberships,
   remindExpiringMemberships,
 } = require('../../src/services/membershipExpiryService');
+const { isExpiredPaidPlan } = require('../../src/services/entitlementService');
 
 const NOW = new Date('2026-10-20T12:00:00Z');
 const DAY = 24 * 60 * 60 * 1000;
@@ -34,19 +35,15 @@ function memoryStore(memberships) {
     auditEntries,
     findFreePlan: async () => FREE,
     findExpired: async (now) =>
-      memberships
-        .filter(
-          (item) => item.plan.key !== FREE.key && item.expiresAt !== null && item.expiresAt <= now,
-        )
-        .map((item) => ({ ...item })),
-    lapse: async (snapshot) => {
+      memberships.filter((item) => isExpiredPaidPlan(item, now)).map((item) => ({ ...item })),
+    lapse: async (snapshot, freePlan, endedAt) => {
       const stored = memberships.find((item) => item._id === snapshot._id);
 
       if (stored.plan !== snapshot.plan || stored.expiresAt !== snapshot.expiresAt) {
         return false;
       }
 
-      stored.lapsed = { plan: stored.plan, expiredAt: stored.expiresAt };
+      stored.lapsed = { plan: stored.plan, expiredAt: endedAt };
       stored.plan = FREE;
       stored.expiresAt = null;
       auditEntries.push(snapshot._id);
@@ -175,4 +172,50 @@ test('the run registers every model it populates', () => {
   for (const name of ['Member', 'Plan', 'Membership', 'AuditEntry']) {
     assert.ok(mongoose.modelNames().includes(name), `${name} is not registered`);
   }
+});
+
+test('one record that cannot be processed does not hold back the others', async (context) => {
+  context.mock.method(console, 'error', () => {});
+  const store = memoryStore([membership({ _id: 'broken' }), membership({ _id: 'healthy' })]);
+  const lapse = store.lapse;
+
+  store.lapse = async (snapshot, freePlan, endedAt) => {
+    if (snapshot._id === 'broken') {
+      throw new TypeError("Cannot read properties of null (reading 'businessName')");
+    }
+
+    return lapse(snapshot, freePlan, endedAt);
+  };
+
+  assert.equal(await lapseExpiredMemberships(NOW, store, recordingMail().deliver), 1);
+  assert.equal(store.memberships.find((item) => item._id === 'healthy').plan.key, 'free');
+});
+
+test('a paid plan whose expiry cannot be trusted moves to Gratuita as of the run', async () => {
+  const farAway = new Date('2031-01-01T06:00:00Z');
+  const store = memoryStore([
+    membership({ _id: 'far', expiresAt: farAway }),
+    membership({ _id: 'missing', expiresAt: null }),
+  ]);
+
+  assert.equal(await lapseExpiredMemberships(NOW, store, recordingMail().deliver), 2);
+
+  for (const stored of store.memberships) {
+    assert.equal(stored.plan.key, 'free');
+    assert.equal(stored.lapsed.expiredAt, NOW);
+  }
+});
+
+test('an address no message could reach is never claimed for a reminder', async () => {
+  const store = memoryStore([
+    membership({
+      member: { email: 'not an address', businessName: 'Café' },
+      expiresAt: new Date(NOW.getTime() + 3 * DAY),
+    }),
+  ]);
+  const mail = recordingMail();
+
+  assert.equal(await remindExpiringMemberships(NOW, store, mail.deliver), 0);
+  assert.equal(store.memberships[0].reminderSentFor, null);
+  assert.equal(mail.sent.length, 0);
 });

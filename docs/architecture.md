@@ -293,7 +293,8 @@ audit log.
 
 - **Approval grants Gratuita.** The grant only writes when the membership is
   missing, so approving twice, seeding again or two requests racing each other
-  leave the one membership that is there.
+  leave the one membership that is there. A grant that fails is logged and does
+  not fail the approval, which is already written and still mails the code.
 - **Reading grants it too.** `GET /api/members/me/membership` creates Gratuita
   for a member approved before memberships existed, or whose grant was cut
   short. `npm run grant-free-memberships` does the same for every approved
@@ -307,14 +308,19 @@ audit log.
 `src/jobs/membershipExpiryJob.js` runs inside the API every hour, and once at
 start. `npm run run-membership-expiry` runs it by hand.
 
-1. **Expired paid plans move to Gratuita.** The update is conditional on the
-   plan and the expiry it read, and it is written with its audit entry in one
-   transaction. A payment approved in between is not undone, and a second run
-   finds nothing left to move. The member is mailed.
+1. **Paid plans access is refused for move to Gratuita.** That is a plan past
+   its expiry, and one whose expiry cannot be trusted. The update is
+   conditional on the plan and the expiry it read, and it is written with its
+   audit entry in one transaction. A payment approved in between is not undone,
+   and a second run finds nothing left to move. The member is mailed.
 2. **Plans expiring within seven days get one reminder.** The reminder is
    claimed on the membership before the mail is sent, naming the expiry, so two
    runs cannot both send it and a renewal makes the next one due. A mail that
-   fails releases the claim, so the next run tries again.
+   fails releases the claim, so the next run tries again. An address no mail
+   could reach is never claimed, so it is not retried every hour.
+
+A record that cannot be processed is logged by its identifier and skipped, so
+it never holds back the members after it.
 
 The run is safe to repeat, which is why it lives in the API rather than in the
 host's scheduler: a restart, a second instance or a missed hour only means it
@@ -327,10 +333,10 @@ Plans grant access by date, so a mistake here gives somebody a paid plan that
 never ends. These rules close that.
 
 **The clock decides, never stored data alone.** A paid plan holds while the
-current time is before its expiry. `effectivePlan` in `entitlementService`
-returns Gratuita from the expiry itself onward, whatever plan is stored, and
-every reader goes through it: the middleware, the membership screen and the
-public listings.
+current time is before its expiry. `isExpiredPaidPlan` in `entitlementService`
+is the one rule: from the expiry itself onward it answers that the member holds
+Gratuita, whatever plan is stored. The middleware and the membership screen ask
+it, and the hourly run's query matches the same cases.
 
 **One enforcement point.** `requireEntitlement(name)` reads the member's
 effective plan on every request and answers 403 `plan_required`, with the

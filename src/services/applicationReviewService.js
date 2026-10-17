@@ -237,14 +237,29 @@ function updateMatchingApplication(filter, changes) {
     .lean();
 }
 
-// An approved member is on Gratuita from the start. The grant only writes when
-// the membership is missing, and reading the membership grants it as well, so
-// a grant cut short here is completed the first time the member looks.
-async function approveMatchingApplication(filter, changes) {
-  const approved = await updateMatchingApplication(filter, changes);
+// An approved member is on Gratuita from the start. The approval is already
+// written when the grant runs, so a grant that fails must not fail the
+// approval: the applicant would never be mailed their code, and a retry would
+// find the application already decided. A missing membership reads as
+// Gratuita, and reading it grants it, so the grant is completed the first
+// time the member looks.
+async function approveMatchingApplication(
+  filter,
+  changes,
+  grant = grantFreeMembership,
+  update = updateMatchingApplication,
+) {
+  const approved = await update(filter, changes);
 
   if (approved !== null && approved !== undefined) {
-    await grantFreeMembership(approved._id, approved.reviewedAt);
+    try {
+      await grant(approved._id, approved.reviewedAt);
+    } catch (error) {
+      console.error('Gratuita not granted on approval', {
+        member: String(approved._id),
+        reason: error.message,
+      });
+    }
   }
 
   return approved;
@@ -474,6 +489,7 @@ module.exports = {
   listPendingApplications,
   listDecidedApplications,
   approveApplication,
+  approveMatchingApplication,
   rejectApplication,
   requestChangesApplication,
   ApplicationReviewError,

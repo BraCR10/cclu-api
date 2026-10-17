@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
-  effectivePlan,
+  isExpiredPaidPlan,
   grants,
   isTermCurrent,
   readEffectivePlan,
@@ -16,6 +16,11 @@ const PRO = {
   key: 'pro',
   entitlements: { publishInMarketplace: true, publishJobs: true, banner: 'one_month' },
 };
+
+// The plan a member holds at that moment, as every reader works it out.
+function effectivePlan(membership, freePlan, now) {
+  return isExpiredPaidPlan(membership, now) ? freePlan : membership.plan;
+}
 
 function at(offsetInMilliseconds) {
   return new Date(EXPIRES_AT.getTime() + offsetInMilliseconds);
@@ -60,6 +65,7 @@ test('Gratuita never expires', () => {
   const membership = { plan: FREE, expiresAt: null };
 
   assert.equal(effectivePlan(membership, FREE, at(0)), FREE);
+  assert.equal(isExpiredPaidPlan(membership, at(0)), false);
 });
 
 test('an entitlement is granted only by its exact value', () => {

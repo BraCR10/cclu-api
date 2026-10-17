@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   approveApplication,
+  approveMatchingApplication,
   rejectApplication,
   requestChangesApplication,
   MAXIMUM_CODE_ATTEMPTS,
@@ -545,4 +546,33 @@ test('a request for changes hands over the same link a rejection does', async ()
       process.env.WEB_ORIGIN = previous;
     }
   }
+});
+
+test('an approval stands, code and all, when granting Gratuita fails', async () => {
+  const approved = { _id: MEMBER_ID, memberCode: 'MA7K2Q4', reviewedAt: new Date() };
+
+  const result = await approveMatchingApplication(
+    {},
+    {},
+    async () => {
+      throw new Error('Atlas unreachable');
+    },
+    async () => approved,
+  );
+
+  assert.equal(result, approved);
+});
+
+test('an approval grants Gratuita to the member it approved', async () => {
+  const granted = [];
+  const reviewedAt = new Date();
+
+  await approveMatchingApplication(
+    {},
+    {},
+    async (memberId, startedAt) => granted.push({ memberId, startedAt }),
+    async () => ({ _id: MEMBER_ID, reviewedAt }),
+  );
+
+  assert.deepEqual(granted, [{ memberId: MEMBER_ID, startedAt: reviewedAt }]);
 });
