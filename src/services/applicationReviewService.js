@@ -3,6 +3,7 @@ const { Activity, ACTIVITY_STATUSES } = require('../models/Activity');
 const { generateMemberCode } = require('./memberCodeService');
 const { issueResubmissionToken, CORRECTABLE_FIELDS } = require('./resubmissionService');
 const emailService = require('./emailService');
+const { grantFreeMembership } = require('./membershipService');
 const { ApplicationError, ERROR_CODES } = require('../config/errorCodes');
 const { readPagination, paginated } = require('../config/pagination');
 
@@ -236,6 +237,34 @@ function updateMatchingApplication(filter, changes) {
     .lean();
 }
 
+// An approved member is on Gratuita from the start. The approval is already
+// written when the grant runs, so a grant that fails must not fail the
+// approval: the applicant would never be mailed their code, and a retry would
+// find the application already decided. A missing membership reads as
+// Gratuita, and reading it grants it, so the grant is completed the first
+// time the member looks.
+async function approveMatchingApplication(
+  filter,
+  changes,
+  grant = grantFreeMembership,
+  update = updateMatchingApplication,
+) {
+  const approved = await update(filter, changes);
+
+  if (approved !== null && approved !== undefined) {
+    try {
+      await grant(approved._id, approved.reviewedAt);
+    } catch (error) {
+      console.error('Gratuita not granted on approval', {
+        member: String(approved._id),
+        reason: error.message,
+      });
+    }
+  }
+
+  return approved;
+}
+
 // The expected state travels inside the filter, so the read and the write are a
 // single operation. Two administrators deciding at once cannot both succeed.
 function pendingApplication(memberId) {
@@ -301,7 +330,7 @@ async function recordNamedActivity(application, add = addNamedActivity) {
 async function approveApplication(
   memberId,
   reviewerId,
-  decide = updateMatchingApplication,
+  decide = approveMatchingApplication,
   findStatus = findApplicationStatus,
   newCode = generateMemberCode,
   record = recordNamedActivity,
@@ -460,6 +489,7 @@ module.exports = {
   listPendingApplications,
   listDecidedApplications,
   approveApplication,
+  approveMatchingApplication,
   rejectApplication,
   requestChangesApplication,
   ApplicationReviewError,

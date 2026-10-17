@@ -6,6 +6,7 @@ const {
   canUseAdminAccount,
 } = require('../config/accountStatus');
 const { ROLES } = require('../config/roles');
+const { formatMemberCode } = require('./memberCodeService');
 
 // One value that answers what a person actually wants to know. accountStatus
 // alone reads as "this account works", which is untrue for an application that
@@ -53,7 +54,10 @@ const ACCOUNT_RULES = {
         : {
             email: member.email,
             displayName: member.businessName,
-            memberCode: member.memberCode ?? null,
+            memberCode:
+              member.memberCode === null || member.memberCode === undefined
+                ? null
+                : formatMemberCode(member.memberCode),
             state: effectiveMemberState(member),
           };
     },

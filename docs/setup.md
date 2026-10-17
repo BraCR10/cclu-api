@@ -61,7 +61,10 @@ tells you which.
 **Read when the first mail is sent.** The API starts without them. Until they
 are set, approving or rejecting an application still succeeds but its mail is
 only logged as not delivered, a registration still succeeds and its confirmation
-is logged the same way, and requesting a password link fails. Any SMTP server works; [Ethereal](https://ethereal.email) gives a test inbox
+is logged the same way, and requesting a password link fails. The membership
+mails behave the same way: a plan still moves to Gratuita when its mail cannot
+be sent, and a reminder that cannot be sent is tried again on the next hourly
+run. Any SMTP server works; [Ethereal](https://ethereal.email) gives a test inbox
 for local development.
 
 | Variable        | Purpose                                                 | Example                                             |
@@ -102,11 +105,14 @@ npm run seed-catalogs
 ADMIN_PASSWORD='<password>' npm run create-admin -- <email> [name]
 ```
 
-`seed-catalogs` loads the cantons and activities from `scripts/data/` into the
-database. The registration form offers only what this loads, so registering
-fails until it has run. It upserts by name, so running it again updates the same
-entries rather than duplicating them. The activities it ships with are a starting
-set: the official one is the municipality's patent roll.
+`seed-catalogs` loads the cantons, the activities and the four plans from
+`scripts/data/` into the database. The registration form offers only what this
+loads, and approving an application needs the plans, so both fail until it has
+run. It upserts each entry by its name or key, so running it again updates the
+same entries rather than duplicating them. A plan's fee is written only when the
+plan is created, so seeding again never undoes a fee the chamber changed from
+the panel. The activities it ships with are a starting set: the official one is
+the municipality's patent roll.
 
 `create-admin` creates the first administrator, since the panel has no way to
 sign up. The password is read from `ADMIN_PASSWORD` rather than from the
@@ -115,11 +121,24 @@ password: at least 8 characters, with a letter, a number and a symbol. The name
 is optional. It refuses an address that already belongs to a member or to
 another administrator.
 
+If the database already holds members approved before memberships existed,
+give each of them Gratuita once. It only creates what is missing, so it is safe
+to run again:
+
+```bash
+npm run grant-free-memberships
+```
+
 Then start it:
 
 ```bash
 npm start
 ```
+
+Once connected, the API runs the membership job at start and every hour after:
+it moves expired paid plans to Gratuita and sends the seven-day reminders. To
+run it now instead of waiting, use `npm run run-membership-expiry`. Access never
+waits for it; see [Time and access](architecture.md#time-and-access).
 
 The API refuses to start if a startup variable is missing and tells you which
 one it needs. That is intentional: a server running without a database is

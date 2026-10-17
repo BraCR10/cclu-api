@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const app = require('./app');
 const connectDatabase = require('./config/database');
+const { startMembershipExpiryJob } = require('./jobs/membershipExpiryJob');
 
 const REQUIRED_ENV = ['MONGODB_URI', 'JWT_SECRET', 'JWT_EXPIRES_IN', 'WEB_ORIGIN', 'COOKIE_SECURE'];
 
@@ -20,6 +21,7 @@ connectDatabase()
     app.listen(port, () => {
       console.log(`cclu-api listening on port ${port}`);
     });
+    startMembershipExpiryJob();
   })
   .catch((error) => {
     console.error(`Could not connect to MongoDB: ${error.message}`);

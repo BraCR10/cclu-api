@@ -30,8 +30,14 @@ function forgetTransport() {
   sharedTransport = null;
 }
 
+// Whether a message could be addressed to this value at all. A failure here is
+// permanent, unlike a server that is down, so a caller that retries can skip it.
+function isDeliverableAddress(recipient) {
+  return typeof recipient === 'string' && EMAIL_SHAPE.test(recipient.trim());
+}
+
 function readRecipient(recipient) {
-  if (typeof recipient !== 'string' || !EMAIL_SHAPE.test(recipient.trim())) {
+  if (!isDeliverableAddress(recipient)) {
     throw new EmailDeliveryError('The recipient address is not an address.');
   }
 
@@ -71,4 +77,11 @@ async function notify(templateName, recipient, data = {}, send = sendEmail) {
   }
 }
 
-module.exports = { sendEmail, notify, openTransport, forgetTransport, EmailDeliveryError };
+module.exports = {
+  sendEmail,
+  notify,
+  isDeliverableAddress,
+  openTransport,
+  forgetTransport,
+  EmailDeliveryError,
+};

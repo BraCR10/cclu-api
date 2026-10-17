@@ -11,6 +11,21 @@ const ESCAPES = {
 
 const SIGNATURE = 'Cámara de Comercio, Turismo, Industria y Afines del Cantón de La Unión';
 
+const CALENDAR_DAY = new Intl.DateTimeFormat('es-CR', { dateStyle: 'long', timeZone: 'UTC' });
+const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+// A day on the chamber's calendar, given as YYYY-MM-DD. Formatted from its own
+// parts in UTC so no time zone can move it to the day before.
+function formatCalendarDay(isoDate) {
+  const [, year, month, day] = ISO_DATE.exec(isoDate) ?? [];
+
+  if (year === undefined) {
+    throw new TypeError(`${isoDate} is not a calendar day.`);
+  }
+
+  return CALENDAR_DAY.format(new Date(Date.UTC(Number(year), Number(month) - 1, Number(day))));
+}
+
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (character) => ESCAPES[character]);
 }
@@ -23,4 +38,4 @@ function layout(heading, paragraphs) {
   return `<div><h2>${escapeHtml(heading)}</h2>${body}<p>${SIGNATURE}</p></div>`;
 }
 
-module.exports = { layout, escapeHtml, SIGNATURE };
+module.exports = { layout, escapeHtml, formatCalendarDay, SIGNATURE };

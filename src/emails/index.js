@@ -2,6 +2,8 @@ const { applicationApproved } = require('./applicationApproved');
 const { applicationChangesRequested } = require('./applicationChangesRequested');
 const { applicationReceived } = require('./applicationReceived');
 const { applicationRejected } = require('./applicationRejected');
+const { membershipExpiring } = require('./membershipExpiring');
+const { membershipLapsed } = require('./membershipLapsed');
 const { passwordResetLink } = require('./passwordResetLink');
 
 // A new kind of notification is a new file beside this one and a line here.
@@ -11,6 +13,8 @@ const TEMPLATES = {
   applicationChangesRequested,
   applicationReceived,
   applicationRejected,
+  membershipExpiring,
+  membershipLapsed,
   passwordResetLink,
 };
 

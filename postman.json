@@ -48,6 +48,14 @@
     {
       "key": "resubmissionToken",
       "value": ""
+    },
+    {
+      "key": "resetToken",
+      "value": ""
+    },
+    {
+      "key": "memberCode",
+      "value": ""
     }
   ],
   "item": [
@@ -147,6 +155,66 @@
             "description": "Clears the session cookie. Needs no authentication, so an expired session can still be closed."
           },
           "response": []
+        },
+        {
+          "name": "Ask for a password link",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{memberEmail}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/password/forgot",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "password", "forgot"]
+            },
+            "description": "Public. Sends a single-use link to the address when it belongs to an account, and answers the same whether or not it does, so the form cannot be used to find out who has an account. Rate limited per address and per account."
+          },
+          "response": []
+        },
+        {
+          "name": "Check a password link",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/password/reset/{{resetToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "password", "reset", "{{resetToken}}"]
+            },
+            "description": "Public. Says whether the link in the mail can still be used, before the person types a new password. A link that was used, expired or never existed answers the same refusal."
+          },
+          "response": []
+        },
+        {
+          "name": "Set a new password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"newPassword\": \"{{memberPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/password/reset",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "password", "reset"]
+            },
+            "description": "Public. Spends the token and sets the new password, which follows the same rules as at registration. The token cannot be used twice."
+          },
+          "response": []
         }
       ]
     },
@@ -173,6 +241,80 @@
               "path": ["api", "members"]
             },
             "description": "Public, since nobody has an account yet. Answers 201 with the identifier alone, and writes to the applicant on the address they registered with. Role and application status are set by the server and ignored if sent. A repeated identifier answers 409 with a message that names nothing. An empresa or an asociación sends the razón social, its legal representative and the personería jurídica; a profesional independiente sends their own name instead."
+          },
+          "response": []
+        },
+        {
+          "name": "Read own profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me"]
+            },
+            "description": "Member session. The profile of the member signed in; the identity comes from the session, never from the request."
+          },
+          "response": []
+        },
+        {
+          "name": "Update own profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"8888 8888\",\n  \"businessDescription\": \"Café de altura tostado en San Juan de La Unión.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me"]
+            },
+            "description": "Member session. Only the editable fields are read; anything else in the body is ignored. Each field is validated with the same rules as at registration."
+          },
+          "response": []
+        },
+        {
+          "name": "Verify a member code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{memberCode}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/members/verification",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "verification"]
+            },
+            "description": "Member or administrator session. Says whether a member code belongs to an active member. Rate limited."
+          },
+          "response": []
+        },
+        {
+          "name": "Read own membership",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/membership",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "membership"]
+            },
+            "description": "Member session. The plan the member holds now, worked out against the clock: a paid plan past its expiry reads as Gratuita with its lapse, even before the hourly job has moved it. expiresAt is the instant the plan ends, in UTC, for a screen to show on the viewer's clock; validUntil is its last valid day in Costa Rica (YYYY-MM-DD), for messages from the chamber. Both are null on Gratuita. A member without a membership is granted Gratuita on the first read."
           },
           "response": []
         }
@@ -396,6 +538,133 @@
               "path": ["api", "files", "{{fileKey}}"]
             },
             "description": "Streams the file. The key is the capability: it carries 256 random bits, so an address that holds one was only ever handed it. Send the whole key percent-encoded, slashes included."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Administrators",
+      "item": [
+        {
+          "name": "Read own profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "me"]
+            },
+            "description": "Administrator session. The profile of the administrator signed in."
+          },
+          "response": []
+        },
+        {
+          "name": "Update own profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nombre Apellido\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "me"]
+            },
+            "description": "Administrator session. Only the name can be changed here."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Directory",
+      "item": [
+        {
+          "name": "Read a member's public profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/directory/{{memberCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "directory", "{{memberCode}}"]
+            },
+            "description": "Public. The listing a member card's QR code opens. Only public fields, and only for an active member."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Plans",
+      "item": [
+        {
+          "name": "List plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plans"]
+            },
+            "description": "Public. The four plans with their monthly fee in whole colones and their entitlements, in display order. Not paged: it is a closed catalog."
+          },
+          "response": []
+        },
+        {
+          "name": "Change fees",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fees\": {\n    \"lite\": 5000\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/plans/fees",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "plans", "fees"]
+            },
+            "description": "Administrator session. Every key is checked before anything is written. Gratuita cannot be priced, an amount equal to the current one is not a change, and an amount is a whole number from 1 to 1000000. Each change is written with its audit entry in one transaction; a fee another administrator changed first answers 409 changed_meanwhile."
+          },
+          "response": []
+        },
+        {
+          "name": "List fee changes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/plans/fee-changes?page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "plans", "fee-changes"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Administrator session. The fee history from the audit log, newest first, paged as { items, page, pageSize, total, pageCount }."
           },
           "response": []
         }
