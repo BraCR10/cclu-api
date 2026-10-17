@@ -98,6 +98,58 @@ receipts to its own disk loses them on the next deploy. The private bucket must
 have public access blocked; the public one allows reading objects and nothing
 else.
 
+### Creating the buckets
+
+The API never creates a bucket; whoever holds the chamber's AWS account creates
+them once per environment, in the S3 console, region `us-east-1`:
+
+| Environment | Public bucket         | Private bucket         |
+| ----------- | --------------------- | ---------------------- |
+| Production  | `cclu-prod-public`    | `cclu-prod-private`    |
+| Staging     | `cclu-staging-public` | `cclu-staging-private` |
+
+Bucket names are global; if one is taken, add a word such as `launion`.
+
+1. **Private bucket.** Leave _Block all public access_ on, Object Ownership on
+   _Bucket owner enforced_ and default encryption (SSE-S3) on. Nothing else.
+2. **Public bucket.** Turn _Block all public access_ off, then under
+   _Permissions → Bucket policy_ allow reading objects and nothing else:
+
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Effect": "Allow",
+         "Principal": "*",
+         "Action": "s3:GetObject",
+         "Resource": "arn:aws:s3:::cclu-prod-public/*"
+       }
+     ]
+   }
+   ```
+
+3. **A user for the API.** In IAM, create a user such as `cclu-api` whose only
+   permissions are on these two buckets, then create an access key for it:
+
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Effect": "Allow",
+         "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
+         "Resource": ["arn:aws:s3:::cclu-prod-public/*", "arn:aws:s3:::cclu-prod-private/*"]
+       }
+     ]
+   }
+   ```
+
+4. **The environment.** On the server, never in the repository:
+   `S3_ENDPOINT=https://s3.us-east-1.amazonaws.com`, `S3_REGION=us-east-1`,
+   the two bucket names, the key and its secret, and
+   `S3_FORCE_PATH_STYLE=false`.
+
 Atlas gives you the connection string under **Connect > Drivers**. Replace the
 placeholder password and keep the `/cclu` database name at the end.
 
