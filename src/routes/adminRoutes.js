@@ -3,6 +3,7 @@ const applicationReviewController = require('../controllers/applicationReviewCon
 const adminProfileController = require('../controllers/adminProfileController');
 const planController = require('../controllers/planController');
 const fileController = require('../controllers/fileController');
+const adminPaymentController = require('../controllers/adminPaymentController');
 const adminMembershipController = require('../controllers/adminMembershipController');
 const { authorize } = require('../middlewares/authorize');
 const { ROLES } = require('../config/roles');
@@ -35,5 +36,11 @@ adminRoutes.patch('/plans/policy', adminMembershipController.updatePolicy);
 adminRoutes.get('/memberships', adminMembershipController.getMemberships);
 
 adminRoutes.get('/files/:key', fileController.openFileAsAdmin);
+
+adminRoutes.get('/payments', adminPaymentController.getPayments);
+adminRoutes.get('/payments/:paymentId', adminPaymentController.getPayment);
+adminRoutes.get('/payments/:paymentId/receipt', adminPaymentController.getReceipt);
+adminRoutes.post('/payments/:paymentId/approve', adminPaymentController.approvePayment);
+adminRoutes.post('/payments/:paymentId/reject', adminPaymentController.rejectPayment);
 
 module.exports = { adminRoutes };

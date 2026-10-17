@@ -56,6 +56,10 @@
     {
       "key": "memberCode",
       "value": ""
+    },
+    {
+      "key": "paymentId",
+      "value": ""
     }
   ],
   "item": [
@@ -757,6 +761,217 @@
               ]
             },
             "description": "Administrator session. Paid plans in force only; Gratuita, and any plan that ran out, is not listed. view is active (default) or expiring, the part that ends within the notice; plan is lite, pro or premium; search matches the business name or the start of the member code. Answers the page with counts { active, expiring } and the notice in force, soonest to expire first."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Check whether a payment can be made",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/payments/eligibility",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "payments", "eligibility"]
+            },
+            "description": "Member session. canSubmit, and when it is false the reason: payment_pending while one waits for review, or renewal_not_open with opensOn, the day the renewal window opens. Also the reference to write on the transfer."
+          },
+          "response": []
+        },
+        {
+          "name": "Register a payment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "plan",
+                  "value": "pro",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "comment",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "resubmissionOf",
+                  "value": "",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "payments"]
+            },
+            "description": "Member session, multipart. plan is lite, pro or premium; file is the receipt (JPG, PNG or PDF, 5 MB, checked by its bytes); comment and resubmissionOf are optional, the latter the id of a rejected payment of yours. Answers 201 pending. 409 payment_pending, renewal_not_open or receipt_already_used."
+          },
+          "response": []
+        },
+        {
+          "name": "List my payments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/payments?status=&page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "payments"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Member session. Newest first, optionally filtered by status: pending_review, approved or rejected."
+          },
+          "response": []
+        },
+        {
+          "name": "Read one of my payments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/payments/{{paymentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "payments", "{{paymentId}}"]
+            },
+            "description": "Member session. 404 for a payment that is not yours."
+          },
+          "response": []
+        },
+        {
+          "name": "Open the receipt of one of my payments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/payments/{{paymentId}}/receipt",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "payments", "{{paymentId}}", "receipt"]
+            },
+            "description": "Member session. The receipt itself, with nosniff and a sandbox policy. 404 for a payment that is not yours."
+          },
+          "response": []
+        },
+        {
+          "name": "List payments for review",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/payments?status=pending_review&search=&page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "payments"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending_review"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Administrator session. status is pending_review (default, oldest first), approved or rejected (newest decision first). search matches the business name or the start of the member code. counts carries the number in each state."
+          },
+          "response": []
+        },
+        {
+          "name": "Review a payment",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/payments/{{paymentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "payments", "{{paymentId}}"]
+            },
+            "description": "Administrator session. The payment with its member, earlierAttempts (the member's rejected payments) and sameReceipt (other payments with the same receipt)."
+          },
+          "response": []
+        },
+        {
+          "name": "Open a payment's receipt",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/payments/{{paymentId}}/receipt",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "payments", "{{paymentId}}", "receipt"]
+            },
+            "description": "Administrator session. The receipt itself, with nosniff and a sandbox policy."
+          },
+          "response": []
+        },
+        {
+          "name": "Approve a payment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/payments/{{paymentId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "payments", "{{paymentId}}", "approve"]
+            },
+            "description": "Administrator session. Moves the membership to the plan paid for in one transaction with the audit entries, and mails the member. 409 already_decided, account_suspended or receipt_already_used."
+          },
+          "response": []
+        },
+        {
+          "name": "Reject a payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"El comprobante no muestra el detalle de la referencia.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/payments/{{paymentId}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "payments", "{{paymentId}}", "reject"]
+            },
+            "description": "Administrator session. reason is 10 to 300 characters and is mailed to the member. 409 already_decided."
           },
           "response": []
         }

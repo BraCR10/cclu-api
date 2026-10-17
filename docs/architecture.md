@@ -443,6 +443,66 @@ the chamber's calendar.
 - **Access is never local.** Whatever zone the screen shows, the API decides
   against its own clock.
 
+## Payments
+
+A member pays by SINPE Móvil or bank transfer outside the system and hands in
+the receipt. The chamber checks it and approves or rejects the payment. Only an
+approval moves the membership.
+
+### The renewal window
+
+A member on Gratuita may pay at any time. A member whose paid plan is still
+running may pay only within its last N days, N being the same expiry notice the
+chamber sets for the reminder (see [The expiry notice](#the-expiry-notice)).
+Before then `POST /api/members/me/payments` answers 409 `renewal_not_open`
+with the day the window opens as `reason`, and
+`GET /api/members/me/payments/eligibility` tells the screen the same before the
+form is shown. A term is therefore paid for once.
+
+| Paying for                           | The new term                            |
+| ------------------------------------ | --------------------------------------- |
+| The running plan, inside the window  | From the current expiry, one more month |
+| Another plan, inside the window      | The same; the new plan applies at once  |
+| Anything, on Gratuita or after lapse | From the approval, one month            |
+
+Payments are monthly. There is no proration: the amount is always the full fee
+of the plan chosen, so the chamber can check a receipt against it at a glance.
+
+### What a payment cannot do
+
+| It cannot                    | Because                                                                       |
+| ---------------------------- | ----------------------------------------------------------------------------- |
+| Exist twice pending          | A unique partial index allows one `pending_review` payment per member         |
+| Change after it is submitted | The model refuses every write except the one decision of a pending payment    |
+| Be removed                   | The model refuses every delete; a rejected payment stays as a record          |
+| Be decided twice             | The decision is a write conditional on `pending_review`; a second answers 409 |
+| Reuse a receipt              | A receipt whose SHA-256 is on an approved payment is refused                  |
+| Follow a later fee           | The plan, its fee and the amount are copied in when the payment is submitted  |
+| Approve a suspended account  | Approval answers 409 `account_suspended`                                      |
+| Be rejected silently         | A reason of 10 to 300 characters is required, and the member is mailed it     |
+
+### Deciding
+
+Approval is one transaction: the payment becomes approved with the term it
+granted, the membership takes the plan, the new expiry, the frequency and the
+payment date, and two audit entries are written, `payment.approved` and
+`membership.renewed`. Every write names the state it read, so a second decision
+or an hourly run in between undoes all of it. The member is mailed after the
+commit.
+
+A rejection is final. The member answers it by submitting again: the new
+payment may carry the same receipt, a comment of up to 300 characters and
+`resubmissionOf`, the rejected payment it answers. The review shows the
+earlier rejected attempts and every other payment with the same receipt.
+
+### Receipts
+
+A receipt is uploaded with its payment, as the `file` field of the multipart
+request, under the member in the session. It goes to the private bucket and is
+read only through `GET /api/members/me/payments/:paymentId/receipt`, for its
+member, and `GET /api/admin/payments/:paymentId/receipt`. A payment that is not
+the member's answers 404.
+
 ## Pagination
 
 Every list that grows answers one page. The query is `?page=1&pageSize=10`, and
