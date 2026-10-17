@@ -76,6 +76,17 @@ paymentSchema.index({ member: 1, submittedAt: -1 });
 paymentSchema.index({ status: 1, submittedAt: 1 });
 paymentSchema.index({ 'receipt.sha256': 1, status: 1 });
 
+// One receipt pays for one term. Checked before approving, and enforced here so
+// two approvals of the same receipt at once cannot both stand.
+paymentSchema.index(
+  { 'receipt.sha256': 1 },
+  {
+    unique: true,
+    partialFilterExpression: { status: PAYMENT_STATUSES.APPROVED },
+    name: 'one_approval_per_receipt',
+  },
+);
+
 // The database itself refuses a second pending payment for the same member, so
 // two requests arriving together cannot both get in.
 paymentSchema.index(

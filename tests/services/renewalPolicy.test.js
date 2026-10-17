@@ -61,3 +61,15 @@ test('a renewal from the last day of January ends on the last day of February', 
     '2027-02-28',
   );
 });
+
+// The longest notice is shorter than the shortest month, so approving a renewal
+// always closes the window until the next term.
+test('a renewal approved in February closes the window even with the longest notice', () => {
+  const { MAXIMUM } = require('../../src/models/MembershipPolicy').NOTICE_DAYS;
+  const endOfJanuary = { plan: PRO, expiresAt: new Date('2027-02-01T06:00:00.000Z') };
+  const approvedAt = new Date('2027-01-06T12:00:00.000Z');
+  const renewed = { plan: PRO, expiresAt: termFor(endOfJanuary, approvedAt).expiresAt };
+
+  assert.equal(renewalWindow(endOfJanuary, approvedAt, MAXIMUM).open, true);
+  assert.equal(renewalWindow(renewed, approvedAt, MAXIMUM).open, false);
+});

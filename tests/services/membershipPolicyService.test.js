@@ -16,8 +16,8 @@ test('a policy never seeded reads as seven days', async () => {
   assert.equal(await readNoticeDays(store(null)), 7);
 });
 
-test('the notice is whole days from 1 to 30, and nothing else is written', async () => {
-  for (const value of [0, 31, 7.5, '10', -1, null, undefined, Number.MAX_SAFE_INTEGER]) {
+test('the notice is whole days from 1 to 27, and nothing else is written', async () => {
+  for (const value of [0, 28, 31, 7.5, '10', -1, null, undefined, Number.MAX_SAFE_INTEGER]) {
     const applied = [];
 
     await assert.rejects(

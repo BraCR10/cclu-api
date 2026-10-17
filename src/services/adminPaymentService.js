@@ -17,6 +17,7 @@ const { RENEWAL_FREQUENCY, holdsRunningPaidPlan, termFor } = require('./renewalP
 const { presentPayment } = require('./paymentService');
 
 const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
+const DUPLICATE_KEY = 11000;
 const MAXIMUM_SEARCH_LENGTH = 100;
 const REGEX_SPECIALS = /[.*+?^${}()|[\]\\]/g;
 const STATUSES = Object.values(PAYMENT_STATUSES);
@@ -89,33 +90,37 @@ function orderFor(status) {
     : { decidedAt: -1, _id: 1 };
 }
 
+const JOIN_MEMBER = [
+  {
+    $lookup: {
+      from: 'members',
+      localField: 'member',
+      foreignField: '_id',
+      pipeline: [{ $project: { businessName: 1, memberCode: 1 } }],
+      as: 'member',
+    },
+  },
+  { $unwind: '$member' },
+];
+
+// Without a search, members are joined only to the page shown, so the cost of a
+// list does not grow with the whole payment history. A search needs the join
+// first, since it matches on the member.
 function listPipeline({ status, search, pagination }) {
   const matchSearch = searchFilter(search);
-
-  return [
-    {
-      $lookup: {
-        from: 'members',
-        localField: 'member',
-        foreignField: '_id',
-        pipeline: [{ $project: { businessName: 1, memberCode: 1 } }],
-        as: 'member',
-      },
-    },
-    { $unwind: '$member' },
-    ...(matchSearch === null ? [] : [{ $match: matchSearch }]),
-    {
-      $facet: {
-        counts: [{ $group: { _id: '$status', count: { $sum: 1 } } }],
-        items: [
-          { $match: { status } },
-          { $sort: orderFor(status) },
-          { $skip: pagination.skip },
-          { $limit: pagination.pageSize },
-        ],
-      },
-    },
+  const page = [
+    { $match: { status } },
+    { $sort: orderFor(status) },
+    { $skip: pagination.skip },
+    { $limit: pagination.pageSize },
   ];
+  const counts = [{ $group: { _id: '$status', count: { $sum: 1 } } }];
+
+  if (matchSearch === null) {
+    return [{ $facet: { counts, items: [...page, ...JOIN_MEMBER] } }];
+  }
+
+  return [...JOIN_MEMBER, { $match: matchSearch }, { $facet: { counts, items: page } }];
 }
 
 function presentForAdmin(payment, member) {
@@ -155,11 +160,26 @@ const defaultAdminPaymentStore = {
   // the whole of it.
   approve: ({ payment, membership, decidedAt, decidedBy, term, nextMembership, auditEntries }) =>
     mongoose.connection.transaction(async (session) => {
-      const decided = await Payment.updateOne(
-        { _id: payment._id, status: PAYMENT_STATUSES.PENDING_REVIEW },
-        { $set: { status: PAYMENT_STATUSES.APPROVED, decidedAt, decidedBy, term } },
-        { session },
-      );
+      let decided;
+
+      try {
+        decided = await Payment.updateOne(
+          { _id: payment._id, status: PAYMENT_STATUSES.PENDING_REVIEW },
+          { $set: { status: PAYMENT_STATUSES.APPROVED, decidedAt, decidedBy, term } },
+          { session },
+        );
+      } catch (error) {
+        // Another approval of the same receipt stood first.
+        if (error.code === DUPLICATE_KEY) {
+          throw new ApplicationError(
+            ERROR_CODES.RECEIPT_ALREADY_USED,
+            'This receipt already paid for another term.',
+            { statusCode: 409 },
+          );
+        }
+
+        throw error;
+      }
 
       if (decided.matchedCount === 0) {
         throw new ApplicationError(
