@@ -6,8 +6,8 @@ const { ValidationError, refuse } = require('../config/memberRules');
 const { ApplicationError, ERROR_CODES } = require('../config/errorCodes');
 const { readPagination, paginated } = require('../config/pagination');
 
-// A ceiling well above any fee the chamber charges, so a mistyped extra zero
-// is refused instead of being billed.
+// A sanity ceiling, not a typo check: it refuses absurd amounts while leaving
+// the chamber room to raise its fees.
 const MAXIMUM_MONTHLY_FEE = 1_000_000;
 
 function present(plan) {

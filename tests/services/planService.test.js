@@ -48,7 +48,17 @@ test('Gratuita cannot be given a fee', () => {
 });
 
 test('an amount that is not whole colones above zero is refused', () => {
-  for (const fee of [0, -5000, 5000.5, '5000', null, MAXIMUM_MONTHLY_FEE + 1]) {
+  for (const fee of [
+    0,
+    -5000,
+    5000.5,
+    '5000',
+    null,
+    MAXIMUM_MONTHLY_FEE + 1,
+    Infinity,
+    Number.NaN,
+    Number.MAX_SAFE_INTEGER + 2,
+  ]) {
     assert.throws(
       () => readFees({ fees: { lite: fee } }),
       refusedWith(ERROR_CODES.INVALID_FORMAT, 'fees.lite'),

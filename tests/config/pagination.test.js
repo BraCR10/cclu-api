@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const {
   DEFAULT_PAGE_SIZE,
   MAXIMUM_PAGE_SIZE,
+  MAXIMUM_PAGE,
   readPagination,
   paginated,
 } = require('../../src/config/pagination');
@@ -47,4 +48,19 @@ test('the answer says how many pages exist', () => {
     pageCount: 3,
   });
   assert.equal(paginated([], 0, { page: 1, pageSize: 10 }).pageCount, 0);
+});
+
+// A page past the ceiling would ask the database to skip a number too large to
+// be represented exactly.
+test('the last page allowed still skips an exact number of items', () => {
+  const { skip } = readPagination({
+    page: String(MAXIMUM_PAGE),
+    pageSize: String(MAXIMUM_PAGE_SIZE),
+  });
+
+  assert.equal(Number.isSafeInteger(skip), true);
+  assert.throws(
+    () => readPagination({ page: String(MAXIMUM_PAGE + 1) }),
+    (error) => error.code === ERROR_CODES.INVALID_FORMAT && error.field === 'page',
+  );
 });
