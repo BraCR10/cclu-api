@@ -1,20 +1,15 @@
-const { layout, escapeHtml } = require('./layout');
+const { layout, escapeHtml, formatCalendarDay } = require('./layout');
 
-// Shown as the chamber reads a calendar, not in the server's own time zone.
-const EXPIRY_DATE = new Intl.DateTimeFormat('es-CR', {
-  dateStyle: 'long',
-  timeZone: 'America/Costa_Rica',
-});
-
-function membershipExpiring({ businessName, planName, expiresAt }) {
-  const date = EXPIRY_DATE.format(new Date(expiresAt));
+// The last valid day, so "vigente hasta" names the day the member still has.
+function membershipExpiring({ businessName, planName, validUntil }) {
+  const date = formatCalendarDay(validUntil);
 
   return {
     subject: 'Su membresía está por vencer',
-    text: `${businessName}: su plan ${planName} vence el ${date}. Si no se renueva, su membresía pasa al plan Gratuita. Puede registrar el pago de la renovación desde su panel.`,
+    text: `${businessName}: su plan ${planName} está vigente hasta el ${date}. Si no se renueva, al día siguiente su membresía pasa al plan Gratuita. Puede registrar el pago de la renovación desde su panel.`,
     html: layout('Su membresía está por vencer', [
-      `${escapeHtml(businessName)}, su plan <strong>${escapeHtml(planName)}</strong> vence el ${escapeHtml(date)}.`,
-      'Si no se renueva, su membresía pasa al plan Gratuita.',
+      `${escapeHtml(businessName)}, su plan <strong>${escapeHtml(planName)}</strong> está vigente hasta el ${escapeHtml(date)}.`,
+      'Si no se renueva, al día siguiente su membresía pasa al plan Gratuita.',
       'Puede registrar el pago de la renovación desde su panel.',
     ]),
   };

@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const { Membership } = require('../models/Membership');
 const { Plan, PLAN_KEYS } = require('../models/Plan');
 const { AuditEntry, AUDIT_ACTIONS, SYSTEM_ACTOR } = require('../models/AuditEntry');
+const clock = require('../config/clock');
+const { lastValidDay } = require('../config/chamberCalendar');
 const emailService = require('./emailService');
 
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
@@ -92,7 +94,7 @@ const defaultExpiryStore = {
 // Moves every paid plan past its expiry back to Gratuita. Safe to run as often
 // as wanted: a membership already moved no longer matches.
 async function lapseExpiredMemberships(
-  now = new Date(),
+  now = clock.now(),
   store = defaultExpiryStore,
   notify = emailService.notify,
 ) {
@@ -126,7 +128,7 @@ async function lapseExpiredMemberships(
 // expiry. A message that does not leave releases its claim, so the next run
 // tries again instead of the reminder being lost.
 async function remindExpiringMemberships(
-  now = new Date(),
+  now = clock.now(),
   store = defaultExpiryStore,
   send = emailService.sendEmail,
 ) {
@@ -142,7 +144,7 @@ async function remindExpiringMemberships(
       await send('membershipExpiring', membership.member.email, {
         businessName: membership.member.businessName,
         planName: membership.plan.name,
-        expiresAt: membership.expiresAt,
+        validUntil: lastValidDay(membership.expiresAt),
       });
       reminded += 1;
     } catch (error) {

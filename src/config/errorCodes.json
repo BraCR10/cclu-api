@@ -30,6 +30,7 @@
   "ROUTE_NOT_FOUND": "route_not_found",
   "ALREADY_DECIDED": "already_decided",
   "CHANGED_MEANWHILE": "changed_meanwhile",
+  "PLAN_REQUIRED": "plan_required",
   "FILE_TYPE_NOT_ALLOWED": "file_type_not_allowed",
   "FILE_TOO_LARGE": "file_too_large",
   "INVALID_REQUEST": "invalid_request",

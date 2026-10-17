@@ -43,6 +43,7 @@ test('a member without a membership is granted Gratuita when they first ask', as
   const store = {
     findMember: async () => APPROVED,
     findMembership: async () => stored,
+    findFreePlan: async () => FREE,
     grant: async () => {
       stored = { plan: FREE, startedAt: new Date(), expiresAt: null, lapsed: null };
     },
@@ -52,7 +53,29 @@ test('a member without a membership is granted Gratuita when they first ask', as
 
   assert.equal(membership.plan.key, 'free');
   assert.equal(membership.memberCode, 'M-A7K2-Q4');
-  assert.equal(membership.expiresAt, null);
+  assert.equal(membership.validUntil, null);
+});
+
+test('a paid plan past its expiry reads as Gratuita before the job has moved it', async () => {
+  const pro = { key: 'pro', name: 'Pro Pymex', monthlyFee: 10000, entitlements: {} };
+  const expiresAt = new Date('2026-11-18T06:00:00Z');
+  const store = {
+    findMember: async () => APPROVED,
+    findMembership: async () => ({ plan: pro, startedAt: new Date(), expiresAt, lapsed: null }),
+    findFreePlan: async () => FREE,
+  };
+
+  const before = await readOwnMembership(MEMBER_ID, store, new Date(expiresAt.getTime() - 1));
+  const after = await readOwnMembership(MEMBER_ID, store, expiresAt);
+
+  assert.equal(before.plan.key, 'pro');
+  assert.equal(before.validUntil, '2026-11-17');
+  assert.equal(after.plan.key, 'free');
+  assert.equal(after.validUntil, null);
+  assert.deepEqual(after.lapsed, {
+    plan: { key: 'pro', name: 'Pro Pymex' },
+    validUntil: '2026-11-17',
+  });
 });
 
 test('a member who is not approved has no plan to read', async () => {

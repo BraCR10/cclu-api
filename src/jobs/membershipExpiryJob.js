@@ -1,3 +1,4 @@
+const clock = require('../config/clock');
 const {
   lapseExpiredMemberships,
   remindExpiringMemberships,
@@ -5,7 +6,7 @@ const {
 
 const HOUR_IN_MILLISECONDS = 60 * 60 * 1000;
 
-async function runMembershipExpiry(now = new Date()) {
+async function runMembershipExpiry(now = clock.now()) {
   const lapsed = await lapseExpiredMemberships(now);
   const reminded = await remindExpiringMemberships(now);
 
