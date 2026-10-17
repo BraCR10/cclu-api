@@ -80,17 +80,23 @@ for local development.
 under `FILE_STORAGE_DIRECTORY` (`.file-storage` by default), which is what a
 development machine has; `API_PUBLIC_URL` says which address to hand a stored
 file out under, and defaults to `http://localhost:4000`. A deployment that
-stores files sets all five variables and the files live in the bucket instead of
+stores files sets all six variables and the files live in the buckets instead of
 on the machine. Any S3 compatible provider works.
 
 | Variable               | Purpose                                                      | Example                            |
 | ---------------------- | ------------------------------------------------------------ | ---------------------------------- |
 | `S3_ENDPOINT`          | Provider endpoint                                            | `https://<provider-endpoint>`      |
 | `S3_REGION`            | Region the provider expects                                  | `auto`                             |
-| `S3_BUCKET`            | Bucket name                                                  | `cclu-development`                 |
+| `S3_PUBLIC_BUCKET`     | Bucket for files anybody may see, such as logos              | `cclu-development-public`          |
+| `S3_PRIVATE_BUCKET`    | Bucket for receipts and certifications, never public         | `cclu-development-private`         |
 | `S3_ACCESS_KEY_ID`     | Access key                                                   | The key your provider gives you    |
 | `S3_SECRET_ACCESS_KEY` | Secret key                                                   | The secret your provider gives you |
 | `S3_FORCE_PATH_STYLE`  | `true` on providers that name the bucket in the path (MinIO) | `false`                            |
+
+`NODE_ENV=production` without all six refuses to start: a server writing
+receipts to its own disk loses them on the next deploy. The private bucket must
+have public access blocked; the public one allows reading objects and nothing
+else.
 
 Atlas gives you the connection string under **Connect > Drivers**. Replace the
 placeholder password and keep the `/cclu` database name at the end.

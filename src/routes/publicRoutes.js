@@ -25,7 +25,7 @@ publicRoutes.get('/plans', planController.getPlans);
 // has an account, so storing one is open for the same reason registering is.
 // Reading one back needs the key, which is the only thing that opens it.
 publicRoutes.post('/files', limitUploads, readUpload, fileController.uploadFile);
-publicRoutes.get('/files/:key', fileController.openFile);
+publicRoutes.get('/files/:key', fileController.openPublicFile);
 
 // The address a card's QR carries. It is a permanent contract: a card already
 // issued cannot be reissued, so this path never changes.

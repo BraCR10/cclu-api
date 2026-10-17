@@ -523,7 +523,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "files"]
             },
-            "description": "Public, because a registration carries its uploads before the applicant has an account. Answers 201 with the key, which is what the registration sends. The purpose decides the folder: membership-certifications, member-logos or payment-receipts. The owner names the member or administrator the file belongs to; a registration that has no account yet uses the identifier its form generated."
+            "description": "Public, because a registration carries its uploads before the applicant has an account. Answers 201 with the key, which is what the registration sends. The purpose decides the folder: membership-certifications, member-logos or payment-receipts. The owner names the member or administrator the file belongs to; a registration that has no account yet uses the identifier its form generated. Only the purposes a registration carries are accepted here: member-logos and membership-certifications. The type is checked against the file's own bytes; 5 MB at most."
           },
           "response": []
         },
@@ -537,7 +537,21 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "files", "{{fileKey}}"]
             },
-            "description": "Streams the file. The key is the capability: it carries 256 random bits, so an address that holds one was only ever handed it. Send the whole key percent-encoded, slashes included."
+            "description": "Public. Serves only files anybody may see, such as logos, with nosniff and a sandbox policy. Any private key, a receipt or a certification, answers 404."
+          },
+          "response": []
+        },
+        {
+          "name": "Open a file as an administrator",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/files/{{fileKey}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "files", "{{fileKey}}"]
+            },
+            "description": "Administrator session. Opens any stored file, including private ones such as the certification of a registration, with the same protective headers."
           },
           "response": []
         }

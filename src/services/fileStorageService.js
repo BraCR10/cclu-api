@@ -1,6 +1,8 @@
-const { randomBytes } = require('node:crypto');
+const { createHash, randomBytes } = require('node:crypto');
 const {
   FILE_PURPOSES,
+  FILE_VISIBILITY,
+  PURPOSE_RULES,
   CONTENT_TYPE_EXTENSIONS,
   MAXIMUM_FILE_SIZE_BYTES,
   DOWNLOAD_URL_EXPIRY_SECONDS,
@@ -54,17 +56,70 @@ function readOwnerId(value) {
   return value;
 }
 
+function refuseType() {
+  throw new FileStorageError(
+    ERROR_CODES.FILE_TYPE_NOT_ALLOWED,
+    'The file type is not one the chamber accepts.',
+  );
+}
+
 function readContentType(value) {
   const contentType = typeof value === 'string' ? value.trim().toLowerCase() : '';
 
   if (!ACCEPTED_CONTENT_TYPES.includes(contentType)) {
-    throw new FileStorageError(
-      ERROR_CODES.FILE_TYPE_NOT_ALLOWED,
-      'The file type is not one the chamber accepts.',
-    );
+    refuseType();
   }
 
   return contentType;
+}
+
+// The first bytes every file of each accepted type starts with. The type the
+// client declares is written by whoever uploads; these are written by the
+// program that made the file, so a page renamed to .png is caught here.
+const SIGNATURES = [
+  {
+    contentType: 'image/jpeg',
+    matches: (bytes) => bytes.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff])),
+  },
+  {
+    contentType: 'image/png',
+    matches: (bytes) =>
+      bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+  },
+  {
+    contentType: 'image/webp',
+    matches: (bytes) =>
+      bytes.subarray(0, 4).toString('latin1') === 'RIFF' &&
+      bytes.subarray(8, 12).toString('latin1') === 'WEBP',
+  },
+  {
+    contentType: 'application/pdf',
+    matches: (bytes) => bytes.subarray(0, 5).toString('latin1') === '%PDF-',
+  },
+];
+
+function detectContentType(content) {
+  return SIGNATURES.find((signature) => signature.matches(content))?.contentType ?? null;
+}
+
+// The type is what the bytes say, and it has to agree with what was declared
+// and be one this kind of file may be.
+function readActualContentType(declared, content, purpose) {
+  const actual = detectContentType(content);
+
+  if (
+    actual === null ||
+    actual !== declared ||
+    !PURPOSE_RULES[purpose].contentTypes.includes(actual)
+  ) {
+    refuseType();
+  }
+
+  return actual;
+}
+
+function visibilityOf(purpose) {
+  return PURPOSE_RULES[purpose].visibility;
 }
 
 function readContent(value) {
@@ -102,8 +157,9 @@ function readExpirySeconds(value) {
   return value;
 }
 
-// Random bytes, never the uploaded name. A key nobody can guess is what keeps
-// one member's receipt out of reach even if an address were to escape.
+// Random bytes, never the uploaded name: 128 bits nobody can guess. It is not
+// what protects a private file, which only the API serves after deciding who
+// is asking, but it keeps keys from being enumerated.
 function randomObjectName() {
   return randomBytes(OBJECT_NAME_BYTES).toString('hex');
 }
@@ -112,7 +168,14 @@ function buildStorageKey({ purpose, ownerId, objectName, contentType }) {
   return `${purpose}/${ownerId}/${objectName}.${CONTENT_TYPE_EXTENSIONS[contentType]}`;
 }
 
-async function uploadFile(upload, store = objectStore(), newObjectName = randomObjectName) {
+// A caller names the kinds of file it may store, so a route that serves people
+// without an account cannot be used to plant a receipt in somebody's folder.
+async function uploadFile(
+  upload,
+  store = undefined,
+  newObjectName = randomObjectName,
+  allowedPurposes = PURPOSES,
+) {
   if (upload === null || typeof upload !== 'object' || Array.isArray(upload)) {
     throw new FileStorageError(ERROR_CODES.REQUIRED, 'The file is missing.');
   }
@@ -120,9 +183,15 @@ async function uploadFile(upload, store = objectStore(), newObjectName = randomO
   // Read one field at a time. Anything else the caller attached, the uploaded
   // name above all, takes no part in the key or in what is stored.
   const purpose = readPurpose(upload.purpose);
+
+  if (!allowedPurposes.includes(purpose)) {
+    throw new FileStorageError(ERROR_CODES.NOT_ALLOWED, 'This kind of file is not stored here.');
+  }
+
   const ownerId = readOwnerId(upload.ownerId);
-  const contentType = readContentType(upload.contentType);
+  const declaredType = readContentType(upload.contentType);
   const content = readContent(upload.content);
+  const contentType = readActualContentType(declaredType, content, purpose);
 
   const key = buildStorageKey({
     purpose,
@@ -131,30 +200,45 @@ async function uploadFile(upload, store = objectStore(), newObjectName = randomO
     contentType,
   });
 
-  await store.putObject({ key, content, contentType });
+  await (store ?? objectStore(visibilityOf(purpose))).putObject({ key, content, contentType });
 
   // The key and never an address. Who may open the file is a separate decision,
-  // made once the API knows who is asking.
-  return { key };
+  // made once the API knows who is asking. The fingerprint lets a caller tell
+  // when the same file was handed in before.
+  return {
+    key,
+    contentType,
+    size: content.length,
+    sha256: createHash('sha256').update(content).digest('hex'),
+  };
 }
 
-async function createDownloadUrl(
-  key,
-  expiresInSeconds = DOWNLOAD_URL_EXPIRY_SECONDS,
-  store = objectStore(),
-) {
+function storeFor(key, store) {
+  return store ?? objectStore(visibilityOf(key.split('/')[0]));
+}
+
+// Whether a stored file is one anybody may see. Only these are served without a
+// session.
+function isPublicKey(key) {
+  return visibilityOf(readStoredKey(key).split('/')[0]) === FILE_VISIBILITY.PUBLIC;
+}
+
+async function createDownloadUrl(key, expiresInSeconds = DOWNLOAD_URL_EXPIRY_SECONDS, store) {
   const storedKey = readStoredKey(key);
   const windowSeconds = readExpirySeconds(expiresInSeconds);
 
-  return store.createSignedDownloadUrl({ key: storedKey, expiresInSeconds: windowSeconds });
+  return storeFor(storedKey, store).createSignedDownloadUrl({
+    key: storedKey,
+    expiresInSeconds: windowSeconds,
+  });
 }
 
 // Only the object goes. The record that pointed at it stays, so what a member
 // paid and when they paid it is still answerable a year later.
-async function deleteFile(key, store = objectStore()) {
+async function deleteFile(key, store) {
   const storedKey = readStoredKey(key);
 
-  await store.deleteObject({ key: storedKey });
+  await storeFor(storedKey, store).deleteObject({ key: storedKey });
 }
 
 // The extension the key was written under is what the answer carries, so a
@@ -174,13 +258,16 @@ function contentTypeFor(key) {
 
 // The bytes themselves, for whoever opens a file through the API rather than
 // through an address the bucket signed.
-async function readFile(key, store = objectStore()) {
+async function readFile(key, store) {
   const storedKey = readStoredKey(key);
 
-  return store.readObject({ key: storedKey });
+  return storeFor(storedKey, store).readObject({ key: storedKey });
 }
 
 module.exports = {
+  PURPOSES,
+  detectContentType,
+  isPublicKey,
   uploadFile,
   createDownloadUrl,
   deleteFile,

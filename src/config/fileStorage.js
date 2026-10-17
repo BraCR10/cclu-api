@@ -5,19 +5,28 @@ const {
   DeleteObjectCommand,
 } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-const { createLocalStore } = require('./localFileStorage');
+const path = require('node:path');
+const { createLocalStore, readLocalDirectory } = require('./localFileStorage');
 
 // The storage provider is named in this file and nowhere else. The chamber can
 // move to another host by changing these values, without touching a service.
 // Without them the disk answers instead, which is what a development machine
-// has; a deployment that stores files sets all five.
+// has; a deployment that stores files sets all six, and production refuses to
+// start without them.
 const REQUIRED_ENVIRONMENT_VARIABLES = [
   'S3_ENDPOINT',
   'S3_REGION',
-  'S3_BUCKET',
+  'S3_PUBLIC_BUCKET',
+  'S3_PRIVATE_BUCKET',
   'S3_ACCESS_KEY_ID',
   'S3_SECRET_ACCESS_KEY',
 ];
+
+// Two buckets rather than a permission per file. What anyone may see, a logo or
+// a product photo, lives where reading is open. A receipt or a certification
+// lives where nothing is public, so no single misconfigured object can expose
+// one: only this API reads it, after deciding who is asking.
+const FILE_VISIBILITY = Object.freeze({ PUBLIC: 'public', PRIVATE: 'private' });
 
 // The first segment of every key. A payment receipt and a logo never share a
 // folder, so a rule written for one can never reach the other.
@@ -38,7 +47,24 @@ const CONTENT_TYPE_EXTENSIONS = {
 
 // A receipt photographed with a telephone is the largest thing the chamber
 // receives. Past this a file is a mistake or an attempt to fill the bucket.
-const MAXIMUM_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAXIMUM_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+
+// Where each kind of file lives and what it may be. A rule written for one kind
+// never reaches another.
+const PURPOSE_RULES = Object.freeze({
+  [FILE_PURPOSES.MEMBER_LOGO]: {
+    visibility: FILE_VISIBILITY.PUBLIC,
+    contentTypes: ['image/jpeg', 'image/png', 'image/webp'],
+  },
+  [FILE_PURPOSES.MEMBERSHIP_CERTIFICATION]: {
+    visibility: FILE_VISIBILITY.PRIVATE,
+    contentTypes: ['application/pdf', 'image/jpeg', 'image/png'],
+  },
+  [FILE_PURPOSES.PAYMENT_RECEIPT]: {
+    visibility: FILE_VISIBILITY.PRIVATE,
+    contentTypes: ['image/jpeg', 'image/png', 'application/pdf'],
+  },
+});
 
 // Long enough to open the file, short enough that an address copied out of a
 // browser history is already dead by the time anyone else reads it.
@@ -68,7 +94,10 @@ function readFileStorageConfiguration(environment = process.env) {
   return {
     endpoint: environment.S3_ENDPOINT,
     region: environment.S3_REGION,
-    bucket: environment.S3_BUCKET,
+    buckets: {
+      [FILE_VISIBILITY.PUBLIC]: environment.S3_PUBLIC_BUCKET,
+      [FILE_VISIBILITY.PRIVATE]: environment.S3_PRIVATE_BUCKET,
+    },
     accessKeyId: environment.S3_ACCESS_KEY_ID,
     secretAccessKey: environment.S3_SECRET_ACCESS_KEY,
 
@@ -78,7 +107,8 @@ function readFileStorageConfiguration(environment = process.env) {
   };
 }
 
-function createObjectStore(configuration = readFileStorageConfiguration()) {
+function createObjectStore(visibility, configuration = readFileStorageConfiguration()) {
+  const bucket = configuration.buckets[visibility];
   const client = new S3Client({
     endpoint: configuration.endpoint,
     region: configuration.region,
@@ -95,7 +125,7 @@ function createObjectStore(configuration = readFileStorageConfiguration()) {
     async putObject({ key, content, contentType }) {
       await client.send(
         new PutObjectCommand({
-          Bucket: configuration.bucket,
+          Bucket: bucket,
           Key: key,
           Body: content,
           ContentType: contentType,
@@ -104,7 +134,7 @@ function createObjectStore(configuration = readFileStorageConfiguration()) {
     },
 
     createSignedDownloadUrl({ key, expiresInSeconds }) {
-      const command = new GetObjectCommand({ Bucket: configuration.bucket, Key: key });
+      const command = new GetObjectCommand({ Bucket: bucket, Key: key });
 
       return getSignedUrl(client, command, { expiresIn: expiresInSeconds });
     },
@@ -112,20 +142,18 @@ function createObjectStore(configuration = readFileStorageConfiguration()) {
     // The bytes, for the caller that opens a file through the API rather than
     // through an address the bucket signed.
     async readObject({ key }) {
-      const answer = await client.send(
-        new GetObjectCommand({ Bucket: configuration.bucket, Key: key }),
-      );
+      const answer = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
 
       return Buffer.from(await answer.Body.transformToByteArray());
     },
 
     async deleteObject({ key }) {
-      await client.send(new DeleteObjectCommand({ Bucket: configuration.bucket, Key: key }));
+      await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
     },
   };
 }
 
-let configuredObjectStore = null;
+const configuredObjectStores = new Map();
 
 // Whether a bucket was named, which is what decides between the two drivers.
 function hasObjectStoreCredentials(environment = process.env) {
@@ -134,16 +162,37 @@ function hasObjectStoreCredentials(environment = process.env) {
 
 // Built on first use rather than on import, so a process that never touches a
 // file starts without storage credentials and a missing one fails where it is.
-function objectStore() {
-  if (configuredObjectStore === null) {
-    configuredObjectStore = hasObjectStoreCredentials() ? createObjectStore() : createLocalStore();
+function objectStore(visibility) {
+  if (!Object.values(FILE_VISIBILITY).includes(visibility)) {
+    throw new TypeError(`There is no file visibility named ${visibility}.`);
   }
 
-  return configuredObjectStore;
+  if (!configuredObjectStores.has(visibility)) {
+    configuredObjectStores.set(
+      visibility,
+      hasObjectStoreCredentials()
+        ? createObjectStore(visibility)
+        : createLocalStore(path.join(readLocalDirectory(), visibility)),
+    );
+  }
+
+  return configuredObjectStores.get(visibility);
+}
+
+// The disk is for a development machine. A production server writing receipts
+// to its own disk loses them on the next deploy, so it refuses to start instead.
+function assertProductionStorage(environment = process.env) {
+  if (environment.NODE_ENV === 'production' && !hasObjectStoreCredentials(environment)) {
+    throw new FileStorageConfigurationError(
+      `Production stores files in the buckets. Set ${REQUIRED_ENVIRONMENT_VARIABLES.join(', ')}.`,
+    );
+  }
 }
 
 module.exports = {
   REQUIRED_ENVIRONMENT_VARIABLES,
+  FILE_VISIBILITY,
+  PURPOSE_RULES,
   FILE_PURPOSES,
   CONTENT_TYPE_EXTENSIONS,
   MAXIMUM_FILE_SIZE_BYTES,
@@ -154,4 +203,5 @@ module.exports = {
   hasObjectStoreCredentials,
   createObjectStore,
   objectStore,
+  assertProductionStorage,
 };
