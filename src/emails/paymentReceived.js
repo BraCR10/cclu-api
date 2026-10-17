@@ -1,14 +1,17 @@
-const { layout, escapeHtml } = require('./layout');
+const { composeEmail, webUrl } = require('./layout');
 
 function paymentReceived({ businessName, planName, amount, reference }) {
-  return {
-    subject: 'Recibimos su comprobante de pago',
-    text: `${businessName}: recibimos su comprobante de pago del plan ${planName} por ${amount}, con el detalle ${reference}. La Cámara lo revisa en 1 a 2 días hábiles y le avisaremos por este medio.`,
-    html: layout('Recibimos su comprobante de pago', [
-      `${escapeHtml(businessName)}, recibimos su comprobante de pago del plan <strong>${escapeHtml(planName)}</strong> por ${escapeHtml(amount)}, con el detalle ${escapeHtml(reference)}.`,
-      'La Cámara lo revisa en 1 a 2 días hábiles y le avisaremos por este medio.',
-    ]),
-  };
+  return composeEmail('Recibimos su comprobante de pago', {
+    preheader: 'La Cámara lo revisa en 1 a 2 días hábiles.',
+    heading: 'Recibimos su comprobante',
+    paragraphs: [`${businessName}, la Cámara revisará su pago en 1 a 2 días hábiles.`],
+    details: [
+      { label: 'Plan', value: planName },
+      { label: 'Monto', value: amount },
+      { label: 'Detalle', value: reference },
+    ],
+    action: { label: 'Ver mis pagos', url: webUrl('/member/payments') },
+  });
 }
 
 module.exports = { paymentReceived };

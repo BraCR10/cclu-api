@@ -1,19 +1,12 @@
-const { layout, escapeHtml } = require('./layout');
+const { composeEmail, webUrl } = require('./layout');
 
 function paymentRejected({ businessName, planName, reason }) {
-  return {
-    subject: 'Su pago no fue aprobado',
-    text: [
-      `${businessName}: la Cámara no aprobó su pago del plan ${planName}.`,
-      `Motivo: ${reason}`,
-      'Puede registrarlo de nuevo desde Mis pagos en su panel.',
-    ].join('\n\n'),
-    html: layout('Su pago no fue aprobado', [
-      `${escapeHtml(businessName)}, la Cámara no aprobó su pago del plan <strong>${escapeHtml(planName)}</strong>.`,
-      `<strong>Motivo:</strong> ${escapeHtml(reason)}`,
-      'Puede registrarlo de nuevo desde Mis pagos en su panel.',
-    ]),
-  };
+  return composeEmail('Su pago no fue aprobado', {
+    heading: 'Su pago no fue aprobado',
+    paragraphs: [`${businessName}, revisamos su pago del plan ${planName} y no pudimos aprobarlo.`],
+    details: [{ label: 'Motivo', value: reason }],
+    action: { label: 'Registrar de nuevo', url: webUrl('/member/payments') },
+  });
 }
 
 module.exports = { paymentRejected };
