@@ -716,12 +716,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/admin/memberships?status=active&plan=&search=&page=1&pageSize=10",
+              "raw": "{{baseUrl}}/api/admin/memberships?view=active&plan=&search=&page=1&pageSize=10",
               "host": ["{{baseUrl}}"],
               "path": ["api", "admin", "memberships"],
               "query": [
                 {
-                  "key": "status",
+                  "key": "view",
                   "value": "active"
                 },
                 {
@@ -742,7 +742,7 @@
                 }
               ]
             },
-            "description": "Administrator session. Paid memberships only. status is active (default) or inactive; plan is lite, pro or premium; search matches the business name or the start of the member code. Answers the page with counts { active, expiring, inactive } and the notice in force. A lapsed member is listed as inactive with the plan that ran out."
+            "description": "Administrator session. Paid plans in force only; Gratuita, and any plan that ran out, is not listed. view is active (default) or expiring, the part that ends within the notice; plan is lite, pro or premium; search matches the business name or the start of the member code. Answers the page with counts { active, expiring } and the notice in force, soonest to expire first."
           },
           "response": []
         }

@@ -345,26 +345,21 @@ first.
 
 ### The administration list
 
-`GET /api/admin/memberships?status=active|inactive&plan=&search=&page=&pageSize=`
-lists paid memberships, and only paid ones: a member who has always been on
-Gratuita is not in it.
+`GET /api/admin/memberships?view=active|expiring&plan=&search=&page=&pageSize=`
+lists paid plans in force, and nothing else. A plan that ran out is back on
+Gratuita, and Gratuita is not listed, so the list carries no state of its own:
+everything in it is active.
 
-- **The state is binary.** `active` is a paid plan still in force, by the same
-  rule as access. `inactive` is everything access is refused for: a plan past its
-  expiry whether or not the hourly run has moved it yet, one whose expiry cannot
-  be trusted, and a member who lapsed to Gratuita. A lapsed member stays listed
-  until they pay again, which makes it the chamber's list to win them back.
-- **Expiring soon is a count, not a state.** `counts.expiring` is how many active
-  plans end within the notice. Active plans are listed soonest to expire first,
-  so those are at the top anyway; inactive ones most recently ended first.
-- **A lapsed member is shown with the plan that ran out**, not Gratuita, and the
-  plan filter matches that plan.
+- **Two views of the same plans.** `active` is every paid plan in force, by the
+  same rule as access. `expiring` is the part of those that ends within the
+  notice. Both are listed soonest to expire first.
 - **The search** matches the business name anywhere, or the start of the member
   code with its dashes ignored. It is escaped, so it is read as the characters
-  typed. `status` and `plan` outside their lists are refused.
+  typed. `view` and `plan` outside their lists are refused.
 
-The answer is the page, the three counts and the notice in force, from one
-aggregation that joins each membership to its member.
+The answer is the page, `counts { active, expiring }` and the notice in force,
+from one aggregation that joins each membership to its member and keeps only
+its name and code.
 
 ## Time and access
 
