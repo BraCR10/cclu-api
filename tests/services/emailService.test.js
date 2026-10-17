@@ -172,6 +172,8 @@ const TEMPLATE_FIXTURES = {
     daysToReview: 5,
   },
   applicationRejected: { businessName: 'A', reason: 'No verificable.' },
+  membershipExpiring: { businessName: 'A', planName: 'Pro Pymex', expiresAt: new Date() },
+  membershipLapsed: { businessName: 'A', planName: 'Pro Pymex' },
   passwordResetLink: { resetUrl: 'https://cclu.example/password/reset/abc', minutesValid: 30 },
 };
 

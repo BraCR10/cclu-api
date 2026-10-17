@@ -3,6 +3,7 @@ const { Activity, ACTIVITY_STATUSES } = require('../models/Activity');
 const { generateMemberCode } = require('./memberCodeService');
 const { issueResubmissionToken, CORRECTABLE_FIELDS } = require('./resubmissionService');
 const emailService = require('./emailService');
+const { grantFreeMembership } = require('./membershipService');
 const { ApplicationError, ERROR_CODES } = require('../config/errorCodes');
 const { readPagination, paginated } = require('../config/pagination');
 
@@ -236,6 +237,19 @@ function updateMatchingApplication(filter, changes) {
     .lean();
 }
 
+// An approved member is on Gratuita from the start. The grant only writes when
+// the membership is missing, and reading the membership grants it as well, so
+// a grant cut short here is completed the first time the member looks.
+async function approveMatchingApplication(filter, changes) {
+  const approved = await updateMatchingApplication(filter, changes);
+
+  if (approved !== null && approved !== undefined) {
+    await grantFreeMembership(approved._id, approved.reviewedAt);
+  }
+
+  return approved;
+}
+
 // The expected state travels inside the filter, so the read and the write are a
 // single operation. Two administrators deciding at once cannot both succeed.
 function pendingApplication(memberId) {
@@ -301,7 +315,7 @@ async function recordNamedActivity(application, add = addNamedActivity) {
 async function approveApplication(
   memberId,
   reviewerId,
-  decide = updateMatchingApplication,
+  decide = approveMatchingApplication,
   findStatus = findApplicationStatus,
   newCode = generateMemberCode,
   record = recordNamedActivity,

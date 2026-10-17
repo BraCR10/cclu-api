@@ -14,7 +14,9 @@
     "format:check": "prettier --check .",
     "test": "node --test",
     "create-admin": "node scripts/create-admin.js",
-    "seed-catalogs": "node scripts/seed-catalogs.js"
+    "seed-catalogs": "node scripts/seed-catalogs.js",
+    "grant-free-memberships": "node scripts/grant-free-memberships.js",
+    "run-membership-expiry": "node scripts/run-membership-expiry.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1136.0",

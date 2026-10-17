@@ -2,13 +2,23 @@ const mongoose = require('mongoose');
 
 const AUDIT_ACTIONS = {
   PLAN_FEE_CHANGED: 'plan.fee_changed',
+  MEMBERSHIP_LAPSED: 'membership.lapsed',
 };
+
+// The actor of an action no person took, such as a plan running out overnight.
+const SYSTEM_ACTOR = { role: 'system', name: 'system' };
 
 // Who acted, copied at the moment of the action. A history that joined to the
 // live account would rewrite itself when an administrator changes their name.
+// Only the system acts without an account behind it.
 const actorSchema = new mongoose.Schema(
   {
-    id: { type: mongoose.Schema.Types.ObjectId, required: true },
+    id: {
+      type: mongoose.Schema.Types.ObjectId,
+      required() {
+        return this.role !== SYSTEM_ACTOR.role;
+      },
+    },
     role: { type: String, required: true },
     name: { type: String, required: true },
   },
@@ -90,4 +100,4 @@ auditEntrySchema.pre('save', function refuseResave() {
 
 const AuditEntry = mongoose.model('AuditEntry', auditEntrySchema);
 
-module.exports = { AuditEntry, AUDIT_ACTIONS };
+module.exports = { AuditEntry, AUDIT_ACTIONS, SYSTEM_ACTOR };
