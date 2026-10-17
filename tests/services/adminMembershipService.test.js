@@ -2,19 +2,20 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   readListQuery,
+  viewFilters,
   searchFilter,
   listMemberships,
 } = require('../../src/services/adminMembershipService');
 
-test('the list answers active memberships unless asked for the others', () => {
-  assert.equal(readListQuery({}).status, 'active');
-  assert.equal(readListQuery({ status: 'inactive' }).status, 'inactive');
+test('the list shows every active membership unless asked for those expiring', () => {
+  assert.equal(readListQuery({}).view, 'active');
+  assert.equal(readListQuery({ view: 'expiring' }).view, 'expiring');
 });
 
-test('a status, plan or search outside what the list offers is refused', () => {
+test('a view, plan or search outside what the list offers is refused', () => {
   for (const query of [
-    { status: 'expiring' },
-    { status: ['active', 'inactive'] },
+    { view: 'inactive' },
+    { view: ['active', 'expiring'] },
     { plan: 'free' },
     { plan: 'gold' },
     { plan: { $ne: null } },
@@ -39,13 +40,12 @@ test('a code is matched from its start with the dashes ignored', () => {
   assert.equal(byCode['member.memberCode'].$regex, '^MA7K2');
 });
 
-test('a lapsed member is shown with the plan that ran out and the day it ended', async () => {
+test('an active membership is listed with its plan and the last day it is valid', async () => {
   const now = new Date('2026-10-20T12:00:00Z');
   const plans = [
     { _id: 'free-id', key: 'free', name: 'Gratuita' },
     { _id: 'pro-id', key: 'pro', name: 'Pro Pymex' },
   ];
-  const lapsedOn = new Date('2026-10-08T06:00:00Z');
   const store = {
     findPlans: async () => plans,
     readNoticeDays: async () => 7,
@@ -53,26 +53,34 @@ test('a lapsed member is shown with the plan that ran out and the day it ended',
       {
         active: [{ count: 3 }],
         expiring: [{ count: 1 }],
-        inactive: [{ count: 1 }],
         items: [
           {
             member: { _id: 'm1', businessName: 'Café Loma Verde', memberCode: 'MA7K2Q4' },
-            plan: 'free-id',
-            lapsed: { plan: 'pro-id', expiredAt: lapsedOn },
-            endedAt: lapsedOn,
+            plan: 'pro-id',
+            expiresAt: new Date('2026-10-23T06:00:00Z'),
+            frequency: 'monthly',
           },
         ],
       },
     ],
   };
 
-  const answer = await listMemberships({ status: 'inactive' }, now, store);
+  const answer = await listMemberships({ view: 'expiring' }, now, store);
 
-  assert.deepEqual(answer.counts, { active: 3, expiring: 1, inactive: 1 });
+  assert.deepEqual(answer.counts, { active: 3, expiring: 1 });
   assert.equal(answer.total, 1);
   assert.equal(answer.noticeDays, 7);
   assert.deepEqual(answer.items[0].plan, { key: 'pro', name: 'Pro Pymex' });
   assert.equal(answer.items[0].memberCode, 'M-A7K2-Q4');
-  assert.equal(answer.items[0].validUntil, '2026-10-07');
-  assert.equal(answer.items[0].status, 'inactive');
+  assert.equal(answer.items[0].validUntil, '2026-10-22');
+  assert.equal('status' in answer.items[0], false);
+});
+
+test('only paid plans in force are listed, and expiring is the part that ends within the notice', () => {
+  const now = new Date('2026-10-20T12:00:00Z');
+  const filters = viewFilters(now, 7, 'free-id', null);
+
+  assert.deepEqual(filters.active.plan, { $ne: 'free-id' });
+  assert.equal(filters.active.expiresAt.$gt, now);
+  assert.equal(filters.expiring.expiresAt.$lte.toISOString(), '2026-10-27T12:00:00.000Z');
 });
