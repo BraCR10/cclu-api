@@ -7,8 +7,11 @@ const MAXIMUM_PAGE_SIZE = 50;
 // skip stay an exact integer instead of overflowing into an approximation.
 const MAXIMUM_PAGE = 100_000;
 
-// Absent means the default. Anything else has to be a whole number in range,
-// so a typo is refused instead of quietly answering the first page.
+const WHOLE_NUMBER = /^[1-9]\d*$/;
+
+// Absent means the default. Anything else has to be plain digits in range: a
+// typo, a repeated parameter, hexadecimal or an exponent is refused instead of
+// being read as some other page.
 function readPositiveInteger(query, field, fallback, maximum) {
   const raw = query?.[field];
 
@@ -16,9 +19,9 @@ function readPositiveInteger(query, field, fallback, maximum) {
     return fallback;
   }
 
-  const value = Number(raw);
+  const value = typeof raw === 'string' && WHOLE_NUMBER.test(raw) ? Number(raw) : Number.NaN;
 
-  if (!Number.isInteger(value) || value < 1 || value > maximum) {
+  if (!(value >= 1 && value <= maximum)) {
     throw new ValidationError(
       ERROR_CODES.INVALID_FORMAT,
       field,

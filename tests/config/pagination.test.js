@@ -29,6 +29,13 @@ test('a page or size that is not a whole number in range is refused by name', ()
     [{ page: '-1' }, 'page'],
     [{ page: '1.5' }, 'page'],
     [{ page: 'two' }, 'page'],
+    [{ page: '0x10' }, 'page'],
+    [{ page: '1e3' }, 'page'],
+    [{ page: ' 5 ' }, 'page'],
+    [{ page: '05' }, 'page'],
+    [{ page: ['7'] }, 'page'],
+    [{ page: ['1', '2'] }, 'page'],
+    [{ pageSize: '0b11' }, 'pageSize'],
     [{ pageSize: '0' }, 'pageSize'],
     [{ pageSize: String(MAXIMUM_PAGE_SIZE + 1) }, 'pageSize'],
   ]) {
