@@ -1,15 +1,12 @@
 const mongoose = require('mongoose');
 
-const MEMBERSHIP_TYPES = {
-  FREE: 'free',
-  PAID: 'paid',
-};
-
 const MEMBERSHIP_STATUSES = {
   ACTIVE: 'active',
   INACTIVE: 'inactive',
 };
 
+// A member is always on some plan. What the plan allows lives on the plan, so
+// this only records which one and until when.
 const membershipSchema = new mongoose.Schema(
   {
     member: {
@@ -17,11 +14,10 @@ const membershipSchema = new mongoose.Schema(
       ref: 'Member',
       required: true,
     },
-    type: {
-      type: String,
+    plan: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Plan',
       required: true,
-      enum: Object.values(MEMBERSHIP_TYPES),
-      default: MEMBERSHIP_TYPES.FREE,
     },
     status: {
       type: String,
@@ -29,6 +25,7 @@ const membershipSchema = new mongoose.Schema(
       enum: Object.values(MEMBERSHIP_STATUSES),
       default: MEMBERSHIP_STATUSES.ACTIVE,
     },
+    // Null on Gratuita, which never runs out.
     expiresAt: {
       type: Date,
       default: null,
@@ -39,4 +36,4 @@ const membershipSchema = new mongoose.Schema(
 
 const Membership = mongoose.model('Membership', membershipSchema);
 
-module.exports = { Membership, MEMBERSHIP_TYPES, MEMBERSHIP_STATUSES };
+module.exports = { Membership, MEMBERSHIP_STATUSES };
