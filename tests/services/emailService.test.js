@@ -1,3 +1,4 @@
+const fs = require('node:fs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { sendEmail, notify, EmailDeliveryError } = require('../../src/services/emailService');
@@ -80,7 +81,7 @@ test('a rejection reason written by an administrator is escaped too', () => {
     reason: '<img src=x onerror="steal()">',
   });
 
-  assert.ok(!message.html.includes('<img'));
+  assert.ok(!message.html.includes('<img src=x'));
   assert.ok(message.html.includes('&lt;img'));
 });
 
@@ -91,7 +92,7 @@ test('a reason to correct is escaped like any other reason', () => {
     fields: [{ field: 'district', message: 'algo.' }],
   });
 
-  assert.ok(!message.html.includes('<img'));
+  assert.ok(!message.html.includes('<img src=x'));
   assert.ok(message.html.includes('&lt;img'));
 });
 
@@ -111,11 +112,9 @@ test('what is wrong with a field travels with the field', () => {
   });
 
   assert.ok(
-    message.text.includes(
-      '- número de identificación: no coincide con la razón social registrada.',
-    ),
+    message.text.includes('Número de identificación: no coincide con la razón social registrada.'),
   );
-  assert.ok(message.text.includes('- teléfono: tiene un dígito de más.'));
+  assert.ok(message.text.includes('Teléfono: tiene un dígito de más.'));
   assert.ok(message.html.includes('no coincide con la razón social registrada.'));
 });
 
@@ -141,7 +140,7 @@ test('the fields to correct are listed by name rather than by identifier', () =>
     ],
   });
 
-  assert.ok(message.text.includes('distrito'));
+  assert.match(message.text, /distrito/i);
   assert.ok(!message.text.includes('district'));
   assert.ok(!message.html.includes('district'));
 });
@@ -270,4 +269,36 @@ test('notify answers true only when the message actually left', async () => {
   const succeeding = async () => ({ messageId: 'abc' });
 
   assert.equal(await notify('applicationApproved', 'socio@example.cr', {}, succeeding), true);
+});
+
+test('every message names who sends it and how to reach them, in both versions', () => {
+  for (const name of TEMPLATE_NAMES) {
+    const message = renderTemplate(name, TEMPLATE_FIXTURES[name]);
+
+    assert.ok(message.html.includes('6128 2812'), name);
+    assert.ok(message.text.includes('Cámara de Comercio'), name);
+    assert.ok(message.html.startsWith('<!DOCTYPE html>'), name);
+  }
+});
+
+test('a button leads only to an address the API built, never to text from a person', () => {
+  const message = renderTemplate('applicationRejected', {
+    businessName: 'Panadería',
+    reason: 'javascript:alert(1)',
+    resubmitUrl: 'https://cclu.example/resubmit/abc',
+  });
+
+  assert.ok(message.html.includes('href="https://cclu.example/resubmit/abc"'));
+  assert.ok(!message.html.includes('href="javascript'));
+});
+
+test('every message carries the logo inside it rather than linking to the web', () => {
+  for (const name of TEMPLATE_NAMES) {
+    const message = renderTemplate(name, TEMPLATE_FIXTURES[name]);
+    const [logo] = message.attachments;
+
+    assert.ok(message.html.includes(`src="cid:${logo.cid}"`), name);
+    assert.equal(logo.contentDisposition, 'inline', name);
+    assert.ok(fs.existsSync(logo.path), name);
+  }
 });

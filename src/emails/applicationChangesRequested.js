@@ -1,4 +1,4 @@
-const { layout, escapeHtml } = require('./layout');
+const { composeEmail } = require('./layout');
 
 // The applicant reads these, so they are written out rather than shown as the
 // identifiers the API stores. A test checks that every field the chamber may ask
@@ -29,48 +29,22 @@ function correctionsIn(fields) {
 function applicationChangesRequested({ businessName, reason, fields = [], resubmitUrl }) {
   const corrections = correctionsIn(fields);
 
-  const text = [
-    `${businessName}: necesitamos que corrija su solicitud de afiliación.`,
-    `Motivo: ${reason}`,
-    corrections.length === 0
-      ? null
-      : [
-          'Datos por corregir:',
-          ...corrections.map(({ label, message }) => `- ${label}: ${message}`),
-        ].join('\n'),
-    resubmitUrl === undefined
-      ? 'Comuníquese con la Cámara para volver a enviar su solicitud.'
-      : `Puede corregir y volver a enviarla aquí: ${resubmitUrl}`,
-  ]
-    .filter((paragraph) => paragraph !== null)
-    .join('\n\n');
-
-  const paragraphs = [
-    `${escapeHtml(businessName)}, revisamos su solicitud de afiliación y necesitamos que corrija algunos datos antes de continuar.`,
-    `<strong>Motivo:</strong> ${escapeHtml(reason)}`,
-  ];
-
-  if (corrections.length > 0) {
-    const items = corrections
-      .map(({ label, message }) => `<li>${escapeHtml(label)}: ${escapeHtml(message)}</li>`)
-      .join('');
-
-    paragraphs.push(`<strong>Datos por corregir:</strong><ul>${items}</ul>`);
-  }
-
-  // The address is built by the API from a token it generated, so it is markup
-  // this application wrote rather than a value somebody sent.
-  paragraphs.push(
-    resubmitUrl === undefined
-      ? 'Comuníquese con la Cámara para volver a enviar su solicitud.'
-      : `Puede corregir y <a href="${escapeHtml(resubmitUrl)}">volver a enviar su solicitud</a> desde este enlace. El enlace es personal: no lo comparta.`,
-  );
-
-  return {
-    subject: 'Su solicitud de afiliación necesita correcciones',
-    text,
-    html: layout('Su solicitud necesita correcciones', paragraphs),
-  };
+  return composeEmail('Su solicitud de afiliación necesita correcciones', {
+    heading: 'Su solicitud necesita correcciones',
+    paragraphs: [`Revisamos la solicitud de ${businessName}. Corrija lo indicado para continuar.`],
+    details: [
+      { label: 'Motivo', value: reason },
+      ...corrections.map(({ label, message }) => ({
+        label: `${label.charAt(0).toUpperCase()}${label.slice(1)}`,
+        value: message,
+      })),
+    ],
+    action: { label: 'Corregir mi solicitud', url: resubmitUrl },
+    note:
+      resubmitUrl === undefined
+        ? 'Comuníquese con la Cámara para volver a enviar su solicitud.'
+        : 'El enlace es personal: no lo comparta.',
+  });
 }
 
 module.exports = { applicationChangesRequested, FIELD_LABELS };
