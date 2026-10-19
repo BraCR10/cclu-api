@@ -64,6 +64,10 @@
     {
       "key": "emailChangeToken",
       "value": ""
+    },
+    {
+      "key": "branchId",
+      "value": ""
     }
   ],
   "item": [
@@ -1027,6 +1031,127 @@
               "path": ["api", "admin", "payments", "{{paymentId}}", "reject"]
             },
             "description": "Administrator session. reason is 10 to 300 characters and is mailed to the member. 409 already_decided."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Branches",
+      "item": [
+        {
+          "name": "List mine",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/branches",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "branches"]
+            },
+            "description": "Member session. The approved registration becomes the first branch on the first read, so a member never opens on an empty list of the place they already registered."
+          },
+          "response": []
+        },
+        {
+          "name": "Add one",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sucursal Curridabat\",\n  \"isPrimary\": false,\n  \"canton\": \"{{cantonId}}\",\n  \"district\": \"Granadilla\",\n  \"address\": \"100 m sur del parque de Granadilla\",\n  \"phone\": \"2272 1180\",\n  \"schedule\": \"Lunes a sbado, 7:00 a. m. a 6:00 p. m.\",\n  \"municipalPermit\": \"CUR-2025-1142\",\n  \"activity\": \"{{activityId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/branches",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "branches"]
+            },
+            "description": "Member session. name, canton, district and address are required. isPrimary takes the flag from the branch that had it; the first branch is primary whatever the body says. municipalPermit is only ever read by the chamber."
+          },
+          "response": []
+        },
+        {
+          "name": "Edit one",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"district\": \"San Ram de La Unin\",\n  \"phone\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/branches/{{branchId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "branches", "{{branchId}}"]
+            },
+            "description": "Member session. Only the fields sent are rewritten, and an optional one sent empty is taken off the branch. 400 nothing_to_change."
+          },
+          "response": []
+        },
+        {
+          "name": "Close one",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/branches/{{branchId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "branches", "{{branchId}}"]
+            },
+            "description": "Member session. Answers with the branches that are left. 409 last_branch: a member keeps at least one. Closing is a date, so the record stays readable."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Store",
+      "item": [
+        {
+          "name": "Read my shop",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/store",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "store"]
+            },
+            "description": "Member session. Always answers the whole week; a day nobody set is closed."
+          },
+          "response": []
+        },
+        {
+          "name": "Save my shop",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessDescription\": \"Caf y tostadura de altura.\",\n  \"categories\": [\"{{activityId}}\"],\n  \"instagram\": \"@cafelomaverde\",\n  \"website\": \"https://cafelomaverde.cr\",\n  \"schedule\": [\n    { \"day\": \"monday\", \"closed\": false, \"opensAt\": \"07:00\", \"closesAt\": \"18:00\" },\n    { \"day\": \"sunday\", \"closed\": true }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/store",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "store"]
+            },
+            "description": "Member session. The schedule is the week: a day left out is closed. A day must close after it opens. Categories are catalog references, five at most. 400 nothing_to_change."
           },
           "response": []
         }

@@ -1,5 +1,7 @@
 const express = require('express');
 const memberProfileController = require('../controllers/memberProfileController');
+const branchController = require('../controllers/branchController');
+const storeController = require('../controllers/storeController');
 const emailChangeController = require('../controllers/emailChangeController');
 const membershipController = require('../controllers/membershipController');
 const paymentController = require('../controllers/paymentController');
@@ -25,6 +27,25 @@ memberRoutes.post(
 );
 
 memberRoutes.get('/me/membership', authorize(ROLES.MEMBER), membershipController.getOwnMembership);
+
+// The places the chamber affiliates. The first one comes from the approved
+// registration, so a member never starts with an empty list.
+memberRoutes.get('/me/branches', authorize(ROLES.MEMBER), branchController.getOwnBranches);
+memberRoutes.post('/me/branches', authorize(ROLES.MEMBER), branchController.createOwnBranch);
+memberRoutes.patch(
+  '/me/branches/:branchId',
+  authorize(ROLES.MEMBER),
+  branchController.updateOwnBranch,
+);
+memberRoutes.delete(
+  '/me/branches/:branchId',
+  authorize(ROLES.MEMBER),
+  branchController.deleteOwnBranch,
+);
+
+// The shop as a client meets it: what it sells besides its trade, and its hours.
+memberRoutes.get('/me/store', authorize(ROLES.MEMBER), storeController.getOwnStore);
+memberRoutes.patch('/me/store', authorize(ROLES.MEMBER), storeController.updateStore);
 
 memberRoutes.get(
   '/me/payments/eligibility',

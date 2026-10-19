@@ -363,6 +363,33 @@ The answer is the page, `counts { active, expiring }` and the notice in force,
 from one aggregation that joins each membership to its member and keeps only
 its name and code.
 
+## Branches and the shop
+
+The chamber affiliates a place, so a member can hold several. The registration
+records one — `branchName`, `canton`, `district`, `location` — and everything
+else arrives from the panel, one `Branch` document each.
+
+- **The registered place is the first branch.** `GET /api/members/me/branches`
+  writes it from the approved registration when the member has none, the way
+  reading a membership grants Gratuita. A business without a door (a virtual
+  branch has no address) is left with none, and the screen asks for one.
+- **One branch is primary.** Naming another one primary clears the flag first,
+  so there is never a moment with two. The first branch is primary whatever the
+  body says: a member cannot hold branches with none of them by default.
+- **The last branch cannot be closed.** `DELETE` answers `409 last_branch`
+  rather than leaving a member with nowhere to be found. Closing one is a date
+  (`removedAt`), not a delete: the chamber keeps what it affiliated, and the
+  primary flag moves to the oldest branch that is left.
+- **The municipal permit is the chamber's.** It is stored on the branch, shown
+  to the member with that note, and never part of what the directory projects.
+
+The shop is a member's own setting, not a document of its own: the description
+of what it sells, the catalog categories the marketplace groups it under, its
+social accounts and its week. `GET /api/members/me/store` always answers seven
+days; a day nobody set is closed, because an empty pair of hours would read as
+open at some point. `PATCH` takes the week whole, refuses a day that closes
+before it opens, and takes a social account sent empty back off the shop.
+
 ## Time and access
 
 Plans grant access by date, so a mistake here gives somebody a paid plan that
