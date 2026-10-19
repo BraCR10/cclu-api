@@ -302,7 +302,9 @@ audit log.
   member at once.
 - **The answer is the effective plan**, worked out against the clock as the next
   section describes, with `expiresAt` and `validUntil`, when the plan ends, and
-  `lapsed`, the paid plan that ran out, until the next one is approved.
+  `lapsed`, the paid plan that ran out, until the next one is approved. It also
+  carries `businessName`: the plan belongs to a business, and the card printed
+  with it names that business above the member code.
 
 ### The hourly run
 

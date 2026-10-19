@@ -68,7 +68,12 @@ function presentLapse(plan, expiredAt) {
 // it, so the screen never promises what the API would refuse.
 function present(membership, member, freePlan, now) {
   const { lapsed } = membership;
-  const common = { memberCode: formatMemberCode(member.memberCode) };
+  // The name is who the plan belongs to, which is what a card printed with it
+  // has to say above the code.
+  const common = {
+    memberCode: formatMemberCode(member.memberCode),
+    businessName: member.businessName,
+  };
 
   if (isExpiredPaidPlan(membership, now)) {
     // Refused because its expiry passed, the plan ended then. Refused because
@@ -98,7 +103,7 @@ function present(membership, member, freePlan, now) {
 
 const defaultMembershipStore = {
   findMember: (memberId) =>
-    Member.findById(memberId).select('memberCode applicationStatus reviewedAt').lean(),
+    Member.findById(memberId).select('memberCode businessName applicationStatus reviewedAt').lean(),
   findMembership: (memberId) =>
     Membership.findOne({ member: memberId })
       .populate('plan', PLAN_FIELDS)
