@@ -83,7 +83,11 @@ class FileStorageConfigurationError extends Error {
 }
 
 function readFileStorageConfiguration(environment = process.env) {
-  const missing = REQUIRED_ENVIRONMENT_VARIABLES.filter((name) => !environment[name]);
+  // A value that is only spaces is missing, not set: it would pass a presence
+  // check and fail at the first upload instead.
+  const missing = REQUIRED_ENVIRONMENT_VARIABLES.filter(
+    (name) => (environment[name] ?? '').trim() === '',
+  );
 
   if (missing.length > 0) {
     throw new FileStorageConfigurationError(
@@ -95,11 +99,14 @@ function readFileStorageConfiguration(environment = process.env) {
     endpoint: environment.S3_ENDPOINT,
     region: environment.S3_REGION,
     buckets: {
-      [FILE_VISIBILITY.PUBLIC]: environment.S3_PUBLIC_BUCKET,
-      [FILE_VISIBILITY.PRIVATE]: environment.S3_PRIVATE_BUCKET,
+      // Trimmed because these are written by hand into a file, and a bucket
+      // name with a space in front of it is a bucket that does not exist. The
+      // failure would arrive as a permission error on every upload instead.
+      [FILE_VISIBILITY.PUBLIC]: environment.S3_PUBLIC_BUCKET.trim(),
+      [FILE_VISIBILITY.PRIVATE]: environment.S3_PRIVATE_BUCKET.trim(),
     },
-    accessKeyId: environment.S3_ACCESS_KEY_ID,
-    secretAccessKey: environment.S3_SECRET_ACCESS_KEY,
+    accessKeyId: environment.S3_ACCESS_KEY_ID.trim(),
+    secretAccessKey: environment.S3_SECRET_ACCESS_KEY.trim(),
 
     // Some hosts serve every bucket from a single address and name the bucket
     // in the path, which the default subdomain addressing cannot reach.
