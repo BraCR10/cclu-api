@@ -271,6 +271,28 @@ const memberSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // A change of address is not applied when it is asked for: the address being
+    // claimed answers first, which is what the pending address and the digest
+    // are for. Until then the account keeps the one it has.
+    pendingEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
+    },
+    emailChangeTokenHash: {
+      type: String,
+      default: null,
+    },
+    emailChangeExpiresAt: {
+      type: Date,
+      default: null,
+    },
+    // When the password was last set, which is the date the profile shows beside
+    // the link that sets a new one.
+    passwordChangedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true },
 );

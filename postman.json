@@ -60,6 +60,10 @@
     {
       "key": "paymentId",
       "value": ""
+    },
+    {
+      "key": "emailChangeToken",
+      "value": ""
     }
   ],
   "item": [
@@ -321,6 +325,29 @@
             "description": "Member session. The plan the member holds now, worked out against the clock: a paid plan past its expiry reads as Gratuita with its lapse, even before the hourly job has moved it. expiresAt is the instant the plan ends, in UTC, for a screen to show on the viewer's clock; validUntil is its last valid day in Costa Rica (YYYY-MM-DD), for messages from the chamber. Both are null on Gratuita. A member without a membership is granted Gratuita on the first read."
           },
           "response": []
+        },
+        {
+          "name": "Ask for a new address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nuevo@ejemplo.cr\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/email-change",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "email-change"]
+            },
+            "description": "Needs the member session. Nothing about the account changes here: the address being claimed is written to the message this sends, and only answering it applies the change. The address on file stays in place until then. An address another account holds answers 409, and the address the account already has answers 400."
+          },
+          "response": []
         }
       ]
     },
@@ -456,6 +483,34 @@
               "path": ["api", "resubmission", "{{resubmissionToken}}"]
             },
             "description": "Reads the fields the correction screen shows against the same rules the registration answers to, and sends the application back to pending review. The address, the password, the consents and everything the screen does not show are not read here: they are preserved rather than corrected. A member type and an identification type that do not go together answer 400, and the identity that does not go with the chosen type is cleared. The link is spent on the way out, so sending twice answers 404."
+          },
+          "response": []
+        },
+        {
+          "name": "Read the address change the link carries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/email-change/{{emailChangeToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "email-change", "{{emailChangeToken}}"]
+            },
+            "description": "Public, because the message may be opened on another device. Says which address the link would apply, and answers 404 with the same message once it expired, was used, or belongs to nothing."
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm the new address",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/email-change/{{emailChangeToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "email-change", "{{emailChangeToken}}"]
+            },
+            "description": "Applies the pending address and spends the link in the same write, so the same message cannot be replayed. A duplicate on the unique index answers 409 without naming whose address it is."
           },
           "response": []
         }

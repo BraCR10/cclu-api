@@ -1,11 +1,12 @@
 const express = require('express');
 const memberController = require('../controllers/memberController');
 const catalogController = require('../controllers/catalogController');
+const emailChangeController = require('../controllers/emailChangeController');
 const fileController = require('../controllers/fileController');
 const memberProfileController = require('../controllers/memberProfileController');
 const planController = require('../controllers/planController');
 const resubmissionController = require('../controllers/resubmissionController');
-const { limitRegistrations, limitUploads } = require('../middlewares/rateLimits');
+const { limitByAddress, limitRegistrations, limitUploads } = require('../middlewares/rateLimits');
 const { readUpload } = require('../middlewares/readUpload');
 
 const publicRoutes = express.Router();
@@ -36,6 +37,12 @@ publicRoutes.get('/directory/:memberCode', memberProfileController.getPublicProf
 // person this exists for; the token is what proves the registration is theirs.
 publicRoutes.get('/resubmission/:token', resubmissionController.getCorrectionRequest);
 publicRoutes.post('/resubmission/:token', limitRegistrations, resubmissionController.resubmit);
+
+// Reached by the link that confirms a new address. It is read on whichever
+// device the message is opened on, which is why it asks for no session: the
+// token is the proof that the address belongs to whoever asked to claim it.
+publicRoutes.get('/email-change/:token', limitByAddress, emailChangeController.getEmailChange);
+publicRoutes.post('/email-change/:token', limitByAddress, emailChangeController.confirmEmailChange);
 
 // Guessing at codes is pointless against a sparse space of thirty three million
 // with a check digit, so this carries no limit that a shared address could trip.

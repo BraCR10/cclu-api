@@ -34,6 +34,12 @@ const adminSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Set by the one path that changes a password. Administrators share the
+    // flow with members, so they record the same date.
+    passwordChangedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true },
 );
