@@ -1,6 +1,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { buildChanges, updateProfile } = require('../../src/services/memberProfileService');
+const {
+  buildChanges,
+  readProfile,
+  updateProfile,
+} = require('../../src/services/memberProfileService');
 const { ValidationError } = require('../../src/config/memberRules');
 
 const MEMBER_ID = '65f0c3a1b2c3d4e5f6a7b8c9';
@@ -122,6 +126,47 @@ test('the answer carries one state instead of the two fields that confuse', asyn
   assert.equal(profile.state, 'rejected');
   assert.equal(profile.applicationStatus, undefined);
   assert.equal(profile.accountStatus, undefined);
+});
+
+// A record written before a field existed, or one an optional field was removed
+// from, holds nothing for it. The answer still names the field, as null, so the
+// screen never meets a field that is simply missing.
+test('a field the record does not hold is answered as null rather than left out', async () => {
+  const storedBeforeTheFieldsExisted = {
+    _id: MEMBER_ID,
+    businessName: 'Panadería',
+    email: 'socio@example.cr',
+    applicationStatus: 'approved',
+    accountStatus: 'active',
+  };
+
+  const profile = await readProfile(MEMBER_ID, async () => storedBeforeTheFieldsExisted);
+
+  assert.equal(profile.certificationIssuedAt, null);
+  assert.equal(profile.passwordChangedAt, null);
+  assert.equal(profile.activity, null);
+  assert.equal(profile.name, null);
+  assert.equal(profile.legalName, null);
+  assert.equal(profile.businessName, 'Panadería');
+  assert.equal(profile.applicationStatus, undefined);
+});
+
+test('an optional field removed by an update is answered as null', async () => {
+  const storedAfterTheRemoval = {
+    _id: MEMBER_ID,
+    businessName: 'Panadería',
+    applicationStatus: 'approved',
+    accountStatus: 'active',
+  };
+
+  const profile = await updateProfile(
+    MEMBER_ID,
+    { instagram: '' },
+    async () => storedAfterTheRemoval,
+    noReferences,
+  );
+
+  assert.equal(profile.instagram, null);
 });
 
 test('an account that vanished between the gate and the write is a not found', async () => {
