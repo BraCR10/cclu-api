@@ -11,7 +11,11 @@ const FREE = {
   monthlyFee: 0,
   entitlements: { publishInMarketplace: false },
 };
-const APPROVED = { memberCode: 'MA7K2Q4', applicationStatus: APPLICATION_STATUSES.APPROVED };
+const APPROVED = {
+  memberCode: 'MA7K2Q4',
+  businessName: 'Café Loma Verde',
+  applicationStatus: APPLICATION_STATUSES.APPROVED,
+};
 
 test('granting Gratuita only writes when the member has no membership yet', async (context) => {
   const writes = [];
@@ -53,6 +57,7 @@ test('a member without a membership is granted Gratuita when they first ask', as
 
   assert.equal(membership.plan.key, 'free');
   assert.equal(membership.memberCode, 'M-A7K2-Q4');
+  assert.equal(membership.businessName, 'Café Loma Verde');
   assert.equal(membership.validUntil, null);
 });
 
