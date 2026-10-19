@@ -171,6 +171,11 @@ const TEMPLATE_FIXTURES = {
     daysToReview: 5,
   },
   applicationRejected: { businessName: 'A', reason: 'No verificable.' },
+  emailChangeLink: {
+    confirmUrl: 'https://cclu.example/email/confirm/abc',
+    currentEmail: 'viejo@example.cr',
+    minutesValid: 30,
+  },
   membershipExpiring: { businessName: 'A', planName: 'Pro Pymex', validUntil: '2026-11-17' },
   membershipLapsed: { businessName: 'A', planName: 'Pro Pymex' },
   paymentReceived: {

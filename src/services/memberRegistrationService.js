@@ -207,6 +207,9 @@ async function buildRegistration(body, references = REQUIRED_REFERENCE_FIELDS) {
 
   registration.consents = Object.fromEntries(CONSENT_FIELDS.map((field) => [field, true]));
   registration.consentedAt = new Date();
+  // The password was chosen here, so this is the day the profile shows beside
+  // the link that sets a new one.
+  registration.passwordChangedAt = registration.consentedAt;
   registration.passwordHash = await passwordService.hashPassword(password);
 
   // Set here and nowhere else. The schema's defaults decide the account and the

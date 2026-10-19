@@ -2,6 +2,7 @@ const { applicationApproved } = require('./applicationApproved');
 const { applicationChangesRequested } = require('./applicationChangesRequested');
 const { applicationReceived } = require('./applicationReceived');
 const { applicationRejected } = require('./applicationRejected');
+const { emailChangeLink } = require('./emailChangeLink');
 const { membershipExpiring } = require('./membershipExpiring');
 const { membershipLapsed } = require('./membershipLapsed');
 const { passwordResetLink } = require('./passwordResetLink');
@@ -16,6 +17,7 @@ const TEMPLATES = {
   applicationChangesRequested,
   applicationReceived,
   applicationRejected,
+  emailChangeLink,
   membershipExpiring,
   membershipLapsed,
   passwordResetLink,

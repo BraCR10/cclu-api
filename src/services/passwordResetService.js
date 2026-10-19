@@ -184,6 +184,7 @@ async function completePasswordReset(body, locate = findRequest, accounts = ACCO
   }
 
   account.passwordHash = await passwordService.hashPassword(newPassword);
+  account.passwordChangedAt = new Date();
   await account.save();
 
   // The link has done its work and must not open a second change.

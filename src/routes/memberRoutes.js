@@ -1,10 +1,11 @@
 const express = require('express');
 const memberProfileController = require('../controllers/memberProfileController');
+const emailChangeController = require('../controllers/emailChangeController');
 const membershipController = require('../controllers/membershipController');
 const paymentController = require('../controllers/paymentController');
 const { readUpload } = require('../middlewares/readUpload');
 const { authorize } = require('../middlewares/authorize');
-const { limitCodeChecks, limitPayments } = require('../middlewares/rateLimits');
+const { limitByAddress, limitCodeChecks, limitPayments } = require('../middlewares/rateLimits');
 const { ROLES } = require('../config/roles');
 
 const memberRoutes = express.Router();
@@ -13,6 +14,16 @@ const memberRoutes = express.Router();
 // read here. Theirs is a different screen, and a different ticket.
 memberRoutes.get('/me', authorize(ROLES.MEMBER), memberProfileController.getOwnProfile);
 memberRoutes.patch('/me', authorize(ROLES.MEMBER), memberProfileController.updateOwnProfile);
+
+// Sending a message is what this does, so it answers to the same limit as any
+// other route that mails a stranger's address.
+memberRoutes.post(
+  '/me/email-change',
+  authorize(ROLES.MEMBER),
+  limitByAddress,
+  emailChangeController.requestEmailChange,
+);
+
 memberRoutes.get('/me/membership', authorize(ROLES.MEMBER), membershipController.getOwnMembership);
 
 memberRoutes.get(

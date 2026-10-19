@@ -1,9 +1,12 @@
-const { Member, MEMBER_TYPES } = require('../models/Member');
+const { Member, MEMBER_TYPES, BRANCH_MODALITIES } = require('../models/Member');
 const { Canton } = require('../models/Canton');
+const { Activity } = require('../models/Activity');
 const {
   readText,
   readChoice,
   readReference,
+  readCalendarDate,
+  readFileKey,
   ValidationError,
   refuse,
 } = require('../config/memberRules');
@@ -12,17 +15,34 @@ const { effectiveMemberState } = require('./accountService');
 
 // Named one by one. A field absent from these lists cannot be changed here, so
 // a body carrying an application status or a member code simply goes unread.
+// What is here is what the profile's popups edit: the business, the branch, how
+// to reach it, and the legal data behind it. The identification that names the
+// applicant, the address of the account and the password are not, because each
+// of them has a flow of its own.
 const EDITABLE_TEXT_FIELDS = [
   'phone',
   'whatsappNumber',
-  'location',
   'businessName',
+  'managerName',
   'businessDescription',
+  'branchName',
+  'district',
+  'institutionalPhone',
+  'billingEmail',
+  'legalName',
+  'legalRepresentativeName',
+  'legalRepresentativeIdentification',
 ];
-const OPTIONAL_TEXT_FIELDS = ['instagram', 'facebook', 'linkedin'];
+const OPTIONAL_TEXT_FIELDS = ['location', 'activityOther', 'instagram', 'facebook', 'linkedin'];
 const OPTIONAL_LINK_FIELDS = ['logoUrl', 'website'];
-const EDITABLE_REFERENCE_FIELDS = [{ field: 'canton', model: Canton }];
-const EDITABLE_CHOICE_FIELDS = [{ field: 'memberType', allowed: Object.values(MEMBER_TYPES) }];
+const EDITABLE_REFERENCE_FIELDS = [
+  { field: 'canton', model: Canton },
+  { field: 'activity', model: Activity },
+];
+const EDITABLE_CHOICE_FIELDS = [
+  { field: 'memberType', allowed: Object.values(MEMBER_TYPES) },
+  { field: 'branchModality', allowed: Object.values(BRANCH_MODALITIES) },
+];
 
 // What the member sees of their own record. The password hash and the reviewer
 // who decided are not among them.
@@ -55,6 +75,7 @@ const PROFILE_FIELDS = [
   'applicationStatus',
   'accountStatus',
   'statusReason',
+  'passwordChangedAt',
   'createdAt',
 ].join(' ');
 
@@ -129,6 +150,18 @@ async function buildChanges(body, references = EDITABLE_REFERENCE_FIELDS) {
     if (field in body) {
       changes[field] = await readReference(body, field, model);
     }
+  }
+
+  // The personería jurídica is replaced as a pair: the document and the day it
+  // was issued, because one without the other says nothing about the other.
+  if ('certificationFileKey' in body) {
+    changes.certificationFileKey = readFileKey(body, 'certificationFileKey', { required: true });
+  }
+
+  if ('certificationIssuedAt' in body) {
+    changes.certificationIssuedAt = readCalendarDate(body, 'certificationIssuedAt', {
+      required: true,
+    });
   }
 
   if (Object.keys(changes).length === 0 && Object.keys(unset).length === 0) {
