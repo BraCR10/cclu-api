@@ -137,31 +137,23 @@ test('districts are only listed for a canton', async () => {
   await assert.rejects(() => listDistricts({}), { name: 'ValidationError' });
 });
 
-test('the home page puts Premium first, then Pro, then Lite, and leaves out lapsed and free plans', () => {
+test('the home page features only paid plans in force, in an order that changes per visit', () => {
   const now = new Date('2026-10-21T12:00:00Z');
   const future = new Date('2026-12-01T06:00:00Z');
   const past = new Date('2026-10-01T06:00:00Z');
-  const membership = (member, key, expiresAt, startedAt) => ({
-    member,
-    plan: { key, name: key },
-    expiresAt,
-    startedAt: new Date(startedAt),
-  });
+  const membership = (member, key, expiresAt) => ({ member, plan: { key, name: key }, expiresAt });
+  const memberships = () => [
+    membership('lite-member', 'lite', future),
+    membership('free-member', 'free', null),
+    membership('lapsed-premium', 'premium', past),
+    membership('pro-member', 'pro', future),
+    membership('premium-member', 'premium', future),
+  ];
 
-  const ordered = featuredOrder(
-    [
-      membership('lite-member', 'lite', future, '2026-10-20'),
-      membership('free-member', 'free', null, '2026-10-20'),
-      membership('lapsed-premium', 'premium', past, '2026-09-01'),
-      membership('older-pro', 'pro', future, '2026-09-01'),
-      membership('premium-member', 'premium', future, '2026-09-15'),
-      membership('newer-pro', 'pro', future, '2026-10-10'),
-    ],
-    now,
-  );
+  const first = featuredOrder(memberships(), now, () => 0).map((entry) => entry.member);
+  const second = featuredOrder(memberships(), now, () => 0.99).map((entry) => entry.member);
 
-  assert.deepEqual(
-    ordered.map((entry) => entry.member),
-    ['premium-member', 'newer-pro', 'older-pro', 'lite-member'],
-  );
+  assert.deepEqual([...first].sort(), ['lite-member', 'premium-member', 'pro-member']);
+  assert.deepEqual([...second].sort(), ['lite-member', 'premium-member', 'pro-member']);
+  assert.notDeepEqual(first, second);
 });

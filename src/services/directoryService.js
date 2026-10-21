@@ -228,19 +228,19 @@ async function listDirectory(query, now, store = defaultDirectoryStore) {
   );
 }
 
-// Premium shows first, then Pro, then Lite: the visibility is what the higher
-// plans sell. Within a plan, the most recent payment comes first.
+// The businesses on a paid plan in force, in a new order on every visit, so
+// each of them gets its turn at the top of the home page.
 const FEATURED_LIMIT = 8;
-const FEATURED_RANK = { [PLAN_KEYS.PREMIUM]: 0, [PLAN_KEYS.PRO]: 1, [PLAN_KEYS.LITE]: 2 };
 
-function featuredOrder(memberships, now) {
-  return memberships
-    .filter((membership) => paidPlanOf(membership, now) !== null)
-    .sort(
-      (first, second) =>
-        FEATURED_RANK[first.plan.key] - FEATURED_RANK[second.plan.key] ||
-        new Date(second.startedAt ?? 0) - new Date(first.startedAt ?? 0),
-    );
+function featuredOrder(memberships, now, random = Math.random) {
+  const paid = memberships.filter((membership) => paidPlanOf(membership, now) !== null);
+
+  for (let index = paid.length - 1; index > 0; index -= 1) {
+    const other = Math.floor(random() * (index + 1));
+    [paid[index], paid[other]] = [paid[other], paid[index]];
+  }
+
+  return paid;
 }
 
 const defaultFeaturedStore = {
@@ -252,10 +252,10 @@ const defaultFeaturedStore = {
   countListed: () => Member.countDocuments(LISTED),
 };
 
-// The businesses the home page puts first: those on a paid plan in force. A
-// suspended or unlisted member drops out the same way it does from the list.
-async function listFeatured(now, store = defaultFeaturedStore) {
-  const ordered = featuredOrder(await store.findPaidMemberships(), now).slice(
+// The businesses the home page shows: a turn of those on a paid plan in force.
+// A suspended or unlisted member drops out the same way it does from the list.
+async function listFeatured(now, store = defaultFeaturedStore, random = Math.random) {
+  const ordered = featuredOrder(await store.findPaidMemberships(), now, random).slice(
     0,
     FEATURED_LIMIT * 2,
   );
