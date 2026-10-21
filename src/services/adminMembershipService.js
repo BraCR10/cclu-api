@@ -4,12 +4,12 @@ const { Plan, PLAN_KEYS } = require('../models/Plan');
 const { refuse } = require('../config/memberRules');
 const { ApplicationError, ERROR_CODES } = require('../config/errorCodes');
 const { readPagination, paginated } = require('../config/pagination');
+const { escapeForRegex, readSearch } = require('../config/listSearch');
 const { lastValidDay, latestTrustedExpiry } = require('../config/chamberCalendar');
 const { formatMemberCode } = require('./memberCodeService');
 const membershipPolicyService = require('./membershipPolicyService');
 
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
-const MAXIMUM_SEARCH_LENGTH = 100;
 
 // The list shows paid plans in force and nothing else. A plan that ran out is
 // back on Gratuita, which is not listed, so there is no state to show: the
@@ -18,12 +18,6 @@ const MAXIMUM_SEARCH_LENGTH = 100;
 const MEMBERSHIP_LIST_VIEWS = Object.freeze({ ACTIVE: 'active', EXPIRING: 'expiring' });
 
 const PAID_PLAN_KEYS = [PLAN_KEYS.LITE, PLAN_KEYS.PRO, PLAN_KEYS.PREMIUM];
-
-const REGEX_SPECIALS = /[.*+?^${}()|[\]\\]/g;
-
-function escapeForRegex(text) {
-  return text.replace(REGEX_SPECIALS, '\\$&');
-}
 
 function readChoiceParameter(query, field, allowed, fallback) {
   const raw = query?.[field];
@@ -37,30 +31,6 @@ function readChoiceParameter(query, field, allowed, fallback) {
   }
 
   return raw;
-}
-
-function readSearch(query) {
-  const raw = query?.search;
-
-  if (raw === undefined) {
-    return null;
-  }
-
-  if (typeof raw !== 'string') {
-    refuse(ERROR_CODES.NOT_TEXT, 'search', 'The search is text.');
-  }
-
-  const text = raw.trim();
-
-  if (text.length > MAXIMUM_SEARCH_LENGTH) {
-    refuse(
-      ERROR_CODES.TOO_LONG,
-      'search',
-      `The search is at most ${MAXIMUM_SEARCH_LENGTH} characters.`,
-    );
-  }
-
-  return text === '' ? null : text;
 }
 
 // Everything the list is asked for is checked before a query is built. A view

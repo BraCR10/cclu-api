@@ -9,6 +9,7 @@ const { lastValidDay } = require('../config/chamberCalendar');
 const { ApplicationError, ERROR_CODES } = require('../config/errorCodes');
 const { refuse } = require('../config/memberRules');
 const { readPagination, paginated } = require('../config/pagination');
+const { escapeForRegex, readSearch } = require('../config/listSearch');
 const clock = require('../config/clock');
 const emailService = require('./emailService');
 const { formatMemberCode } = require('./memberCodeService');
@@ -18,8 +19,6 @@ const { presentPayment } = require('./paymentService');
 
 const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
 const DUPLICATE_KEY = 11000;
-const MAXIMUM_SEARCH_LENGTH = 100;
-const REGEX_SPECIALS = /[.*+?^${}()|[\]\\]/g;
 const STATUSES = Object.values(PAYMENT_STATUSES);
 
 function notFound() {
@@ -43,25 +42,7 @@ function readListQuery(query) {
     refuse(ERROR_CODES.INVALID_FORMAT, 'status', `status is one of ${STATUSES.join(', ')}.`);
   }
 
-  let search = null;
-
-  if (query?.search !== undefined && query.search !== '') {
-    if (typeof query.search !== 'string') {
-      refuse(ERROR_CODES.NOT_TEXT, 'search', 'The search is text.');
-    }
-
-    if (query.search.trim().length > MAXIMUM_SEARCH_LENGTH) {
-      refuse(
-        ERROR_CODES.TOO_LONG,
-        'search',
-        `The search is at most ${MAXIMUM_SEARCH_LENGTH} characters.`,
-      );
-    }
-
-    search = query.search.trim() || null;
-  }
-
-  return { status, search, pagination: readPagination(query) };
+  return { status, search: readSearch(query), pagination: readPagination(query) };
 }
 
 // The business name anywhere in it, or the start of the member code with its
@@ -71,12 +52,11 @@ function searchFilter(search) {
     return null;
   }
 
-  const escape = (text) => text.replace(REGEX_SPECIALS, '\\$&');
   const code = search.toUpperCase().replace(/[^0-9A-Z]/g, '');
-  const conditions = [{ 'member.businessName': { $regex: escape(search), $options: 'i' } }];
+  const conditions = [{ 'member.businessName': { $regex: escapeForRegex(search), $options: 'i' } }];
 
   if (code !== '') {
-    conditions.push({ 'member.memberCode': { $regex: `^${escape(code)}` } });
+    conditions.push({ 'member.memberCode': { $regex: `^${escapeForRegex(code)}` } });
   }
 
   return { $or: conditions };
