@@ -16,7 +16,8 @@
     "create-admin": "node scripts/create-admin.js",
     "seed-catalogs": "node scripts/seed-catalogs.js",
     "grant-free-memberships": "node scripts/grant-free-memberships.js",
-    "run-membership-expiry": "node scripts/run-membership-expiry.js"
+    "run-membership-expiry": "node scripts/run-membership-expiry.js",
+    "seed-demo": "node scripts/seed-demo.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1136.0",
