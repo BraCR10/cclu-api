@@ -1321,6 +1321,34 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Subscribers",
+      "item": [
+        {
+          "name": "Subscribe to promotions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mariana Solís\",\n  \"email\": \"mariana@example.cr\",\n  \"whatsappNumber\": \"8845 1290\",\n  \"canton\": \"{{cantonId}}\",\n  \"district\": \"San Juan\",\n  \"acceptsPromotions\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/subscribers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "subscribers"]
+            },
+            "description": "Public. 201; 409 already_subscribed on email; consents_required without acceptsPromotions."
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }

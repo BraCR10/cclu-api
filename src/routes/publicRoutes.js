@@ -7,6 +7,7 @@ const fileController = require('../controllers/fileController');
 const memberProfileController = require('../controllers/memberProfileController');
 const planController = require('../controllers/planController');
 const resubmissionController = require('../controllers/resubmissionController');
+const subscriptionController = require('../controllers/subscriptionController');
 const { limitByAddress, limitRegistrations, limitUploads } = require('../middlewares/rateLimits');
 const { readUpload } = require('../middlewares/readUpload');
 
@@ -33,6 +34,10 @@ publicRoutes.get('/files/:key', fileController.openPublicFile);
 // affiliated. Declared before the profile so "districts" is not read as a code.
 publicRoutes.get('/directory', directoryController.getDirectory);
 publicRoutes.get('/directory/districts', directoryController.getDistricts);
+
+// Anybody may ask for the chamber's promotions, so it is open, and limited
+// the way a registration is, since both store what a stranger sends.
+publicRoutes.post('/subscribers', limitRegistrations, subscriptionController.subscribe);
 
 // The address a card's QR carries. It is a permanent contract: a card already
 // issued cannot be reissued, so this path never changes.
