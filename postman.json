@@ -1417,6 +1417,89 @@
             "description": "Public. 201; 409 already_subscribed on email; consents_required without acceptsPromotions."
           },
           "response": []
+        },
+        {
+          "name": "List subscribers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/subscribers?search=mariana&canton={{cantonId}}&district=San Juan&status=subscribed&page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "subscribers"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "mariana",
+                  "disabled": false
+                },
+                {
+                  "key": "canton",
+                  "value": "{{cantonId}}",
+                  "disabled": false
+                },
+                {
+                  "key": "district",
+                  "value": "San Juan",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "subscribed",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Administrator. Paged, newest consent first."
+          },
+          "response": []
+        },
+        {
+          "name": "Export subscribers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/subscribers/export?status=subscribed",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "subscribers", "export"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "subscribed",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Administrator. Every match as CSV in Spanish."
+          },
+          "response": []
+        },
+        {
+          "name": "List subscriber districts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/subscribers/districts?canton={{cantonId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "subscribers", "districts"],
+              "query": [
+                {
+                  "key": "canton",
+                  "value": "{{cantonId}}",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Administrator. The districts subscribers wrote for one canton, each once."
+          },
+          "response": []
         }
       ]
     }

@@ -27,7 +27,7 @@ const subscriberSchema = new mongoose.Schema(
   { timestamps: true, versionKey: false },
 );
 
-subscriberSchema.index({ status: 1, createdAt: -1 });
+subscriberSchema.index({ status: 1, consentedAt: -1 });
 
 const Subscriber = mongoose.model('Subscriber', subscriberSchema);
 
