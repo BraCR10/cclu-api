@@ -2,6 +2,7 @@ const express = require('express');
 const memberController = require('../controllers/memberController');
 const catalogController = require('../controllers/catalogController');
 const directoryController = require('../controllers/directoryController');
+const homeController = require('../controllers/homeController');
 const emailChangeController = require('../controllers/emailChangeController');
 const fileController = require('../controllers/fileController');
 const memberProfileController = require('../controllers/memberProfileController');
@@ -33,6 +34,7 @@ publicRoutes.get('/files/:key', fileController.openPublicFile);
 
 // The directory is the chamber's public roll: anybody may search who is
 // affiliated. Declared before the profile so "districts" is not read as a code.
+publicRoutes.get('/home', homeController.getHome);
 publicRoutes.get('/directory', directoryController.getDirectory);
 publicRoutes.get('/directory/districts', directoryController.getDistricts);
 

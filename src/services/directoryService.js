@@ -100,11 +100,18 @@ function placeFilter(canton, district) {
   };
 }
 
-function listPipeline({ search, activity, canton, district, pagination }) {
+function listPipeline({ search, activity, canton, district, pagination, memberIds = null }) {
   const place = placeFilter(canton, district);
 
   return [
-    { $match: { ...LISTED, ...searchFilter(search), ...(activity === null ? {} : { activity }) } },
+    {
+      $match: {
+        ...LISTED,
+        ...searchFilter(search),
+        ...(activity === null ? {} : { activity }),
+        ...(memberIds === null ? {} : { _id: { $in: memberIds } }),
+      },
+    },
     {
       $lookup: {
         from: 'branches',
@@ -221,6 +228,62 @@ async function listDirectory(query, now, store = defaultDirectoryStore) {
   );
 }
 
+// Premium shows first, then Pro, then Lite: the visibility is what the higher
+// plans sell. Within a plan, the most recent payment comes first.
+const FEATURED_LIMIT = 8;
+const FEATURED_RANK = { [PLAN_KEYS.PREMIUM]: 0, [PLAN_KEYS.PRO]: 1, [PLAN_KEYS.LITE]: 2 };
+
+function featuredOrder(memberships, now) {
+  return memberships
+    .filter((membership) => paidPlanOf(membership, now) !== null)
+    .sort(
+      (first, second) =>
+        FEATURED_RANK[first.plan.key] - FEATURED_RANK[second.plan.key] ||
+        new Date(second.startedAt ?? 0) - new Date(first.startedAt ?? 0),
+    );
+}
+
+const defaultFeaturedStore = {
+  ...defaultDirectoryStore,
+  findPaidMemberships: () =>
+    Membership.find({ expiresAt: { $ne: null } })
+      .populate('plan', 'key name')
+      .lean(),
+  countListed: () => Member.countDocuments(LISTED),
+};
+
+// The businesses the home page puts first: those on a paid plan in force. A
+// suspended or unlisted member drops out the same way it does from the list.
+async function listFeatured(now, store = defaultFeaturedStore) {
+  const ordered = featuredOrder(await store.findPaidMemberships(), now).slice(
+    0,
+    FEATURED_LIMIT * 2,
+  );
+  const membershipByMember = new Map(
+    ordered.map((membership) => [String(membership.member), membership]),
+  );
+  const [result] = await store.aggregate(
+    listPipeline({
+      search: null,
+      activity: null,
+      canton: null,
+      district: null,
+      memberIds: ordered.map((membership) => membership.member),
+      pagination: { skip: 0, pageSize: FEATURED_LIMIT * 2 },
+    }),
+  );
+  const position = new Map(ordered.map((membership, index) => [String(membership.member), index]));
+
+  return result.items
+    .sort((first, second) => position.get(String(first._id)) - position.get(String(second._id)))
+    .slice(0, FEATURED_LIMIT)
+    .map((member) => presentListing(member, membershipByMember.get(String(member._id)), now));
+}
+
+async function countListed(store = defaultFeaturedStore) {
+  return store.countListed();
+}
+
 const defaultDistrictStore = {
   findListedMemberIds: () => Member.distinct('_id', LISTED),
   branchDistricts: (canton, memberIds) =>
@@ -257,4 +320,13 @@ async function listDistricts(query, store = defaultDistrictStore) {
   return { districts: unique.sort(SPANISH_ORDER.compare) };
 }
 
-module.exports = { readDirectoryQuery, listPipeline, presentListing, listDirectory, listDistricts };
+module.exports = {
+  readDirectoryQuery,
+  listPipeline,
+  presentListing,
+  listDirectory,
+  listDistricts,
+  featuredOrder,
+  listFeatured,
+  countListed,
+};
