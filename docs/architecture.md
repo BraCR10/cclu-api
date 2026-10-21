@@ -454,6 +454,20 @@ plan_required` otherwise.
 - **People apply by the means the business names.** There is no application
   through the platform; `howToApply` is that means.
 
+## Subscribers
+
+`POST /api/subscribers` is open: anybody may ask for the chamber's promotions,
+from the form on the home page. It is limited like a registration, since both
+store what a stranger sends.
+
+- **Consent is required and dated.** `acceptsPromotions` must be true, and the
+  moment is kept as `consentedAt`, as the data protection law asks.
+- **One row per address.** An address already subscribed answers `409
+already_subscribed` on `email`; one that left is subscribed again with what
+  it sends now. Leaving keeps the row with `unsubscribedAt`.
+- **The district is typed**, as at registration, and the canton is a catalog
+  identifier.
+
 ## Time and access
 
 Plans grant access by date, so a mistake here gives somebody a paid plan that
