@@ -46,7 +46,7 @@ const EDITABLE_CHOICE_FIELDS = [
 
 // What the member sees of their own record. The password hash and the reviewer
 // who decided are not among them.
-const PROFILE_FIELDS = [
+const PROFILE_FIELD_NAMES = [
   ...EDITABLE_TEXT_FIELDS,
   ...OPTIONAL_TEXT_FIELDS,
   ...OPTIONAL_LINK_FIELDS,
@@ -77,7 +77,8 @@ const PROFILE_FIELDS = [
   'statusReason',
   'passwordChangedAt',
   'createdAt',
-].join(' ');
+];
+const PROFILE_FIELDS = PROFILE_FIELD_NAMES.join(' ');
 
 function findProfile(memberId) {
   return Member.findById(memberId)
@@ -87,10 +88,23 @@ function findProfile(memberId) {
     .lean();
 }
 
+// A record written before a field existed, or one an optional field was removed
+// from, holds nothing for it, and a lean read applies no schema default. Every
+// field is named anyway, as null, so a screen never meets one that is missing.
+function withEveryFieldNamed(member) {
+  const named = {};
+
+  for (const field of PROFILE_FIELD_NAMES) {
+    named[field] = member[field] ?? null;
+  }
+
+  return { ...named, ...member };
+}
+
 // The raw pair of statuses never leaves the API on its own; what goes out is
 // the state they add up to.
 function presentProfile(member) {
-  const { applicationStatus, accountStatus, ...rest } = member;
+  const { applicationStatus, accountStatus, ...rest } = withEveryFieldNamed(member);
 
   return { ...rest, state: effectiveMemberState({ applicationStatus, accountStatus }) };
 }
