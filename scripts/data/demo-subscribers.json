@@ -1,0 +1,31 @@
+[
+  {
+    "slug": "mariana-solis",
+    "name": "Mariana Solís Quesada",
+    "district": "San Juan",
+    "whatsappNumber": "88451290"
+  },
+  {
+    "slug": "jose-arias",
+    "name": "José Pablo Arias Monge",
+    "district": "Tres Ríos",
+    "whatsappNumber": "87124410"
+  },
+  {
+    "slug": "ana-brenes",
+    "name": "Ana Lucía Brenes Vargas",
+    "district": "Concepción"
+  },
+  {
+    "slug": "carlos-quiros",
+    "name": "Carlos Quirós Solano",
+    "district": "San Diego",
+    "unsubscribed": true
+  },
+  {
+    "slug": "rebeca-solano",
+    "name": "Rebeca Solano Jiménez",
+    "district": "Dulce Nombre",
+    "whatsappNumber": "84776601"
+  }
+]

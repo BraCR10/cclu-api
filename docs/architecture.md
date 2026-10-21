@@ -476,6 +476,13 @@ already_subscribed` on `email`; one that left is subscribed again with what
 - **The district is typed**, as at registration, and the canton is a catalog
   identifier.
 
+The panel lists them at `GET /api/admin/subscribers`, searched by name, address
+or WhatsApp and filtered by canton, district and status, newest consent first.
+`GET /api/admin/subscribers/export` answers every match, not only the page, as
+a CSV in Spanish for the chamber's mailing tools. Every CSV the API writes goes
+through `toCsv`, which keeps a value that starts like a formula (`=`, `+`, `-`,
+`@`) as text, so a name typed into a public form cannot run in a spreadsheet.
+
 ## The administration summary
 
 `GET /api/admin/summary` is what the panel opens on (A-01). Every figure is read
