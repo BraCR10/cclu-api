@@ -1319,6 +1319,62 @@
             "description": "Member. 204, or 404 when it is not the member's own."
           },
           "response": []
+        },
+        {
+          "name": "Search the job board",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vacancies?search=barista&canton={{cantonId}}&district=San Juan&workday=part_time&page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vacancies"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "barista",
+                  "disabled": false
+                },
+                {
+                  "key": "canton",
+                  "value": "{{cantonId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "district",
+                  "value": "San Juan",
+                  "disabled": true
+                },
+                {
+                  "key": "workday",
+                  "value": "part_time",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Public. Active vacancies of listed members whose plan includes vacancies now, newest first, nine to a page."
+          },
+          "response": []
+        },
+        {
+          "name": "Read one on the board",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vacancies/{{vacancyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vacancies", "{{vacancyId}}"],
+              "query": []
+            },
+            "description": "Public. Description, requirements, how to apply and the business. 404 when it is not on the board."
+          },
+          "response": []
         }
       ]
     },

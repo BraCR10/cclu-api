@@ -1,5 +1,6 @@
 const clock = require('../config/clock');
 const vacancyService = require('../services/vacancyService');
+const jobBoardService = require('../services/jobBoardService');
 
 async function getOwnVacancies(request, response, next, list = vacancyService.listOwnVacancies) {
   response.json(await list(request.identity.id, request.query, clock.now()));
@@ -14,4 +15,18 @@ async function deleteOwnVacancy(request, response, next, remove = vacancyService
   response.status(204).end();
 }
 
-module.exports = { getOwnVacancies, createOwnVacancy, deleteOwnVacancy };
+async function getBoard(request, response, next, list = jobBoardService.listBoard) {
+  response.json(await list(request.query, clock.now()));
+}
+
+async function getBoardVacancy(request, response, next, read = jobBoardService.readBoardVacancy) {
+  response.json(await read(request.params.vacancyId, clock.now()));
+}
+
+module.exports = {
+  getOwnVacancies,
+  createOwnVacancy,
+  deleteOwnVacancy,
+  getBoard,
+  getBoardVacancy,
+};

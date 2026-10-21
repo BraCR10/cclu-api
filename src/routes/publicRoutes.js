@@ -8,6 +8,7 @@ const memberProfileController = require('../controllers/memberProfileController'
 const planController = require('../controllers/planController');
 const resubmissionController = require('../controllers/resubmissionController');
 const subscriptionController = require('../controllers/subscriptionController');
+const vacancyController = require('../controllers/vacancyController');
 const { limitByAddress, limitRegistrations, limitUploads } = require('../middlewares/rateLimits');
 const { readUpload } = require('../middlewares/readUpload');
 
@@ -34,6 +35,10 @@ publicRoutes.get('/files/:key', fileController.openPublicFile);
 // affiliated. Declared before the profile so "districts" is not read as a code.
 publicRoutes.get('/directory', directoryController.getDirectory);
 publicRoutes.get('/directory/districts', directoryController.getDistricts);
+
+// The job board is public: a visitor looking for work needs no account.
+publicRoutes.get('/vacancies', vacancyController.getBoard);
+publicRoutes.get('/vacancies/:vacancyId', vacancyController.getBoardVacancy);
 
 // Anybody may ask for the chamber's promotions, so it is open, and limited
 // the way a registration is, since both store what a stranger sends.
