@@ -15,6 +15,7 @@ const { Branch } = require('../src/models/Branch');
 const { Membership } = require('../src/models/Membership');
 const { Notification } = require('../src/models/Notification');
 const { Vacancy } = require('../src/models/Vacancy');
+const { Subscriber, SUBSCRIBER_STATUSES } = require('../src/models/Subscriber');
 const { Plan } = require('../src/models/Plan');
 const { Canton } = require('../src/models/Canton');
 const { Activity } = require('../src/models/Activity');
@@ -24,6 +25,7 @@ const { generateMemberCode, normalizeMemberCode } = require('../src/services/mem
 const { hashPassword } = require('../src/services/passwordService');
 const { DEMO_DOMAIN, DEMO_EMAIL, demoEmail } = require('./demoAccounts');
 const demoMembers = require('./data/demo-members.json');
+const demoSubscribers = require('./data/demo-subscribers.json');
 
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
 const WEEKDAY_HOURS = { closed: false, opensAt: '07:00', closesAt: '18:00' };
@@ -154,6 +156,28 @@ async function upsertMembership(member, entry, plans, now) {
   );
 }
 
+async function upsertSubscribers(canton, now) {
+  for (const [index, entry] of demoSubscribers.entries()) {
+    const unsubscribed = entry.unsubscribed === true;
+
+    await Subscriber.findOneAndUpdate(
+      { email: demoEmail(entry.slug) },
+      {
+        $set: {
+          name: entry.name,
+          whatsappNumber: entry.whatsappNumber,
+          canton: canton._id,
+          district: entry.district,
+          status: unsubscribed ? SUBSCRIBER_STATUSES.UNSUBSCRIBED : SUBSCRIBER_STATUSES.SUBSCRIBED,
+          consentedAt: new Date(now.getTime() - (index + 1) * DAY_IN_MILLISECONDS),
+          unsubscribedAt: unsubscribed ? now : null,
+        },
+      },
+      { upsert: true, runValidators: true },
+    );
+  }
+}
+
 async function loadReferences() {
   const [canton, activities, plans] = await Promise.all([
     Canton.findOne({ name: 'La Unión' }).lean(),
@@ -185,24 +209,31 @@ async function seedDemo() {
     }
   }
 
-  console.log(`Demo data: ${demoMembers.length} businesses under @${DEMO_DOMAIN}`);
+  await upsertSubscribers(references.canton, now);
+
+  console.log(
+    `Demo data: ${demoMembers.length} businesses and ${demoSubscribers.length} subscribers under @${DEMO_DOMAIN}`,
+  );
 }
 
 async function removeDemo() {
   const ids = await Member.distinct('_id', { email: DEMO_EMAIL });
 
-  const [vacancies, branches, memberships, notifications, members] = await Promise.all([
-    Vacancy.deleteMany({ member: { $in: ids } }),
-    Branch.deleteMany({ member: { $in: ids } }),
-    Membership.deleteMany({ member: { $in: ids } }),
-    Notification.deleteMany({ recipient: { $in: ids } }),
-    Member.deleteMany({ _id: { $in: ids } }),
-  ]);
+  const [subscribers, vacancies, branches, memberships, notifications, members] = await Promise.all(
+    [
+      Subscriber.deleteMany({ email: DEMO_EMAIL }),
+      Vacancy.deleteMany({ member: { $in: ids } }),
+      Branch.deleteMany({ member: { $in: ids } }),
+      Membership.deleteMany({ member: { $in: ids } }),
+      Notification.deleteMany({ recipient: { $in: ids } }),
+      Member.deleteMany({ _id: { $in: ids } }),
+    ],
+  );
 
   console.log(
     `Demo data removed: ${members.deletedCount} businesses, ${branches.deletedCount} branches, ` +
       `${vacancies.deletedCount} vacancies, ${memberships.deletedCount} memberships, ` +
-      `${notifications.deletedCount} notifications`,
+      `${notifications.deletedCount} notifications, ${subscribers.deletedCount} subscribers`,
   );
 }
 
