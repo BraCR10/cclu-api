@@ -666,6 +666,68 @@
       "name": "Directory",
       "item": [
         {
+          "name": "Search the directory",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/directory?search=café&activity={{activityId}}&canton={{cantonId}}&district=Tres Ríos&page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "directory"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "café",
+                  "disabled": false
+                },
+                {
+                  "key": "activity",
+                  "value": "{{activityId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "canton",
+                  "value": "{{cantonId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "district",
+                  "value": "Tres Ríos",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Public. Approved members whose account is not suspended, alphabetical, twelve to a page. search matches a card code or a business name; district needs canton."
+          },
+          "response": []
+        },
+        {
+          "name": "List districts of a canton",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/directory/districts?canton={{cantonId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "directory", "districts"],
+              "query": [
+                {
+                  "key": "canton",
+                  "value": "{{cantonId}}",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Public. The districts where a listed business is, each written once, for the directory filter."
+          },
+          "response": []
+        },
+        {
           "name": "Read a member's public profile",
           "request": {
             "method": "GET",

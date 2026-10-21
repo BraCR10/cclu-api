@@ -390,6 +390,26 @@ days; a day nobody set is closed, because an empty pair of hours would read as
 open at some point. `PATCH` takes the week whole, refuses a day that closes
 before it opens, and takes a social account sent empty back off the shop.
 
+## The directory
+
+`GET /api/directory` is the chamber's public roll, open to anybody. It lists
+the members whose application is approved and whose account is not suspended,
+the same rule that lets an account in, and nobody else in any form.
+
+- **Search and filters.** `search` matches a card code when it reads as one and
+  a business name otherwise. `activity` and `canton` are catalog identifiers,
+  and `district` only narrows a `canton`, since two cantons share district
+  names. There is no filter by plan: every member is listed the same way.
+- **A member is placed by its branches.** A member whose record predates
+  branches has none yet, and is placed by the canton and district of its
+  registration instead.
+- **Districts are free text.** The registration takes the district as typed, so
+  the filter compares without case or accents, and
+  `GET /api/directory/districts?canton=` offers the districts where a listed
+  business actually is, each written once.
+- **Order.** Alphabetical in Spanish, twelve to a page. No plan buys a higher
+  place; the plan shows as a badge, and only while it holds.
+
 ## Time and access
 
 Plans grant access by date, so a mistake here gives somebody a paid plan that

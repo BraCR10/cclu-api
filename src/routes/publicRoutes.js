@@ -1,6 +1,7 @@
 const express = require('express');
 const memberController = require('../controllers/memberController');
 const catalogController = require('../controllers/catalogController');
+const directoryController = require('../controllers/directoryController');
 const emailChangeController = require('../controllers/emailChangeController');
 const fileController = require('../controllers/fileController');
 const memberProfileController = require('../controllers/memberProfileController');
@@ -27,6 +28,11 @@ publicRoutes.get('/plans', planController.getPlans);
 // Reading one back needs the key, which is the only thing that opens it.
 publicRoutes.post('/files', limitUploads, readUpload, fileController.uploadFile);
 publicRoutes.get('/files/:key', fileController.openPublicFile);
+
+// The directory is the chamber's public roll: anybody may search who is
+// affiliated. Declared before the profile so "districts" is not read as a code.
+publicRoutes.get('/directory', directoryController.getDirectory);
+publicRoutes.get('/directory/districts', directoryController.getDistricts);
 
 // The address a card's QR carries. It is a permanent contract: a card already
 // issued cannot be reissued, so this path never changes.
