@@ -205,4 +205,4 @@ async function updateOwnStore(memberId, body, store = defaultStore) {
   return present(updated);
 }
 
-module.exports = { readOwnStore, updateOwnStore, MAXIMUM_CATEGORIES };
+module.exports = { readOwnStore, updateOwnStore, presentStore: present, MAXIMUM_CATEGORIES };

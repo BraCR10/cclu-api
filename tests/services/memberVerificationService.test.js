@@ -160,6 +160,8 @@ const wholeDocument = (overrides = {}) => ({
   ...overrides,
 });
 
+const NO_DETAILS = { findBranches: async () => [], readPlan: async () => null };
+
 async function refused(work) {
   try {
     await work();
@@ -199,7 +201,7 @@ test('a suspended or rejected affiliate has no public listing', async () => {
 
 // The test the ticket asks for: read the raw answer, not the screen.
 test('nothing administrative survives into the raw answer', async () => {
-  const profile = await readPublicProfile(VALID_CODE, finding(wholeDocument()));
+  const profile = await readPublicProfile(VALID_CODE, finding(wholeDocument()), NO_DETAILS);
   const raw = JSON.stringify(profile);
 
   for (const secret of [
@@ -231,7 +233,7 @@ test('nothing administrative survives into the raw answer', async () => {
 });
 
 test('the listing carries what a directory is for', async () => {
-  const profile = await readPublicProfile(VALID_CODE, finding(wholeDocument()));
+  const profile = await readPublicProfile(VALID_CODE, finding(wholeDocument()), NO_DETAILS);
 
   assert.equal(profile.businessName, 'Panadería Tres Ríos');
   assert.equal(profile.memberCode, formatMemberCode(VALID_CODE));
@@ -246,6 +248,7 @@ test('an absent optional field is answered as nothing rather than left out', asy
   const profile = await readPublicProfile(
     VALID_CODE,
     finding(wholeDocument({ whatsappNumber: undefined, website: undefined, logoUrl: undefined })),
+    NO_DETAILS,
   );
 
   assert.equal(profile.whatsappNumber, null);
@@ -259,8 +262,62 @@ test('a code is found however a person wrote it down', async () => {
     formatMemberCode(VALID_CODE),
     ` ${VALID_CODE} `,
   ]) {
-    const profile = await readPublicProfile(written, finding(wholeDocument()));
+    const profile = await readPublicProfile(written, finding(wholeDocument()), NO_DETAILS);
 
     assert.equal(profile.memberCode, formatMemberCode(VALID_CODE));
   }
+});
+
+test('a public page names each open branch with its hours, and never its municipal permit', async () => {
+  const details = {
+    findBranches: async () => [
+      {
+        name: 'Sucursal San Juan',
+        isPrimary: true,
+        canton: { name: 'La Unión' },
+        district: 'San Juan',
+        address: '200 m norte de la iglesia',
+        phone: '88451290',
+        schedule: 'Lunes a viernes, 7 a. m. a 6 p. m.',
+        municipalPermit: 'PM-2026-0042',
+      },
+    ],
+    readPlan: async () => ({ key: 'pro', name: 'Pro Pymex' }),
+  };
+
+  const profile = await readPublicProfile(VALID_CODE, finding(wholeDocument()), details);
+
+  assert.equal(profile.branches[0].name, 'Sucursal San Juan');
+  assert.equal(profile.branches[0].canton, 'La Unión');
+  assert.ok(!JSON.stringify(profile).includes('PM-2026-0042'));
+  assert.deepEqual(profile.plan, { key: 'pro', name: 'Pro Pymex' });
+});
+
+test('a member whose record predates branches shows the place it registered', async () => {
+  const profile = await readPublicProfile(
+    VALID_CODE,
+    finding(
+      wholeDocument({
+        branchModality: 'physical',
+        branchName: 'Casa matriz',
+        district: 'Tres Ríos',
+      }),
+    ),
+    NO_DETAILS,
+  );
+
+  assert.deepEqual(
+    profile.branches.map((branch) => [branch.name, branch.district, branch.address]),
+    [['Casa matriz', 'Tres Ríos', 'Frente al parque']],
+  );
+});
+
+test('a member on Gratuita shows no plan, and the shop week is always seven days', async () => {
+  const profile = await readPublicProfile(VALID_CODE, finding(wholeDocument()), {
+    findBranches: async () => [],
+    readPlan: async () => ({ key: 'free', name: 'Gratuita' }),
+  });
+
+  assert.equal(profile.plan, null);
+  assert.equal(profile.schedule.length, 7);
 });

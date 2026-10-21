@@ -3,6 +3,16 @@ const { normalizeMemberCode, isMemberCodeValid, formatMemberCode } = require('./
 const { effectiveMemberState, MEMBER_STATES } = require('./accountService');
 const { ValidationError } = require('../config/memberRules');
 const { ERROR_CODES } = require('../config/errorCodes');
+const { Branch } = require('../models/Branch');
+// Registered here because the profile populates cantons and activities, and
+// nothing guarantees another module loaded them first.
+require('../models/Canton');
+require('../models/Activity');
+const { BRANCH_MODALITIES } = require('../models/Member');
+const { PLAN_KEYS } = require('../models/Plan');
+const clock = require('../config/clock');
+const { readEffectivePlan } = require('./entitlementService');
+const { presentStore } = require('./storeService');
 
 // What one member may learn about another from a code: enough to recognise the
 // business in front of them, and nothing that belongs to the account.
@@ -71,6 +81,12 @@ const PUBLIC_FIELDS = [
   'linkedin',
   'website',
   'logoUrl',
+  'logoFileKey',
+  'storeCategories',
+  'storeSchedule',
+  'branchModality',
+  'branchName',
+  'district',
   'createdAt',
   'applicationStatus',
   'accountStatus',
@@ -81,7 +97,56 @@ function findPublicByCode(code) {
     .select(PUBLIC_FIELDS)
     .populate('canton', 'name province')
     .populate('activity', 'name')
+    .populate('storeCategories', 'name')
     .lean();
+}
+
+const defaultPublicDetails = {
+  findBranches: (memberId) =>
+    Branch.find({ member: memberId, removedAt: null })
+      .sort({ isPrimary: -1, createdAt: 1 })
+      .populate('canton', 'name')
+      .lean(),
+  readPlan: (memberId, now) => readEffectivePlan(memberId, now),
+};
+
+// Where a client finds the business. The municipal permit is the chamber's and
+// never leaves. A member whose record predates branches is shown the place on
+// its registration, the way the directory places it.
+function publicBranches(member, branches) {
+  if (branches.length > 0) {
+    return branches.map((branch) => ({
+      name: branch.name,
+      isPrimary: branch.isPrimary === true,
+      canton: branch.canton?.name ?? null,
+      district: branch.district,
+      address: branch.address,
+      phone: branch.phone ?? null,
+      schedule: branch.schedule ?? null,
+    }));
+  }
+
+  if (member.branchModality === BRANCH_MODALITIES.VIRTUAL || !member.branchName) {
+    return [];
+  }
+
+  return [
+    {
+      name: member.branchName,
+      isPrimary: true,
+      canton: member.canton?.name ?? null,
+      district: member.district ?? null,
+      address: member.location ?? null,
+      phone: null,
+      schedule: null,
+    },
+  ];
+}
+
+function paidPlanOf(plan) {
+  return plan === null || plan === undefined || plan.key === PLAN_KEYS.FREE
+    ? null
+    : { key: plan.key, name: plan.name };
 }
 
 function notListed() {
@@ -95,7 +160,12 @@ function notListed() {
 
 // Built rather than filtered. Handing back the document and trusting a screen
 // not to paint a field would still send it to the browser.
-async function readPublicProfile(rawCode, find = findPublicByCode) {
+async function readPublicProfile(
+  rawCode,
+  find = findPublicByCode,
+  details = defaultPublicDetails,
+  now = clock.now(),
+) {
   const code = normalizeMemberCode(rawCode);
 
   if (code === null || !isMemberCodeValid(code)) {
@@ -114,6 +184,12 @@ async function readPublicProfile(rawCode, find = findPublicByCode) {
     throw notListed();
   }
 
+  const [branches, plan] = await Promise.all([
+    details.findBranches(member._id),
+    details.readPlan(member._id, now),
+  ]);
+  const store = presentStore(member);
+
   return {
     memberCode: formatMemberCode(member.memberCode),
     businessName: member.businessName,
@@ -130,7 +206,12 @@ async function readPublicProfile(rawCode, find = findPublicByCode) {
     linkedin: member.linkedin ?? null,
     website: member.website ?? null,
     logoUrl: member.logoUrl ?? null,
+    logoFileKey: member.logoFileKey ?? null,
     affiliatedSince: member.createdAt,
+    plan: paidPlanOf(plan),
+    branches: publicBranches(member, branches),
+    categories: store.categories.map((category) => category.name),
+    schedule: store.schedule,
   };
 }
 

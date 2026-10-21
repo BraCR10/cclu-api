@@ -737,7 +737,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "directory", "{{memberCode}}"]
             },
-            "description": "Public. The listing a member card's QR code opens. Only public fields, and only for an active member."
+            "description": "Public. The page a member card's QR code opens: public fields, open branches (no municipal permit), the shop's week and categories, and the paid plan while it holds. Only for an active member."
           },
           "response": []
         }

@@ -410,6 +410,12 @@ the same rule that lets an account in, and nobody else in any form.
 - **Order.** Alphabetical in Spanish, twelve to a page. No plan buys a higher
   place; the plan shows as a badge, and only while it holds.
 
+`GET /api/directory/:memberCode` is one business's public page, the one a card's
+QR opens. Beyond the profile it carries the open branches with their address,
+telephone and hours, the shop's week and categories, and the paid plan while it
+holds. A branch's municipal permit never leaves, and a member whose record
+predates branches shows the place on its registration.
+
 ## Notifications
 
 A notification is what the bell in the panel shows: something happened that the
