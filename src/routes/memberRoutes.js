@@ -5,7 +5,9 @@ const storeController = require('../controllers/storeController');
 const emailChangeController = require('../controllers/emailChangeController');
 const membershipController = require('../controllers/membershipController');
 const paymentController = require('../controllers/paymentController');
+const vacancyController = require('../controllers/vacancyController');
 const { readUpload } = require('../middlewares/readUpload');
+const { requireEntitlement } = require('../middlewares/requireEntitlement');
 const { authorize } = require('../middlewares/authorize');
 const { limitByAddress, limitCodeChecks, limitPayments } = require('../middlewares/rateLimits');
 const { ROLES } = require('../config/roles');
@@ -78,6 +80,21 @@ memberRoutes.post(
   authorize(ROLES.MEMBER, ROLES.ADMIN),
   limitCodeChecks,
   memberProfileController.verifyCode,
+);
+
+// A member reads their vacancies on any plan, so the screen can say what
+// unlocks publishing; publishing one is what the plan has to include.
+memberRoutes.get('/me/vacancies', authorize(ROLES.MEMBER), vacancyController.getOwnVacancies);
+memberRoutes.post(
+  '/me/vacancies',
+  authorize(ROLES.MEMBER),
+  requireEntitlement('publishJobs'),
+  vacancyController.createOwnVacancy,
+);
+memberRoutes.delete(
+  '/me/vacancies/:vacancyId',
+  authorize(ROLES.MEMBER),
+  vacancyController.deleteOwnVacancy,
 );
 
 module.exports = { memberRoutes };

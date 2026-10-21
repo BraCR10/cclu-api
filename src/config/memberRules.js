@@ -45,6 +45,12 @@ const FIELDS = {
   website: { maxLength: 300, pattern: 'link' },
   logoUrl: { maxLength: 300, pattern: 'link' },
   statusReason: { maxLength: 500 },
+  // A job vacancy. Long enough for a real description, short enough to read on
+  // a telephone.
+  title: { maxLength: 80 },
+  description: { maxLength: 800 },
+  requirements: { maxLength: 500 },
+  howToApply: { maxLength: 300 },
 };
 
 // bcrypt reads no further than the 72nd byte, so a longer password would carry
