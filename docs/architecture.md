@@ -435,6 +435,25 @@ by one member or one administrator, so each person reads and clears their own.
   `POST /api/notifications/read` marks them all. A notice that is somebody
   else's answers 404, like one that does not exist.
 
+## Vacancies
+
+A member publishes job vacancies when the plan includes it (`publishJobs`: Lite,
+Pro and Premium). This is the first route behind `requireEntitlement`, so the
+plan is checked against the clock on the request that publishes, not read from
+the session.
+
+- **Reading is open to any plan.** `GET /api/members/me/vacancies` answers the
+  member's vacancies with `canPublish`, so the screen offers the form or says
+  what unlocks it. `POST` is what the plan has to include, and answers `403
+plan_required` otherwise.
+- **A vacancy belongs to one of the member's own open branches.** The job board
+  places it by that branch, and a branch of another business is refused as an
+  unknown reference.
+- **Deleting is a date.** `removedAt` keeps the vacancy for the chamber's
+  reports. Moderation takes one down with `status: inactive` and a reason.
+- **People apply by the means the business names.** There is no application
+  through the platform; `howToApply` is that means.
+
 ## Time and access
 
 Plans grant access by date, so a mistake here gives somebody a paid plan that

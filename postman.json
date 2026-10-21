@@ -1265,6 +1265,62 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Vacancies",
+      "item": [
+        {
+          "name": "List mine",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/vacancies",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "vacancies"]
+            },
+            "description": "Member. Own vacancies, newest first, paged, with canPublish for the current plan."
+          },
+          "response": []
+        },
+        {
+          "name": "Publish one",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/vacancies",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "vacancies"]
+            },
+            "description": "Member on a plan with publishJobs. 403 plan_required otherwise. The branch must be one of the member's open branches.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Barista medio tiempo\",\n  \"description\": \"Preparás bebidas de café y atendés a los clientes.\",\n  \"requirements\": \"Experiencia de 6 meses.\",\n  \"workday\": \"part_time\",\n  \"howToApply\": \"Enviá tu currículo por WhatsApp al 8845 1290.\",\n  \"branch\": \"{{branchId}}\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete one",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/vacancies/{{vacancyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "vacancies", "{{vacancyId}}"]
+            },
+            "description": "Member. 204, or 404 when it is not the member's own."
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
