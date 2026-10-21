@@ -1218,6 +1218,53 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "List my notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications"]
+            },
+            "description": "Member or administrator. The session's own notices, newest first, paged, with the number unread."
+          },
+          "response": []
+        },
+        {
+          "name": "Mark one read",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/{{notificationId}}/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "{{notificationId}}", "read"]
+            },
+            "description": "Member or administrator. 204, or 404 when the notice is not the session's own."
+          },
+          "response": []
+        },
+        {
+          "name": "Mark all read",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "read"]
+            },
+            "description": "Member or administrator. Marks every unread notice of the session read. 204."
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }

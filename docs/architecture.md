@@ -410,6 +410,25 @@ the same rule that lets an account in, and nobody else in any form.
 - **Order.** Alphabetical in Spanish, twelve to a page. No plan buys a higher
   place; the plan shows as a badge, and only while it holds.
 
+## Notifications
+
+A notification is what the bell in the panel shows: something happened that the
+person may want to act on. Each one is a row of its own (`Notification`), owned
+by one member or one administrator, so each person reads and clears their own.
+
+- **The API stores what happened, never the sentence.** A row holds a `type`
+  such as `payment_submitted` and the `params` the sentence names, and the web
+  writes it. The wording can change without touching stored rows.
+- **A notice for the panel is copied to every active administrator** when it
+  happens, so one of them reading it does not clear it for the others.
+- **A notice never undoes what it reports.** Storing one is attempted after the
+  operation succeeded; a failure is logged and the operation stands, as with
+  the messages sent by email.
+- **Only one's own.** `GET /api/notifications` pages a person's notices with how
+  many are unread; `POST /api/notifications/:id/read` marks one and
+  `POST /api/notifications/read` marks them all. A notice that is somebody
+  else's answers 404, like one that does not exist.
+
 ## Time and access
 
 Plans grant access by date, so a mistake here gives somebody a paid plan that
