@@ -5,6 +5,7 @@ const planController = require('../controllers/planController');
 const fileController = require('../controllers/fileController');
 const adminPaymentController = require('../controllers/adminPaymentController');
 const adminMembershipController = require('../controllers/adminMembershipController');
+const adminSummaryController = require('../controllers/adminSummaryController');
 const { authorize } = require('../middlewares/authorize');
 const { ROLES } = require('../config/roles');
 
@@ -13,6 +14,8 @@ const adminRoutes = express.Router();
 // Applied to the router rather than to each route, so a route added here later
 // is an administrator route whether or not its author remembered to say so.
 adminRoutes.use(authorize(ROLES.ADMIN));
+
+adminRoutes.get('/summary', adminSummaryController.getSummary);
 
 adminRoutes.get('/me', adminProfileController.getOwnProfile);
 adminRoutes.patch('/me', adminProfileController.updateOwnProfile);
