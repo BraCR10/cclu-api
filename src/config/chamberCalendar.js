@@ -71,7 +71,14 @@ function latestTrustedExpiry(now) {
     .toJSDate();
 }
 
+// The first instant of the month on the chamber's calendar, so "this month"
+// means the same thing wherever the server runs.
+function startOfChamberMonth(now) {
+  return inChamberZone(now).startOf('month').toJSDate();
+}
+
 module.exports = {
+  startOfChamberMonth,
   CHAMBER_TIME_ZONE,
   PAYMENT_FREQUENCIES,
   MAXIMUM_TERM_MONTHS,

@@ -884,6 +884,20 @@
             "description": "Administrator session. Paid plans in force only; Gratuita, and any plan that ran out, is not listed. view is active (default) or expiring, the part that ends within the notice; plan is lite, pro or premium; search matches the business name or the start of the member code. Answers the page with counts { active, expiring } and the notice in force, soonest to expire first."
           },
           "response": []
+        },
+        {
+          "name": "Read the panel summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "summary"]
+            },
+            "description": "Administrator. Members, pending applications and payments, paid memberships by plan, memberships expiring soon and active vacancies, read now."
+          },
+          "response": []
         }
       ]
     },

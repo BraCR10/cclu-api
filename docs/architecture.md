@@ -476,6 +476,22 @@ already_subscribed` on `email`; one that left is subscribed again with what
 - **The district is typed**, as at registration, and the canton is a catalog
   identifier.
 
+## The administration summary
+
+`GET /api/admin/summary` is what the panel opens on (A-01). Every figure is read
+when it is asked for and nothing is stored, so it always agrees with the lists
+it leads to.
+
+- **Members** are the listed ones: approved and not suspended. "New this month"
+  counts approvals since the first of the month on the chamber's calendar.
+- **Pending work** is the applications and payments waiting for review, each
+  with when the oldest one arrived.
+- **Paid memberships** are those whose term holds right now, by the same rule
+  access uses. Everybody listed without one counts as Gratuita, whether or not
+  the hourly run has moved the record yet.
+- **Expiring** is the first four of the memberships list's expiring view, with
+  the notice the chamber set; **vacancies** are those on the job board.
+
 ## Time and access
 
 Plans grant access by date, so a mistake here gives somebody a paid plan that
