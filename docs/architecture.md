@@ -454,6 +454,14 @@ plan_required` otherwise.
 - **People apply by the means the business names.** There is no application
   through the platform; `howToApply` is that means.
 
+`GET /api/vacancies` is the public job board and `GET /api/vacancies/:id` one
+vacancy on it. A vacancy is on the board while it is active, not deleted, and
+its business is listed and holds a plan with `publishJobs` whose term has not
+run out; a plan that lapses takes its vacancies off at once, before the hourly
+run. One that is not on the board answers 404 whatever the reason. The board
+searches the title and filters by `canton`, `district` (within a canton,
+compared without case or accents) and `workday`, nine to a page, newest first.
+
 ## Subscribers
 
 `POST /api/subscribers` is open: anybody may ask for the chamber's promotions,
