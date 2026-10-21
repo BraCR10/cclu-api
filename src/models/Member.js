@@ -14,6 +14,10 @@ const BRANCH_MODALITIES = {
   VIRTUAL: 'virtual',
 };
 
+// The shop's week. Monday first: a business reads its hours from the day it
+// opens, not from the calendar's first column.
+const SHOP_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
 // dimex keeps its own name. It is a Costa Rican document for foreign residents,
 // not a word with an English equivalent.
 const IDENTIFICATION_TYPES = {
@@ -29,6 +33,18 @@ const APPLICATION_STATUSES = {
   APPROVED: 'approved',
   REJECTED: 'rejected',
 };
+
+// A day of the shop's week. A closed day keeps no hours: an empty pair would
+// read as open at some point, which is the opposite of what it says.
+const scheduleDaySchema = new mongoose.Schema(
+  {
+    day: { type: String, required: true, enum: SHOP_DAYS },
+    closed: { type: Boolean, required: true, default: true },
+    opensAt: { type: String, trim: true },
+    closesAt: { type: String, trim: true },
+  },
+  { _id: false },
+);
 
 // Kept one by one rather than as a single flag: the chamber has to be able to
 // say which of the three was accepted.
@@ -220,6 +236,19 @@ const memberSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    // The shop, as the member sets it up. The categories are what the marketplace
+    // groups it under; they are not the business's activity, which is the trade
+    // the chamber affiliates.
+    storeCategories: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Activity' }],
+      default: [],
+    },
+    // Empty until the member sets their hours, which the screen reads as a week
+    // that is closed on every day rather than as a shop open around the clock.
+    storeSchedule: {
+      type: [scheduleDaySchema],
+      default: [],
+    },
     accountStatus: {
       type: String,
       required: true,
@@ -312,6 +341,7 @@ module.exports = {
   Member,
   MEMBER_TYPES,
   BRANCH_MODALITIES,
+  SHOP_DAYS,
   IDENTIFICATION_TYPES,
   APPLICATION_STATUSES,
 };

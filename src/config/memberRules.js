@@ -28,6 +28,10 @@ const FIELDS = {
   legalName: { maxLength: 120 },
   managerName: { maxLength: 120 },
   branchName: { maxLength: 120 },
+  district: { maxLength: 80 },
+  address: { maxLength: 200 },
+  schedule: { maxLength: 120 },
+  municipalPermit: { maxLength: 60 },
   legalRepresentativeName: { maxLength: 120 },
   legalRepresentativeIdentification: { maxLength: 20, pattern: 'identificationNumber' },
   activityOther: { maxLength: 120 },
@@ -62,8 +66,8 @@ class ValidationError extends ApplicationError {
   }
 }
 
-function refuse(code, field, message) {
-  throw new ValidationError(code, field, message);
+function refuse(code, field, message, statusCode = 400) {
+  throw new ValidationError(code, field, message, statusCode);
 }
 
 function readText(body, field, { required }) {

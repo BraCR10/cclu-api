@@ -30,6 +30,7 @@
   "ROUTE_NOT_FOUND": "route_not_found",
   "ALREADY_DECIDED": "already_decided",
   "CHANGED_MEANWHILE": "changed_meanwhile",
+  "LAST_BRANCH": "last_branch",
   "PLAN_REQUIRED": "plan_required",
   "RENEWAL_NOT_OPEN": "renewal_not_open",
   "PAYMENT_PENDING": "payment_pending",
