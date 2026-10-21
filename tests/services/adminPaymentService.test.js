@@ -35,6 +35,13 @@ function memoryStore({ payment = pendingPayment(), membership, member, sameRecei
 
   return {
     decisions,
+    notices: [],
+    notifyAdmins: async function (type, params) {
+      this.notices.push({ audience: 'admins', type, params });
+    },
+    notifyMember: async function (memberId, type, params) {
+      this.notices.push({ audience: String(memberId), type, params });
+    },
     findPayment: async () => payment,
     findMember: async () => ({
       _id: 'member-1',
@@ -76,6 +83,10 @@ test('approving moves the member to the plan paid for, from the approval when no
   assert.deepEqual(
     decision.auditEntries.map((entry) => entry.action),
     ['payment.approved', 'membership.renewed'],
+  );
+  assert.deepEqual(
+    store.notices.map((notice) => notice.type),
+    ['payment_approved'],
   );
 });
 

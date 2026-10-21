@@ -9,6 +9,8 @@ const clock = require('../config/clock');
 const { isValidInstant, lastValidDay, latestTrustedExpiry } = require('../config/chamberCalendar');
 const emailService = require('./emailService');
 const membershipPolicyService = require('./membershipPolicyService');
+const notificationService = require('./notificationService');
+const { NOTIFICATION_TYPES } = require('../models/Notification');
 
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
 
@@ -36,6 +38,9 @@ function lapseEntryFor(membership, freePlan) {
 }
 
 const defaultExpiryStore = {
+  notifyMember: (memberId, type, params) =>
+    notificationService.notifyMember(memberId, type, params),
+  notifyAdmins: (type, params) => notificationService.notifyAdmins(type, params),
   findFreePlan: () => Plan.findOne({ key: PLAN_KEYS.FREE }).select('key').lean(),
   readNoticeDays: () => membershipPolicyService.readNoticeDays(),
 
@@ -152,6 +157,9 @@ async function lapseExpiredMemberships(
         businessName: membership.member.businessName,
         planName: membership.plan.name,
       });
+      await store.notifyMember(membership.member._id, NOTIFICATION_TYPES.MEMBERSHIP_LAPSED, {
+        planName: membership.plan.name,
+      });
     } catch (error) {
       reportSkipped('lapse', membership, error);
     }
@@ -194,7 +202,19 @@ async function remindExpiringMemberships(
     } catch (error) {
       await store.releaseReminder(membership);
       reportSkipped('reminder', membership, error);
+      continue;
     }
+
+    // Once per expiry, like the message: the claim above is what keeps the
+    // hourly run from repeating it.
+    const notice = {
+      businessName: membership.member.businessName,
+      planName: membership.plan.name,
+      validUntil: lastValidDay(membership.expiresAt),
+    };
+
+    await store.notifyMember(membership.member._id, NOTIFICATION_TYPES.MEMBERSHIP_EXPIRING, notice);
+    await store.notifyAdmins(NOTIFICATION_TYPES.MEMBERSHIP_EXPIRING, notice);
   }
 
   return reminded;

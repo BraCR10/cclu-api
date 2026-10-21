@@ -10,6 +10,8 @@ const {
 } = require('../../src/services/resubmissionService');
 const { APPLICATION_STATUSES } = require('../../src/models/Member');
 
+const NO_NOTICE = async () => true;
+
 const TOKEN = 'a'.repeat(64);
 const MEMBER_ID = '65f0c3a1b2c3d4e5f6a7b8c9';
 const CANTON_ID = '65f0c3a1b2c3d4e5f6a7b8cb';
@@ -327,7 +329,7 @@ test('a document another member holds is refused without naming whose it is', as
   });
 
   const error = await refused(() =>
-    resubmitRegistration(TOKEN, corrections(), finding(member), []),
+    resubmitRegistration(TOKEN, corrections(), finding(member), [], NO_NOTICE),
   );
 
   assert.deepEqual(
@@ -349,6 +351,7 @@ test('a resubmission goes back under review and spends its link', async () => {
     corrections({ businessName: 'Granja Orgánica San Ramón' }),
     finding(member),
     [],
+    NO_NOTICE,
   );
 
   assert.equal(answer.applicationStatus, APPLICATION_STATUSES.PENDING_REVIEW);
@@ -364,11 +367,11 @@ test('a resubmission goes back under review and spends its link', async () => {
 test('the same link cannot be used twice', async () => {
   const member = correctableMember();
 
-  await resubmitRegistration(TOKEN, corrections(), finding(member), []);
+  await resubmitRegistration(TOKEN, corrections(), finding(member), [], NO_NOTICE);
 
   // Back under review and with the digest gone, the link no longer opens it.
   const error = await refused(() =>
-    resubmitRegistration(TOKEN, corrections(), finding(member), []),
+    resubmitRegistration(TOKEN, corrections(), finding(member), [], NO_NOTICE),
   );
 
   assert.equal(error.statusCode, 404);
@@ -377,7 +380,9 @@ test('the same link cannot be used twice', async () => {
 test('a missing required correction is refused before anything is written', async () => {
   const member = correctableMember();
 
-  await refused(() => resubmitRegistration(TOKEN, { phone: '22790000' }, finding(member), []));
+  await refused(() =>
+    resubmitRegistration(TOKEN, { phone: '22790000' }, finding(member), [], NO_NOTICE),
+  );
 
   assert.equal(member.saved, false);
   assert.equal(member.applicationStatus, APPLICATION_STATUSES.REJECTED);
