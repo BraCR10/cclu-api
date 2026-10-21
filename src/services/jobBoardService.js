@@ -191,10 +191,22 @@ async function readBoardVacancy(vacancyId, now, store = defaultStore) {
   };
 }
 
+// The members whose vacancies a visitor sees, for anything that must count the
+// board the way the board shows it.
+function findPublishingMembers(now, store = defaultStore) {
+  return store.findPublishingMembers(now);
+}
+
 async function countBoardVacancies(now, store = defaultStore) {
   const members = await store.findPublishingMembers(now);
 
   return store.count({ ...SHOWN, member: { $in: members } });
 }
 
-module.exports = { readBoardQuery, listBoard, readBoardVacancy, countBoardVacancies };
+module.exports = {
+  readBoardQuery,
+  listBoard,
+  readBoardVacancy,
+  countBoardVacancies,
+  findPublishingMembers,
+};

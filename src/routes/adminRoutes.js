@@ -6,6 +6,7 @@ const fileController = require('../controllers/fileController');
 const adminPaymentController = require('../controllers/adminPaymentController');
 const adminMembershipController = require('../controllers/adminMembershipController');
 const adminSummaryController = require('../controllers/adminSummaryController');
+const reportController = require('../controllers/reportController');
 const adminSubscriberController = require('../controllers/adminSubscriberController');
 const { authorize } = require('../middlewares/authorize');
 const { ROLES } = require('../config/roles');
@@ -17,6 +18,10 @@ const adminRoutes = express.Router();
 adminRoutes.use(authorize(ROLES.ADMIN));
 
 adminRoutes.get('/summary', adminSummaryController.getSummary);
+
+adminRoutes.get('/reports', reportController.getReports);
+adminRoutes.get('/reports/:type', reportController.getReport);
+adminRoutes.get('/reports/:type/export', reportController.exportReport);
 
 adminRoutes.get('/subscribers', adminSubscriberController.getSubscribers);
 adminRoutes.get('/subscribers/export', adminSubscriberController.exportSubscribers);
