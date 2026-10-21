@@ -18,6 +18,13 @@ function memoryStore(overrides = {}) {
 
   return {
     written,
+    notices: [],
+    notifyAdmins: async function (type, params) {
+      this.notices.push({ audience: 'admins', type, params });
+    },
+    notifyMember: async function (memberId, type, params) {
+      this.notices.push({ audience: String(memberId), type, params });
+    },
     findMember: async () => ({
       _id: MEMBER_ID,
       businessName: 'Café Loma Verde',
@@ -66,6 +73,13 @@ test('a payment is registered pending, with the amount and plan frozen as they w
   assert.equal(store.written.payments[0].monthlyFee, 10000);
   assert.equal(store.written.payments[0].submittedAt, NOW);
   assert.equal(store.written.audit[0].action, 'payment.submitted');
+  assert.deepEqual(store.notices, [
+    {
+      audience: 'admins',
+      type: 'payment_submitted',
+      params: { businessName: store.notices[0].params.businessName, amount: 10000 },
+    },
+  ]);
 });
 
 test('a running plan cannot be paid for before its window opens, and nothing is stored', async () => {

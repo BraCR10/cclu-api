@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const healthRoutes = require('./routes/healthRoutes');
 const { publicAuthRoutes, privateAuthRoutes } = require('./routes/authRoutes');
+const { notificationRoutes } = require('./routes/notificationRoutes');
 const { publicRoutes } = require('./routes/publicRoutes');
 const { adminRoutes } = require('./routes/adminRoutes');
 const { memberRoutes } = require('./routes/memberRoutes');
@@ -44,6 +45,7 @@ app.use('/api', authenticate, requireActiveAccount);
 app.use('/api/auth', privateAuthRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/members', memberRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

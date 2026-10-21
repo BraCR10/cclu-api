@@ -16,6 +16,8 @@ const { formatMemberCode } = require('./memberCodeService');
 const { grantFreeMembership } = require('./membershipService');
 const { RENEWAL_FREQUENCY, holdsRunningPaidPlan, termFor } = require('./renewalPolicy');
 const { presentPayment } = require('./paymentService');
+const notificationService = require('./notificationService');
+const { NOTIFICATION_TYPES } = require('../models/Notification');
 
 const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
 const DUPLICATE_KEY = 11000;
@@ -115,6 +117,8 @@ function presentForAdmin(payment, member) {
 }
 
 const defaultAdminPaymentStore = {
+  notifyMember: (memberId, type, params) =>
+    notificationService.notifyMember(memberId, type, params),
   aggregate: (pipeline) => Payment.aggregate(pipeline),
   findPayment: (paymentId) => Payment.findById(paymentId).lean(),
   findMember: (memberId) =>
@@ -392,6 +396,11 @@ async function approvePayment(
     validUntil: lastValidDay(term.expiresAt),
   });
 
+  await store.notifyMember(member._id, NOTIFICATION_TYPES.PAYMENT_APPROVED, {
+    amount: payment.amount,
+    validUntil: lastValidDay(term.expiresAt),
+  });
+
   return { ...(await readPayment(paymentId, store)), notified };
 }
 
@@ -460,6 +469,11 @@ async function rejectPayment(
   const notified = await notify('paymentRejected', member.email, {
     businessName: member.businessName,
     planName: payment.planName,
+    reason,
+  });
+
+  await store.notifyMember(member._id, NOTIFICATION_TYPES.PAYMENT_REJECTED, {
+    amount: payment.amount,
     reason,
   });
 

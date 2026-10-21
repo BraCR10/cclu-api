@@ -16,6 +16,8 @@ const emailService = require('./emailService');
 const membershipPolicyService = require('./membershipPolicyService');
 const { normalizeMemberCode } = require('./memberCodeService');
 const { RENEWAL_FREQUENCY, renewalWindow } = require('./renewalPolicy');
+const notificationService = require('./notificationService');
+const { NOTIFICATION_TYPES } = require('../models/Notification');
 
 const PAID_PLAN_KEYS = [PLAN_KEYS.LITE, PLAN_KEYS.PRO, PLAN_KEYS.PREMIUM];
 const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
@@ -129,6 +131,7 @@ function presentPayment(payment) {
 }
 
 const defaultPaymentStore = {
+  notifyAdmins: (type, params) => notificationService.notifyAdmins(type, params),
   findMember: (memberId) =>
     Member.findById(memberId).select('businessName email memberCode').lean(),
   findMembership: (memberId) =>
@@ -325,6 +328,11 @@ async function submitPayment(
     planName: plan.name,
     amount: formatColones(payment.amount),
     reference: payment.reference,
+  });
+
+  await store.notifyAdmins(NOTIFICATION_TYPES.PAYMENT_SUBMITTED, {
+    businessName: member.businessName,
+    amount: payment.amount,
   });
 
   return { ...presentPayment(payment), notified };

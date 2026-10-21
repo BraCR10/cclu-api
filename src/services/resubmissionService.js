@@ -16,6 +16,8 @@ const {
   readReference,
 } = require('../config/memberRules');
 const { ERROR_CODES } = require('../config/errorCodes');
+const notificationService = require('./notificationService');
+const { NOTIFICATION_TYPES } = require('../models/Notification');
 
 const TOKEN_BYTES = 32;
 const DAYS_VALID = 30;
@@ -279,6 +281,7 @@ async function resubmitRegistration(
   body,
   find = findByDigest,
   references = REFERENCE_FIELDS,
+  notifyAdmins = notificationService.notifyAdmins,
 ) {
   const member = await findCorrectableByToken(rawToken, find);
   const { changes, unset } = await buildCorrections(body, references);
@@ -318,6 +321,10 @@ async function resubmitRegistration(
 
     throw error;
   }
+
+  await notifyAdmins(NOTIFICATION_TYPES.APPLICATION_RESUBMITTED, {
+    businessName: member.businessName,
+  });
 
   return { id: String(member._id), applicationStatus: member.applicationStatus };
 }

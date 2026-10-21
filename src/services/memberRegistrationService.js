@@ -22,6 +22,8 @@ const {
   refuse,
 } = require('../config/memberRules');
 const { ERROR_CODES } = require('../config/errorCodes');
+const notificationService = require('./notificationService');
+const { NOTIFICATION_TYPES } = require('../models/Notification');
 
 // The form draws three steps and this reads them in that order. Every field is
 // named one by one, and nothing outside these lists is ever read: spreading the
@@ -238,12 +240,16 @@ function alreadyRegistered() {
 // registration that was stored into a failure the applicant sees.
 const DAYS_TO_REVIEW = 5;
 
-function notifyReceivedNotice(registration) {
-  return emailService.notify('applicationReceived', registration.email, {
+// The applicant hears it is in, and the panel that there is one to review.
+async function notifyReceivedNotice(registration) {
+  await emailService.notify('applicationReceived', registration.email, {
     name: registration.name ?? registration.managerName ?? registration.legalRepresentativeName,
     businessName: registration.businessName,
     email: registration.email,
     daysToReview: DAYS_TO_REVIEW,
+  });
+  await notificationService.notifyAdmins(NOTIFICATION_TYPES.APPLICATION_SUBMITTED, {
+    businessName: registration.businessName,
   });
 }
 

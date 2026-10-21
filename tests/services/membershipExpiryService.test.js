@@ -33,6 +33,13 @@ function memoryStore(memberships) {
   return {
     memberships,
     auditEntries,
+    notices: [],
+    notifyAdmins: async function (type, params) {
+      this.notices.push({ audience: 'admins', type, params });
+    },
+    notifyMember: async function (memberId, type, params) {
+      this.notices.push({ audience: String(memberId), type, params });
+    },
     findFreePlan: async () => FREE,
     readNoticeDays: async () => 7,
     findExpired: async (now) =>
@@ -101,6 +108,10 @@ test('a paid plan past its expiry moves to Gratuita once, with one notice and on
   assert.equal(stored.lapsed.plan.key, 'pro');
   assert.equal(store.auditEntries.length, 1);
   assert.deepEqual(mail.sent, [{ template: 'membershipLapsed', recipient: MEMBER.email }]);
+  assert.deepEqual(
+    store.notices.map((notice) => notice.type),
+    ['membership_lapsed'],
+  );
 });
 
 test('a plan that has not expired yet is left alone', async () => {
@@ -133,6 +144,10 @@ test('the reminder goes out once per expiry, however often the run repeats', asy
   assert.equal(await remindExpiringMemberships(NOW, store, mail.deliver), 1);
   assert.equal(await remindExpiringMemberships(NOW, store, mail.deliver), 0);
   assert.deepEqual(mail.sent, [{ template: 'membershipExpiring', recipient: MEMBER.email }]);
+  assert.deepEqual(
+    store.notices.map((notice) => notice.audience === 'admins'),
+    [false, true],
+  );
 });
 
 test('no reminder is sent for a plan more than seven days from its expiry', async () => {
