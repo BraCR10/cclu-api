@@ -1,0 +1,118 @@
+[
+  {
+    "slug": "cafe-loma-verde",
+    "businessName": "Café Loma Verde",
+    "plan": "pro",
+    "description": "Familia cafetalera de San Juan de La Unión. Tostamos en pequeños lotes el café que cultivamos en las faldas del Irazú.",
+    "phone": "88451290",
+    "instagram": "@cafelomaverde",
+    "branches": [
+      {
+        "name": "Sucursal San Juan",
+        "district": "San Juan",
+        "address": "200 m norte de la iglesia católica"
+      },
+      {
+        "name": "Sucursal Tres Ríos",
+        "district": "Tres Ríos",
+        "address": "Costado este del parque central"
+      }
+    ]
+  },
+  {
+    "slug": "ferreteria-el-carmen",
+    "businessName": "Ferretería El Carmen",
+    "plan": "premium",
+    "description": "Materiales de construcción, herramienta y asesoría para obra desde 1998.",
+    "phone": "22790011",
+    "branches": [
+      {
+        "name": "Sucursal Concepción",
+        "district": "Concepción",
+        "address": "Frente a la plaza de deportes"
+      }
+    ]
+  },
+  {
+    "slug": "veterinaria-patitas",
+    "businessName": "Veterinaria Patitas",
+    "plan": "lite",
+    "expiresInDays": 3,
+    "description": "Clínica veterinaria con consulta, vacunación y cirugía menor.",
+    "phone": "22795566",
+    "branches": [
+      {
+        "name": "Sucursal Tres Ríos",
+        "district": "Tres Ríos",
+        "address": "100 m sur del Banco Nacional"
+      }
+    ]
+  },
+  {
+    "slug": "soda-la-pradera",
+    "businessName": "Soda La Pradera",
+    "plan": "free",
+    "description": "Comida casera, casados y desayunos típicos.",
+    "phone": "87001234",
+    "branches": [
+      { "name": "Sucursal San Diego", "district": "San Diego", "address": "Contiguo a la escuela" }
+    ]
+  },
+  {
+    "slug": "tecnorio-soluciones",
+    "businessName": "TecnoRío Soluciones",
+    "plan": "pro",
+    "virtual": true,
+    "description": "Desarrollo de software y soporte informático para pymes.",
+    "phone": "60112233",
+    "branches": []
+  },
+  {
+    "slug": "optica-vision-clara",
+    "businessName": "Óptica Visión Clara",
+    "plan": "free",
+    "description": "Exámenes de la vista y aros a la medida.",
+    "phone": "22781020",
+    "branches": [
+      {
+        "name": "Sucursal Tres Ríos",
+        "district": "Tres Ríos",
+        "address": "Centro comercial Plaza Tres Ríos, local 4"
+      }
+    ]
+  },
+  {
+    "slug": "hostal-cerro-dulce",
+    "businessName": "Hostal Cerro Dulce",
+    "plan": "lite",
+    "description": "Hospedaje familiar con vista al valle.",
+    "phone": "88997766",
+    "branches": [
+      {
+        "name": "Sucursal Dulce Nombre",
+        "district": "Dulce Nombre",
+        "address": "Camino al mirador, 2 km"
+      }
+    ]
+  },
+  {
+    "slug": "panaderia-la-espiga",
+    "businessName": "Panadería La Espiga",
+    "applicationStatus": "pending_review",
+    "description": "Pan artesanal horneado cada mañana.",
+    "phone": "22793344",
+    "branches": [
+      { "name": "Casa matriz", "district": "Río Azul", "address": "Frente a la parada de buses" }
+    ]
+  },
+  {
+    "slug": "granja-san-ramon",
+    "businessName": "Granja Orgánica San Ramón",
+    "applicationStatus": "pending_review",
+    "description": "Hortalizas orgánicas y huevos de pastoreo.",
+    "phone": "83334455",
+    "branches": [
+      { "name": "Finca", "district": "San Ramón", "address": "Calle a Quebradas, 500 m este" }
+    ]
+  }
+]
