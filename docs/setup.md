@@ -201,13 +201,13 @@ npm run seed-demo -- --remove
 
 It loads the businesses in `scripts/data/demo-members.json`: seven approved
 ones with their branches, shop, hours and a membership on each plan, one of them
-about to expire, and two applications pending review. It needs
+about to expire, a few vacancies, and two applications pending review. It needs
 `seed-catalogs` to have run. Running it again updates the same businesses
 rather than duplicating them.
 
 Every demo account uses an address under `demo.camaralaunion.invalid`, a domain
 that can never receive mail, and `--remove` deletes those accounts with their
-branches, memberships and notifications and nothing else. Production is opened
+branches, vacancies, memberships and notifications and nothing else. Production is opened
 with the demo data removed. A demo account can only be signed into when
 `DEMO_MEMBER_PASSWORD` is set while seeding; otherwise its password is random.
 

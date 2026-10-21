@@ -14,6 +14,7 @@ const {
 const { Branch } = require('../src/models/Branch');
 const { Membership } = require('../src/models/Membership');
 const { Notification } = require('../src/models/Notification');
+const { Vacancy } = require('../src/models/Vacancy');
 const { Plan } = require('../src/models/Plan');
 const { Canton } = require('../src/models/Canton');
 const { Activity } = require('../src/models/Activity');
@@ -106,6 +107,27 @@ async function replaceBranches(member, entry, canton) {
   );
 }
 
+// Soda La Pradera is on Gratuita, so its vacancy is stored but never reaches the
+// board: the demo shows the rule as well as the board.
+async function replaceVacancies(member, entry, now) {
+  await Vacancy.deleteMany({ member: member._id });
+
+  const branch = await Branch.findOne({ member: member._id, isPrimary: true }).lean();
+
+  if (branch === null || entry.vacancies === undefined) {
+    return;
+  }
+
+  await Vacancy.insertMany(
+    entry.vacancies.map((vacancy, position) => ({
+      ...vacancy,
+      member: member._id,
+      branch: branch._id,
+      publishedAt: new Date(now.getTime() - (position + 1) * 2 * DAY_IN_MILLISECONDS),
+    })),
+  );
+}
+
 async function upsertMembership(member, entry, plans, now) {
   const plan = plans.get(entry.plan);
   const paid = entry.plan !== 'free';
@@ -156,6 +178,7 @@ async function seedDemo() {
     const member = await upsertMember(entry, index, references);
 
     await replaceBranches(member, entry, references.canton);
+    await replaceVacancies(member, entry, now);
 
     if (entry.plan !== undefined) {
       await upsertMembership(member, entry, references.plans, now);
@@ -168,7 +191,8 @@ async function seedDemo() {
 async function removeDemo() {
   const ids = await Member.distinct('_id', { email: DEMO_EMAIL });
 
-  const [branches, memberships, notifications, members] = await Promise.all([
+  const [vacancies, branches, memberships, notifications, members] = await Promise.all([
+    Vacancy.deleteMany({ member: { $in: ids } }),
     Branch.deleteMany({ member: { $in: ids } }),
     Membership.deleteMany({ member: { $in: ids } }),
     Notification.deleteMany({ recipient: { $in: ids } }),
@@ -177,7 +201,8 @@ async function removeDemo() {
 
   console.log(
     `Demo data removed: ${members.deletedCount} businesses, ${branches.deletedCount} branches, ` +
-      `${memberships.deletedCount} memberships, ${notifications.deletedCount} notifications`,
+      `${vacancies.deletedCount} vacancies, ${memberships.deletedCount} memberships, ` +
+      `${notifications.deletedCount} notifications`,
   );
 }
 

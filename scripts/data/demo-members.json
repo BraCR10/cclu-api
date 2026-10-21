@@ -17,6 +17,15 @@
         "district": "Tres Ríos",
         "address": "Costado este del parque central"
       }
+    ],
+    "vacancies": [
+      {
+        "title": "Barista medio tiempo",
+        "workday": "part_time",
+        "description": "Preparás bebidas de café de especialidad, atendés la barra y ayudás con el cierre del local.",
+        "requirements": "Experiencia de 6 meses como barista. Disponibilidad de tardes y sábados.",
+        "howToApply": "Enviá tu currículo por WhatsApp al 8845 1290 o traelo a la cafetería de lunes a viernes de 2 a 5 p. m."
+      }
     ]
   },
   {
@@ -30,6 +39,22 @@
         "name": "Sucursal Concepción",
         "district": "Concepción",
         "address": "Frente a la plaza de deportes"
+      }
+    ],
+    "vacancies": [
+      {
+        "title": "Asistente de bodega",
+        "workday": "full_time",
+        "description": "Recibís y acomodás mercadería, preparás pedidos y llevás el inventario.",
+        "requirements": "Secundaria completa. Licencia B1 deseable.",
+        "howToApply": "Enviá tu currículo a la ferretería o pasá por la caja principal."
+      },
+      {
+        "title": "Cajero o cajera de fin de semana",
+        "workday": "part_time",
+        "description": "Atendés la caja y el servicio al cliente los sábados y domingos.",
+        "requirements": "Experiencia en manejo de efectivo.",
+        "howToApply": "Escribinos por WhatsApp al 2279 0011."
       }
     ]
   },
@@ -46,6 +71,15 @@
         "district": "Tres Ríos",
         "address": "100 m sur del Banco Nacional"
       }
+    ],
+    "vacancies": [
+      {
+        "title": "Asistente veterinario",
+        "workday": "full_time",
+        "description": "Apoyás en consultas, vacunación y el cuidado de pacientes hospitalizados.",
+        "requirements": "Técnico en asistencia veterinaria.",
+        "howToApply": "Enviá tu currículo por correo o traelo a la clínica."
+      }
     ]
   },
   {
@@ -55,7 +89,19 @@
     "description": "Comida casera, casados y desayunos típicos.",
     "phone": "87001234",
     "branches": [
-      { "name": "Sucursal San Diego", "district": "San Diego", "address": "Contiguo a la escuela" }
+      {
+        "name": "Sucursal San Diego",
+        "district": "San Diego",
+        "address": "Contiguo a la escuela"
+      }
+    ],
+    "vacancies": [
+      {
+        "title": "Salonero",
+        "workday": "part_time",
+        "description": "Atendés mesas en horario de almuerzo.",
+        "howToApply": "Pasá por la soda de 9 a 11 a. m."
+      }
     ]
   },
   {
@@ -102,7 +148,11 @@
     "description": "Pan artesanal horneado cada mañana.",
     "phone": "22793344",
     "branches": [
-      { "name": "Casa matriz", "district": "Río Azul", "address": "Frente a la parada de buses" }
+      {
+        "name": "Casa matriz",
+        "district": "Río Azul",
+        "address": "Frente a la parada de buses"
+      }
     ]
   },
   {
@@ -112,7 +162,11 @@
     "description": "Hortalizas orgánicas y huevos de pastoreo.",
     "phone": "83334455",
     "branches": [
-      { "name": "Finca", "district": "San Ramón", "address": "Calle a Quebradas, 500 m este" }
+      {
+        "name": "Finca",
+        "district": "San Ramón",
+        "address": "Calle a Quebradas, 500 m este"
+      }
     ]
   }
 ]
