@@ -1502,6 +1502,109 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Publications",
+      "item": [
+        {
+          "name": "List mine",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/publications?type=product",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "publications"],
+              "query": [{ "key": "type", "value": "product" }]
+            },
+            "description": "Member session. Answers on any plan, with canPublish saying whether this plan lets them publish now. type is one of product, service, promotion, discount."
+          },
+          "response": []
+        },
+        {
+          "name": "Publish a product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"product\",\n  \"title\": \"Caf molido 500 g\",\n  \"description\": \"Tueste medio, molido para cafetera.\",\n  \"price\": 5500,\n  \"imageUrl\": \"https://cdn.example.cr/cafe.png\",\n  \"category\": \"{{activityId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/publications",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "publications"]
+            },
+            "description": "Member session on a plan that includes publishInMarketplace, otherwise 403 plan_required. A product or a service takes price and imageUrl; a promotion takes startsAt and endsAt; a discount takes percentage (1-90), condition and the two days."
+          },
+          "response": []
+        },
+        {
+          "name": "Edit one",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Caf molido 1 kg\",\n  \"description\": \"Tueste medio, molido para cafetera.\",\n  \"price\": 9900,\n  \"imageUrl\": \"https://cdn.example.cr/cafe.png\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/publications/{{publicationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "publications", "{{publicationId}}"]
+            },
+            "description": "Member session. The type does not change: a product does not become a promotion, because the two ask for different things."
+          },
+          "response": []
+        },
+        {
+          "name": "Take it down or put it back",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"inactive\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/publications/{{publicationId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "publications", "{{publicationId}}", "status"]
+            },
+            "description": "Member session. status is active or inactive. 400 not_allowed when the chamber took the publication down: only the chamber can put it back."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete one",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/me/publications/{{publicationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "me", "publications", "{{publicationId}}"]
+            },
+            "description": "Member session. 204. The publication keeps its date, so the reports still count what was published."
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
