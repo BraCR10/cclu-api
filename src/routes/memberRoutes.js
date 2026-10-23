@@ -105,6 +105,11 @@ memberRoutes.get(
   authorize(ROLES.MEMBER),
   publicationController.getOwnPublications,
 );
+memberRoutes.get(
+  '/me/publications/:publicationId',
+  authorize(ROLES.MEMBER),
+  publicationController.getOwnPublication,
+);
 memberRoutes.post(
   '/me/publications',
   authorize(ROLES.MEMBER),
