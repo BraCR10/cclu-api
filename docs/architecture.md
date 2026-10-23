@@ -522,6 +522,17 @@ or a discount, one document each, owned by the member that wrote it.
 - **Deleting sets a date** (`removedAt`), so the reports still count what was
   published.
 
+## The marketplace
+
+`GET /api/marketplace` is what a visitor browses: the publications that are
+active, inside their validity and offered by a business that holds a paid plan.
+It asks no session and reads the search as text, never as a pattern.
+
+That last rule is the one worth keeping: a lapsed plan stops being a shop window
+the moment it lapses, without anyone deleting a publication. The query resolves
+the plan first and asks only for the publications of the members it allows, so a
+business that falls to Gratuita leaves the marketplace that same day.
+
 ## Time and access
 
 Plans grant access by date, so a mistake here gives somebody a paid plan that

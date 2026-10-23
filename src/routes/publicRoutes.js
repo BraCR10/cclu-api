@@ -3,6 +3,7 @@ const memberController = require('../controllers/memberController');
 const catalogController = require('../controllers/catalogController');
 const directoryController = require('../controllers/directoryController');
 const homeController = require('../controllers/homeController');
+const marketplaceController = require('../controllers/marketplaceController');
 const emailChangeController = require('../controllers/emailChangeController');
 const fileController = require('../controllers/fileController');
 const memberProfileController = require('../controllers/memberProfileController');
@@ -41,6 +42,11 @@ publicRoutes.get('/directory/districts', directoryController.getDistricts);
 // The job board is public: a visitor looking for work needs no account.
 publicRoutes.get('/vacancies', vacancyController.getBoard);
 publicRoutes.get('/vacancies/:vacancyId', vacancyController.getBoardVacancy);
+
+// What the members with a paid plan are offering. A visitor browses it before
+// signing in, and it only shows what is on offer right now.
+publicRoutes.get('/marketplace', marketplaceController.getMarketplace);
+publicRoutes.get('/marketplace/:publicationId', marketplaceController.getMarketplaceItem);
 
 // Anybody may ask for the chamber's promotions, so it is open, and limited
 // the way a registration is, since both store what a stranger sends.
