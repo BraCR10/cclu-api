@@ -1605,6 +1605,44 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Marketplace",
+      "item": [
+        {
+          "name": "Browse what is on offer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/marketplace?type=product&search=caf&page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "marketplace"],
+              "query": [
+                { "key": "type", "value": "product" },
+                { "key": "search", "value": "caf" },
+                { "key": "page", "value": "1" }
+              ]
+            },
+            "description": "No session. Active publications inside their validity, offered by businesses that hold a paid plan. The search is read as text, never as a pattern."
+          },
+          "response": []
+        },
+        {
+          "name": "One publication",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/marketplace/{{publicationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "marketplace", "{{publicationId}}"]
+            },
+            "description": "No session. 404 when it was taken down, ran out of its validity, or its business no longer holds the plan."
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
