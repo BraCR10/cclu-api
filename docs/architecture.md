@@ -499,6 +499,29 @@ it leads to.
 - **Expiring** is the first four of the memberships list's expiring view, with
   the notice the chamber set; **vacancies** are those on the job board.
 
+## Publications
+
+A publication is what the marketplace lists: a product, a service, a promotion
+or a discount, one document each, owned by the member that wrote it.
+
+- **The type decides what is required.** A product or a service carries a price
+  and a picture; a promotion carries the two days it runs; a discount carries a
+  percentage and the condition it applies on. The body is read after the type is
+  known, so a promotion is never refused for a missing price.
+- **Validity is a pair of calendar days.** A promotion that ends before it
+  starts is refused on `endsAt`, the field that is wrong, and the days travel as
+  `YYYY-MM-DD` so no time zone can move one.
+- **Publishing is what a paid plan buys.** The list answers on any plan and says
+  whether this one allows publishing now; `POST` is what
+  `requireEntitlement('publishInMarketplace')` gates.
+- **The member takes one down; the chamber's refusal is not theirs to undo.** A
+  publication the chamber took down carries `inactiveReason`, and reactivating it
+  answers `not_allowed`.
+- **An edit keeps the type.** A product does not become a promotion, because the
+  two ask for different things and what was written would be half lost.
+- **Deleting sets a date** (`removedAt`), so the reports still count what was
+  published.
+
 ## Time and access
 
 Plans grant access by date, so a mistake here gives somebody a paid plan that

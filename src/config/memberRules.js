@@ -39,6 +39,8 @@ const FIELDS = {
   billingEmail: { maxLength: 254, pattern: 'email' },
   fileKey: { maxLength: 300, pattern: 'storageKey' },
   businessDescription: { maxLength: 500 },
+  condition: { maxLength: 200 },
+  imageUrl: { maxLength: 300, pattern: 'link' },
   instagram: { maxLength: 60, pattern: 'handle' },
   facebook: { maxLength: 60, pattern: 'handle' },
   linkedin: { maxLength: 60, pattern: 'handle' },

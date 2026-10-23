@@ -2,6 +2,7 @@ const express = require('express');
 const memberProfileController = require('../controllers/memberProfileController');
 const branchController = require('../controllers/branchController');
 const storeController = require('../controllers/storeController');
+const publicationController = require('../controllers/publicationController');
 const emailChangeController = require('../controllers/emailChangeController');
 const membershipController = require('../controllers/membershipController');
 const paymentController = require('../controllers/paymentController');
@@ -95,6 +96,35 @@ memberRoutes.delete(
   '/me/vacancies/:vacancyId',
   authorize(ROLES.MEMBER),
   vacancyController.deleteOwnVacancy,
+);
+
+// Publishing is what a paid plan buys, so the list answers on any plan and the
+// write is the one the entitlement gates.
+memberRoutes.get(
+  '/me/publications',
+  authorize(ROLES.MEMBER),
+  publicationController.getOwnPublications,
+);
+memberRoutes.post(
+  '/me/publications',
+  authorize(ROLES.MEMBER),
+  requireEntitlement('publishInMarketplace'),
+  publicationController.createOwnPublication,
+);
+memberRoutes.patch(
+  '/me/publications/:publicationId',
+  authorize(ROLES.MEMBER),
+  publicationController.updateOwnPublication,
+);
+memberRoutes.patch(
+  '/me/publications/:publicationId/status',
+  authorize(ROLES.MEMBER),
+  publicationController.setOwnPublicationStatus,
+);
+memberRoutes.delete(
+  '/me/publications/:publicationId',
+  authorize(ROLES.MEMBER),
+  publicationController.deleteOwnPublication,
 );
 
 module.exports = { memberRoutes };
