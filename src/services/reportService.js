@@ -2,7 +2,7 @@ const { ERROR_CODES } = require('../config/errorCodes');
 const { ValidationError } = require('../config/memberRules');
 const { paginated } = require('../config/pagination');
 const { toCsv } = require('../config/csv');
-const { REPORTS, PENDING_REPORTS, defaultReportStore } = require('./reports/reportCatalog');
+const { REPORTS, defaultReportStore } = require('./reports/reportCatalog');
 const { readReportFilters, readReportPage } = require('./reports/reportFilters');
 const { formatInstant } = require('./reports/reportFormat');
 const { renderReportPdf } = require('./reports/reportPdf');
@@ -29,13 +29,10 @@ function findReport(type) {
 }
 
 // What the screen offers: every report the chamber asked for, with the filters
-// each one takes. The ones over publications not built yet say so.
+// each one takes. Every one of them reads data that exists.
 function listReports() {
   return {
-    items: [
-      ...REPORTS.map(({ type, title, filters }) => ({ type, title, filters, available: true })),
-      ...PENDING_REPORTS.map(({ type, title }) => ({ type, title, filters: [], available: false })),
-    ],
+    items: REPORTS.map(({ type, title, filters }) => ({ type, title, filters, available: true })),
   };
 }
 

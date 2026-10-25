@@ -20,8 +20,14 @@ function member(id, businessName, extra = {}) {
   };
 }
 
-function storeWith({ members = [], memberships = [], payments = [] } = {}) {
-  const calls = { members: [] };
+function storeWith({
+  members = [],
+  memberships = [],
+  payments = [],
+  publications = [],
+  publishing = [],
+} = {}) {
+  const calls = { members: [], publications: [] };
 
   return {
     calls,
@@ -32,9 +38,13 @@ function storeWith({ members = [], memberships = [], payments = [] } = {}) {
     findMemberships: async () => memberships,
     findPayments: async () => payments,
     findVacancies: async () => [],
+    findPublications: async (filter) => {
+      calls.publications.push(filter);
+      return publications;
+    },
     findSubscribers: async () => [],
     readNoticeDays: async () => 7,
-    findPublishingMembers: async () => [],
+    findPublishingMembers: async () => publishing,
   };
 }
 
@@ -50,13 +60,13 @@ const MEMBERSHIPS = [
   { member: 'clu003', plan: { key: 'free', name: 'Gratuita' }, expiresAt: null },
 ];
 
-test('the catalog offers every report and marks those over publications not built yet', () => {
+test('the catalog offers the eleven reports the chamber asked for, all of them available', () => {
   const { items } = listReports();
 
   assert.equal(items.length, 11);
-  assert.deepEqual(
-    items.filter((item) => !item.available).map((item) => item.type),
-    ['products', 'promotions', 'discounts'],
+  assert.equal(
+    items.every((item) => item.available),
+    true,
   );
 });
 
@@ -148,4 +158,92 @@ test('a range that ends before it starts is refused', async () => {
     readReport('newMembers', { from: '2026-10-20', to: '2026-10-01' }, NOW, storeWith()),
     { statusCode: 400 },
   );
+});
+
+function publication(id, type, title, extra = {}) {
+  return {
+    _id: id,
+    type,
+    title,
+    price: type === 'product' || type === 'service' ? 5500 : null,
+    percentage: type === 'discount' ? 15 : null,
+    condition: type === 'discount' ? 'Con la tarjeta de la cámara' : null,
+    status: 'active',
+    removedAt: null,
+    startsAt: null,
+    endsAt: null,
+    publishedAt: new Date('2026-10-15T15:00:00Z'),
+    category: { name: 'Cafeterías' },
+    member: {
+      _id: 'clu001',
+      businessName: 'Café Loma Verde',
+      district: 'San Juan',
+      canton: CANTON,
+    },
+    ...extra,
+  };
+}
+
+test('the products report holds the products and the services, and counts each', async () => {
+  const publications = [
+    publication('pub1', 'product', 'Café molido 500 g'),
+    publication('pub2', 'service', 'Reparación de bomba', {
+      publishedAt: new Date('2026-10-10T15:00:00Z'),
+    }),
+    // Offered by a business whose plan stopped publishing: the marketplace no
+    // longer shows it, so the report does not count it either.
+    publication('pub3', 'product', 'Café verde', {
+      member: { _id: 'clu009', businessName: 'Soda La Pradera', district: 'San Juan' },
+    }),
+  ];
+  const store = storeWith({ publications, publishing: ['clu001'] });
+
+  const report = await readReport('products', {}, NOW, store);
+
+  assert.deepEqual(report.summary, [
+    { label: 'Total', value: '2' },
+    { label: 'Productos', value: '1' },
+    { label: 'Servicios', value: '1' },
+  ]);
+  assert.deepEqual(
+    report.items.map((row) => [row[0], row[2], row[4]]),
+    [
+      ['Café molido 500 g', 'Producto', '₡5.500'],
+      ['Reparación de bomba', 'Servicio', '₡5.500'],
+    ],
+  );
+});
+
+// Same question as the marketplace, asked of the database: what is on offer.
+test('the publication reports only read what is on offer', async () => {
+  const store = storeWith();
+
+  await readReport('promotions', {}, NOW, store);
+
+  const filter = store.calls.publications[0];
+
+  assert.deepEqual(filter.type, { $in: ['promotion'] });
+  assert.equal(filter.status, 'active');
+  assert.equal(filter.removedAt, null);
+  assert.deepEqual(filter.$and, [
+    { $or: [{ startsAt: null }, { startsAt: { $lte: NOW } }] },
+    { $or: [{ endsAt: null }, { endsAt: { $gte: NOW } }] },
+  ]);
+});
+
+test('the discounts report says how much comes off and on what condition', async () => {
+  const store = storeWith({
+    publications: [publication('pub1', 'discount', '15 % en el almuerzo')],
+    publishing: ['clu001'],
+  });
+
+  const report = await readReport('discounts', {}, NOW, store);
+
+  assert.deepEqual(report.items[0].slice(0, 5), [
+    '15 % en el almuerzo',
+    'Café Loma Verde',
+    'San Juan',
+    '15 %',
+    'Con la tarjeta de la cámara',
+  ]);
 });

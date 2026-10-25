@@ -542,6 +542,32 @@ it leads to.
   the figure the same way it empties the shop window, so the panel and what a
   visitor finds never disagree.
 
+## Reports
+
+`GET /api/admin/reports` offers the catalog, each entry with the filters it
+takes; `GET /api/admin/reports/:type` is the preview and
+`GET /api/admin/reports/:type/export?format=csv|pdf` the file. There are eleven:
+comercios afiliados, afiliados con membresía paga, afiliados con membresía no
+paga, nuevos afiliados del período, membresías por vencer, vacantes activas,
+pagos del período, suscriptores, productos y servicios activos, promociones
+activas and descuentos para afiliados activos, each named as the chamber names
+it.
+
+- **One load, three outputs.** A report builds its summary and rows once, and
+  the preview, the CSV and the PDF all read those rows, so the three cannot say
+  different things.
+- **Only the filters a report takes reach it.** A filter chosen for another
+  report cannot narrow this one without the screen showing it, and a range that
+  ends before it starts is refused on `to`.
+- **The publication reports ask the marketplace's question**, the way the
+  vacancies report asks the job board's: active, not taken down, inside its
+  validity, and offered by a business that still holds a plan that publishes. A
+  promotion that already ended is out of the report at the same moment it leaves
+  the marketplace.
+- **Nothing in the catalog is unavailable.** The entry carries `available` so a
+  report can be announced before it is built; every one of the eleven reads data
+  that exists.
+
 ## Publications
 
 A publication is what the marketplace lists: a product, a service, a promotion

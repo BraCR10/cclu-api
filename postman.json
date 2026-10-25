@@ -1365,6 +1365,93 @@
       ]
     },
     {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "List the reports",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/reports",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "reports"]
+            },
+            "description": "Administrator. The catalog: every report with the filters it takes. All eleven are available: comercios afiliados, memberships, new members, expiring, vacancies, payments, subscribers, productos y servicios, promociones and descuentos."
+          },
+          "response": []
+        },
+        {
+          "name": "Read a report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/reports/{{reportType}}?canton=&district=&from=&to=&page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "reports", "{{reportType}}"],
+              "query": [
+                {
+                  "key": "canton",
+                  "value": ""
+                },
+                {
+                  "key": "district",
+                  "value": ""
+                },
+                {
+                  "key": "from",
+                  "value": ""
+                },
+                {
+                  "key": "to",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Administrator. The preview: summary, columns and the page of rows, ten at a time. Only the filters the chosen report takes are read; the rest are ignored. from and to are days written as YYYY-MM-DD. The publication reports ask the marketplace question: active, not taken down, inside its validity, offered by a business that still publishes, so an ended promotion is out of them."
+          },
+          "response": []
+        },
+        {
+          "name": "Export a report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/reports/{{reportType}}/export?format=csv&from=&to=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "reports", "{{reportType}}", "export"],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "csv"
+                },
+                {
+                  "key": "from",
+                  "value": ""
+                },
+                {
+                  "key": "to",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Administrator. The same rows the preview pages through, every one of them, with the same totals. format is csv or pdf; anything else is refused."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Payments",
       "item": [
         {

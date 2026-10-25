@@ -21,7 +21,13 @@ function formatInstant(instant) {
     .replace('.', '');
 }
 
+// A publication that carries no price, as a promotion and a discount do not,
+// writes nothing rather than a zero it never had.
 function formatColones(amount) {
+  if (amount === null || amount === undefined) {
+    return '';
+  }
+
   return `₡${Math.trunc(amount)
     .toString()
     .replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
@@ -50,6 +56,13 @@ const FREQUENCY_LABELS = {
 
 const SUBSCRIBER_STATUS_LABELS = { subscribed: 'Suscrito', unsubscribed: 'Dado de baja' };
 
+const PUBLICATION_TYPE_LABELS = {
+  product: 'Producto',
+  service: 'Servicio',
+  promotion: 'Promoción',
+  discount: 'Descuento',
+};
+
 module.exports = {
   formatDay,
   formatInstant,
@@ -59,4 +72,5 @@ module.exports = {
   WORKDAY_LABELS,
   FREQUENCY_LABELS,
   SUBSCRIBER_STATUS_LABELS,
+  PUBLICATION_TYPE_LABELS,
 };

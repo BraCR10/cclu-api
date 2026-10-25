@@ -4,6 +4,11 @@ const { Membership } = require('../../models/Membership');
 const { Payment, PAYMENT_STATUSES } = require('../../models/Payment');
 const { Vacancy, VACANCY_STATUSES } = require('../../models/Vacancy');
 const { Subscriber, SUBSCRIBER_STATUSES } = require('../../models/Subscriber');
+const {
+  Publication,
+  PUBLICATION_TYPES,
+  PUBLICATION_STATUSES,
+} = require('../../models/Publication');
 const { PLAN_KEYS } = require('../../models/Plan');
 const { ACCOUNT_STATUSES } = require('../../config/accountStatus');
 const { formatMemberCode } = require('../memberCodeService');
@@ -18,6 +23,7 @@ const {
   WORKDAY_LABELS,
   FREQUENCY_LABELS,
   SUBSCRIBER_STATUS_LABELS,
+  PUBLICATION_TYPE_LABELS,
 } = require('./reportFormat');
 
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
@@ -44,6 +50,11 @@ const defaultReportStore = {
     Payment.find(filter).populate('member', 'businessName memberCode canton district').lean(),
   findVacancies: (filter) =>
     Vacancy.find(filter).populate('member', 'businessName canton district').lean(),
+  findPublications: (filter) =>
+    Publication.find(filter)
+      .populate('member', 'businessName memberCode canton district')
+      .populate('category', 'name')
+      .lean(),
   findSubscribers: (filter) => Subscriber.find(filter).populate('canton', 'name').lean(),
   readNoticeDays: () => readNoticeDays(),
   findPublishingMembers: (now) => findPublishingMembers(now),
@@ -110,6 +121,40 @@ function countBy(rows, label, test) {
 
 const PLACE_FILTERS = ['canton', 'district'];
 const MEMBER_FILTERS = [...PLACE_FILTERS, 'memberType', 'activity'];
+
+// The publication reports ask the marketplace's question, the way the vacancies
+// report asks the board's: active, not taken down, inside its validity, and
+// offered by a business that still holds a plan that publishes. A lapse empties
+// the report the same moment it empties the shop window.
+async function loadVisiblePublications(filters, now, store, types) {
+  const publishing = new Set((await store.findPublishingMembers(now)).map(String));
+  const publications = await store.findPublications({
+    type: { $in: types },
+    status: PUBLICATION_STATUSES.ACTIVE,
+    removedAt: null,
+    ...rangeFilter('publishedAt', filters),
+    $and: [
+      { $or: [{ startsAt: null }, { startsAt: { $lte: now } }] },
+      { $or: [{ endsAt: null }, { endsAt: { $gte: now } }] },
+    ],
+  });
+
+  return publications
+    .filter(
+      (publication) =>
+        publication.member !== null &&
+        publishing.has(String(publication.member._id)) &&
+        (filters.canton === null || String(publication.member.canton) === filters.canton) &&
+        (filters.district === null || publication.member.district === filters.district),
+    )
+    .sort((first, second) => second.publishedAt - first.publishedAt);
+}
+
+const categoryOf = (publication) => publication.category?.name ?? '';
+const percentageOf = (publication) =>
+  publication.percentage === null || publication.percentage === undefined
+    ? ''
+    : `${publication.percentage} %`;
 
 const REPORTS = [
   {
@@ -359,14 +404,80 @@ const REPORTS = [
       };
     },
   },
+  {
+    type: 'products',
+    title: 'Productos y servicios activos',
+    filters: [...PLACE_FILTERS, 'from', 'to'],
+    columns: ['Publicación', 'Comercio', 'Tipo', 'Categoría', 'Precio', 'Publicada'],
+    async load(filters, now, store) {
+      const publications = await loadVisiblePublications(filters, now, store, [
+        PUBLICATION_TYPES.PRODUCT,
+        PUBLICATION_TYPES.SERVICE,
+      ]);
+
+      return {
+        summary: [
+          { label: 'Total', value: String(publications.length) },
+          countBy(publications, 'Productos', (item) => item.type === PUBLICATION_TYPES.PRODUCT),
+          countBy(publications, 'Servicios', (item) => item.type === PUBLICATION_TYPES.SERVICE),
+        ],
+        rows: publications.map((publication) => [
+          publication.title,
+          publication.member.businessName,
+          PUBLICATION_TYPE_LABELS[publication.type] ?? '',
+          categoryOf(publication),
+          formatColones(publication.price),
+          formatDay(publication.publishedAt),
+        ]),
+      };
+    },
+  },
+  {
+    type: 'promotions',
+    title: 'Promociones activas',
+    filters: [...PLACE_FILTERS, 'from', 'to'],
+    columns: ['Promoción', 'Comercio', 'Distrito', 'Empieza', 'Termina', 'Publicada'],
+    async load(filters, now, store) {
+      const promotions = await loadVisiblePublications(filters, now, store, [
+        PUBLICATION_TYPES.PROMOTION,
+      ]);
+
+      return {
+        summary: [{ label: 'Total', value: String(promotions.length) }],
+        rows: promotions.map((promotion) => [
+          promotion.title,
+          promotion.member.businessName,
+          promotion.member.district ?? '',
+          formatDay(promotion.startsAt),
+          formatDay(promotion.endsAt),
+          formatDay(promotion.publishedAt),
+        ]),
+      };
+    },
+  },
+  {
+    type: 'discounts',
+    title: 'Descuentos para afiliados activos',
+    filters: [...PLACE_FILTERS, 'from', 'to'],
+    columns: ['Descuento', 'Comercio', 'Distrito', 'Porcentaje', 'Condición', 'Publicado'],
+    async load(filters, now, store) {
+      const discounts = await loadVisiblePublications(filters, now, store, [
+        PUBLICATION_TYPES.DISCOUNT,
+      ]);
+
+      return {
+        summary: [{ label: 'Total', value: String(discounts.length) }],
+        rows: discounts.map((discount) => [
+          discount.title,
+          discount.member.businessName,
+          discount.member.district ?? '',
+          percentageOf(discount),
+          discount.condition ?? '',
+          formatDay(discount.publishedAt),
+        ]),
+      };
+    },
+  },
 ];
 
-// Reports over publications that do not exist yet. They stay in the catalog so
-// the screen shows the full set, and answer as unavailable until they do.
-const PENDING_REPORTS = [
-  { type: 'products', title: 'Productos y servicios activos' },
-  { type: 'promotions', title: 'Promociones activas' },
-  { type: 'discounts', title: 'Descuentos para afiliados activos' },
-];
-
-module.exports = { REPORTS, PENDING_REPORTS, defaultReportStore, loadMembers };
+module.exports = { REPORTS, defaultReportStore, loadMembers };
