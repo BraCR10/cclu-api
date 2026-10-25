@@ -239,6 +239,112 @@
       ]
     },
     {
+      "name": "Moderation",
+      "description": "What the chamber takes down, by the four kinds the panel draws as tabs. Taking one down keeps it and its reason and tells the member; restoring puts it back.",
+      "item": [
+        {
+          "name": "List what a tab moderates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/moderation/products?status=active&search=caf%C3%A9",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "moderation", "products"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "active",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "café",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Administrator session. kind is products, promotions, discounts or vacancies. Each row names the member behind it, and carries the reason when it is already down."
+          },
+          "response": []
+        },
+        {
+          "name": "Take a publication down",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"La foto no corresponde al producto ofrecido.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/moderation/products/{{publicationId}}/take-down",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "moderation", "products", "{{publicationId}}", "take-down"]
+            },
+            "description": "Administrator session. A reason of 10 to 500 characters. The publication keeps its record and its reason, leaves the marketplace, and the member is notified. A promotion cannot be reached through the products tab."
+          },
+          "response": []
+        },
+        {
+          "name": "Put a publication back",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/moderation/products/{{publicationId}}/restore",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "moderation", "products", "{{publicationId}}", "restore"]
+            },
+            "description": "Administrator session. Clears the reason and returns the publication to the marketplace; the member is notified."
+          },
+          "response": []
+        },
+        {
+          "name": "Take a vacancy down",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"El puesto ya no está disponible.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/moderation/vacancies/{{vacancyId}}/take-down",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "moderation", "vacancies", "{{vacancyId}}", "take-down"]
+            },
+            "description": "Administrator session. The same write as a publication, against the job board."
+          },
+          "response": []
+        },
+        {
+          "name": "Put a vacancy back",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/moderation/vacancies/{{vacancyId}}/restore",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "moderation", "vacancies", "{{vacancyId}}", "restore"]
+            },
+            "description": "Administrator session. Returns the vacancy to the job board and tells the member."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Members",
       "item": [
         {
@@ -1739,7 +1845,12 @@
               "raw": "{{baseUrl}}/api/members/me/publications?type=product",
               "host": ["{{baseUrl}}"],
               "path": ["api", "members", "me", "publications"],
-              "query": [{ "key": "type", "value": "product" }]
+              "query": [
+                {
+                  "key": "type",
+                  "value": "product"
+                }
+              ]
             },
             "description": "Member session. Answers on any plan, with canPublish saying whether this plan lets them publish now. type is one of product, service, promotion, discount."
           },
@@ -1843,9 +1954,18 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "marketplace"],
               "query": [
-                { "key": "type", "value": "product" },
-                { "key": "search", "value": "caf" },
-                { "key": "page", "value": "1" }
+                {
+                  "key": "type",
+                  "value": "product"
+                },
+                {
+                  "key": "search",
+                  "value": "caf"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
               ]
             },
             "description": "No session. Active publications inside their validity, offered by businesses that hold a paid plan. The search is read as text, never as a pattern."

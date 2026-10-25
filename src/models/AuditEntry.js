@@ -8,6 +8,10 @@ const AUDIT_ACTIONS = {
   PAYMENT_SUBMITTED: 'payment.submitted',
   PAYMENT_APPROVED: 'payment.approved',
   PAYMENT_REJECTED: 'payment.rejected',
+  PUBLICATION_TAKEN_DOWN: 'publication.taken_down',
+  PUBLICATION_RESTORED: 'publication.restored',
+  VACANCY_TAKEN_DOWN: 'vacancy.taken_down',
+  VACANCY_RESTORED: 'vacancy.restored',
 };
 
 // The actor of an action no person took, such as a plan running out overnight.

@@ -1,6 +1,7 @@
 const express = require('express');
 const applicationReviewController = require('../controllers/applicationReviewController');
 const adminActivityController = require('../controllers/adminActivityController');
+const adminModerationController = require('../controllers/adminModerationController');
 const adminProfileController = require('../controllers/adminProfileController');
 const planController = require('../controllers/planController');
 const fileController = require('../controllers/fileController');
@@ -35,6 +36,12 @@ adminRoutes.get('/activities', adminActivityController.getActivities);
 adminRoutes.post('/activities', adminActivityController.createActivity);
 adminRoutes.patch('/activities/:activityId', adminActivityController.updateActivity);
 adminRoutes.delete('/activities/:activityId', adminActivityController.removeActivity);
+
+// What the chamber takes down, by the four kinds the panel draws as tabs. Taking
+// one down keeps it and its reason; restoring puts it back.
+adminRoutes.get('/moderation/:kind', adminModerationController.getContent);
+adminRoutes.post('/moderation/:kind/:contentId/take-down', adminModerationController.takeDown);
+adminRoutes.post('/moderation/:kind/:contentId/restore', adminModerationController.restore);
 
 adminRoutes.get('/me', adminProfileController.getOwnProfile);
 adminRoutes.patch('/me', adminProfileController.updateOwnProfile);
