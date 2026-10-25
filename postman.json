@@ -1344,7 +1344,7 @@
                 }
               ]
             },
-            "description": "Administrator session. Paid plans in force only; Gratuita, and any plan that ran out, is not listed. view is active (default) or expiring, the part that ends within the notice; plan is lite, pro or premium; search matches the business name or the start of the member code. Answers the page with counts { active, expiring } and the notice in force, soonest to expire first."
+            "description": "Administrator session. The plans the chamber is paid for, in force and after they ran out. view is active (default), expiring (the part that ends within the notice) or expired (back on Gratuita, keeping the plan it ran out of); plan is lite, pro or premium and names the plan in force, or the plan that ran out on expired; search matches the business name or the start of the member code. Answers the page with counts { active, expiring, expired } and the notice in force, soonest to expire first on the live views and most recent lapse first on expired."
           },
           "response": []
         },
