@@ -8,6 +8,9 @@ const ACTIVITY_STATUSES = {
   // registration that was approved gets this far, which is why the form can
   // promise that "otra actividad" joins the catalog on approval.
   PENDING: 'pending',
+  // Retired from the catalog. It is not offered to anybody new, and the members
+  // already classified under it keep their trade.
+  INACTIVE: 'inactive',
 };
 
 const activitySchema = new mongoose.Schema(

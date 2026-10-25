@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const {
   readOwnProfile,
   updateOwnProfile,
+  changeOwnPassword,
   present,
 } = require('../../src/services/adminProfileService');
 const { ValidationError } = require('../../src/config/memberRules');
@@ -91,5 +92,101 @@ test('a name that is only spaces is refused, since it would greet nobody', async
       assert.fail('the account was written'),
     ),
     ValidationError,
+  );
+});
+
+// The password is the one thing a borrowed session must not be able to take, so
+// the current one is asked for and checked before anything is written.
+const passwords = {
+  verifyPassword: async (candidate, stored_) => candidate === 'Actual2026!' && stored_ === 'hash',
+  hashPassword: async (password) => `hashed:${password}`,
+};
+
+function passwordStore(overrides = {}) {
+  return {
+    findById: async () => stored({ passwordHash: 'hash', ...overrides }),
+    save: async () => assert.fail('the password was written'),
+  };
+}
+
+test('the right current password lets a new one be written, and nothing else travels', async () => {
+  let written = null;
+  const store = {
+    findById: async () => stored({ passwordHash: 'hash' }),
+    save: async (id, fields) => {
+      written = fields;
+    },
+  };
+  const now = new Date('2026-03-02T09:00:00.000Z');
+
+  const answer = await changeOwnPassword(
+    { id: 'x' },
+    { currentPassword: 'Actual2026!', newPassword: 'Nueva2026!x' },
+    now,
+    store,
+    passwords,
+  );
+
+  assert.deepEqual(written, { passwordHash: 'hashed:Nueva2026!x', passwordChangedAt: now });
+  assert.equal(answer.email, 'admin@example.cr');
+  assert.equal('passwordHash' in answer, false);
+});
+
+test('a wrong current password is refused on its own field and writes nothing', async () => {
+  await assert.rejects(
+    changeOwnPassword(
+      { id: 'x' },
+      { currentPassword: 'Otra2026!', newPassword: 'Nueva2026!x' },
+      new Date(),
+      passwordStore(),
+      passwords,
+    ),
+    (error) => {
+      assert.equal(error.field, 'currentPassword');
+      assert.equal(error.code, 'invalid_current_password');
+      return true;
+    },
+  );
+});
+
+test('a new password that breaks the rules is refused before the current one is even read', async () => {
+  await assert.rejects(
+    changeOwnPassword(
+      { id: 'x' },
+      { currentPassword: 'Actual2026!', newPassword: 'corta' },
+      new Date(),
+      passwordStore(),
+      passwords,
+    ),
+    ValidationError,
+  );
+});
+
+test('a missing current password is refused rather than treated as empty', async () => {
+  await assert.rejects(
+    changeOwnPassword(
+      { id: 'x' },
+      { newPassword: 'Nueva2026!x' },
+      new Date(),
+      passwordStore(),
+      passwords,
+    ),
+    ValidationError,
+  );
+});
+
+test('an account that no longer exists cannot change its password', async () => {
+  await assert.rejects(
+    changeOwnPassword(
+      { id: 'x' },
+      { currentPassword: 'Actual2026!', newPassword: 'Nueva2026!x' },
+      new Date(),
+      { findById: async () => null, save: async () => assert.fail('the password was written') },
+      passwords,
+    ),
+    (error) => {
+      assert.equal(error.statusCode, 404);
+      return true;
+    },
   );
 });

@@ -4,6 +4,7 @@ const catalogController = require('../controllers/catalogController');
 const directoryController = require('../controllers/directoryController');
 const homeController = require('../controllers/homeController');
 const marketplaceController = require('../controllers/marketplaceController');
+const adminInvitationController = require('../controllers/adminInvitationController');
 const emailChangeController = require('../controllers/emailChangeController');
 const fileController = require('../controllers/fileController');
 const memberProfileController = require('../controllers/memberProfileController');
@@ -47,6 +48,11 @@ publicRoutes.get('/vacancies/:vacancyId', vacancyController.getBoardVacancy);
 // signing in, and it only shows what is on offer right now.
 publicRoutes.get('/marketplace', marketplaceController.getMarketplace);
 publicRoutes.get('/marketplace/:publicationId', marketplaceController.getMarketplaceItem);
+
+// An administrator arrives through one of these links, and has no account to
+// sign in with until they are accepted.
+publicRoutes.get('/admin-invitations/:token', adminInvitationController.getInvitation);
+publicRoutes.post('/admin-invitations/:token', limitByAddress, adminInvitationController.accept);
 
 // Anybody may ask for the chamber's promotions, so it is open, and limited
 // the way a registration is, since both store what a stranger sends.

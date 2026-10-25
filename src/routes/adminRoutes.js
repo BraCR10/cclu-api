@@ -1,11 +1,13 @@
 const express = require('express');
 const applicationReviewController = require('../controllers/applicationReviewController');
+const adminActivityController = require('../controllers/adminActivityController');
 const adminProfileController = require('../controllers/adminProfileController');
 const planController = require('../controllers/planController');
 const fileController = require('../controllers/fileController');
 const adminPaymentController = require('../controllers/adminPaymentController');
 const adminMembershipController = require('../controllers/adminMembershipController');
 const adminSummaryController = require('../controllers/adminSummaryController');
+const adminDirectoryController = require('../controllers/adminDirectoryController');
 const reportController = require('../controllers/reportController');
 const adminSubscriberController = require('../controllers/adminSubscriberController');
 const { authorize } = require('../middlewares/authorize');
@@ -27,8 +29,17 @@ adminRoutes.get('/subscribers', adminSubscriberController.getSubscribers);
 adminRoutes.get('/subscribers/export', adminSubscriberController.exportSubscribers);
 adminRoutes.get('/subscribers/districts', adminSubscriberController.getSubscriberDistricts);
 
+// The catalog of economic activities: what a member is, offered to everybody at
+// registration, and the one list the chamber edits by hand.
+adminRoutes.get('/activities', adminActivityController.getActivities);
+adminRoutes.post('/activities', adminActivityController.createActivity);
+adminRoutes.patch('/activities/:activityId', adminActivityController.updateActivity);
+adminRoutes.delete('/activities/:activityId', adminActivityController.removeActivity);
+
 adminRoutes.get('/me', adminProfileController.getOwnProfile);
 adminRoutes.patch('/me', adminProfileController.updateOwnProfile);
+// The one password an administrator can change without a link: their own.
+adminRoutes.post('/me/password', adminProfileController.changePassword);
 
 adminRoutes.get('/applications/pending', applicationReviewController.getPendingApplications);
 adminRoutes.get('/applications/decided', applicationReviewController.getDecidedApplications);
@@ -58,5 +69,12 @@ adminRoutes.get('/payments/:paymentId', adminPaymentController.getPayment);
 adminRoutes.get('/payments/:paymentId/receipt', adminPaymentController.getReceipt);
 adminRoutes.post('/payments/:paymentId/approve', adminPaymentController.approvePayment);
 adminRoutes.post('/payments/:paymentId/reject', adminPaymentController.rejectPayment);
+
+// The administrators the chamber keeps: who they are, who is invited, and who
+// has been let go. Every one of them is an administrator already.
+adminRoutes.get('/administrators', adminDirectoryController.getAdmins);
+adminRoutes.post('/administrators', adminDirectoryController.invite);
+adminRoutes.post('/administrators/:adminId/invitation', adminDirectoryController.resend);
+adminRoutes.patch('/administrators/:adminId/status', adminDirectoryController.setStatus);
 
 module.exports = { adminRoutes };
