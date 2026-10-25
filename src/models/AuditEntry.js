@@ -12,6 +12,9 @@ const AUDIT_ACTIONS = {
   PUBLICATION_RESTORED: 'publication.restored',
   VACANCY_TAKEN_DOWN: 'vacancy.taken_down',
   VACANCY_RESTORED: 'vacancy.restored',
+  MEMBER_UPDATED: 'member.updated',
+  MEMBER_SUSPENDED: 'member.suspended',
+  MEMBER_REACTIVATED: 'member.reactivated',
 };
 
 // The actor of an action no person took, such as a plan running out overnight.
