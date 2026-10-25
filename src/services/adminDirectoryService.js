@@ -18,11 +18,11 @@ function digestOf(token) {
 }
 
 // Built here rather than in the template, because only the API knows the token
-// and where the site answers.
+// and where the site answers. The page sits outside /admin on purpose: the
+// panel's layout turns away anybody without a session, and the person holding
+// this link has no account yet.
 function invitationUrlFor(token, origin = process.env.WEB_ORIGIN) {
-  return origin === undefined
-    ? undefined
-    : `${origin.replace(/\/+$/, '')}/admin/invitation/${token}`;
+  return origin === undefined ? undefined : `${origin.replace(/\/+$/, '')}/invitation/${token}`;
 }
 
 function notFound() {

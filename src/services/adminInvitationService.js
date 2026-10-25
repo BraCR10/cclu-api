@@ -31,7 +31,8 @@ const defaultStore = {
 };
 
 // The form shows the address fixed, so it has to know it before the password is
-// chosen. It answers only while the invitation is still pending.
+// chosen, and the day the link stops working, so the sentence under the button
+// names a real date. It answers only while the invitation is still pending.
 async function readInvitation(token, now = new Date(), store = defaultStore) {
   const raw = readToken(token);
   const admin = await store.findByToken(digestOf(raw));
@@ -44,7 +45,11 @@ async function readInvitation(token, now = new Date(), store = defaultStore) {
     throw notValid('The invitation is not valid or has expired.');
   }
 
-  return { name: admin.name ?? null, email: admin.email };
+  return {
+    name: admin.name ?? null,
+    email: admin.email,
+    expiresAt: admin.invitationExpiresAt ?? null,
+  };
 }
 
 // Accepting sets the password and opens the panel, and the token stops working

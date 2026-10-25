@@ -2,7 +2,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { randomBytes } = require('node:crypto');
 const adminInvitationService = require('../../src/services/adminInvitationService');
-const { digestOf } = require('../../src/services/adminDirectoryService');
+const adminDirectoryService = require('../../src/services/adminDirectoryService');
+const { digestOf } = adminDirectoryService;
 
 const NOW = new Date('2026-10-24T15:00:00Z');
 const TOKEN = randomBytes(32).toString('hex');
@@ -38,6 +39,17 @@ test('a valid link opens the form with the address it was sent to', async () => 
 
   assert.equal(invitation.email, 'ana@camaralaunion.com');
   assert.equal(invitation.name, 'Ana Solano');
+  // The sentence under the button names the day the link stops working.
+  assert.equal(invitation.expiresAt.toISOString(), '2026-10-30T15:00:00.000Z');
+});
+
+// Outside /admin on purpose: the panel's layout turns away anybody without a
+// session, and the person holding the link has no account yet.
+test('the link the email carries opens the public page, not the guarded panel', () => {
+  assert.equal(
+    adminDirectoryService.invitationUrlFor('abc123', 'https://cclu.cr/'),
+    'https://cclu.cr/invitation/abc123',
+  );
 });
 
 test('an invitation past its day no longer opens anything', async () => {
