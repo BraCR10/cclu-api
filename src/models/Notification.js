@@ -11,6 +11,10 @@ const NOTIFICATION_TYPES = Object.freeze({
   PAYMENT_REJECTED: 'payment_rejected',
   MEMBERSHIP_EXPIRING: 'membership_expiring',
   MEMBERSHIP_LAPSED: 'membership_lapsed',
+  PUBLICATION_TAKEN_DOWN: 'publication_taken_down',
+  PUBLICATION_RESTORED: 'publication_restored',
+  VACANCY_TAKEN_DOWN: 'vacancy_taken_down',
+  VACANCY_RESTORED: 'vacancy_restored',
 });
 
 // One row per person, so each one reads it on their own. A notice for the

@@ -727,6 +727,27 @@ read only through `GET /api/members/me/payments/:paymentId/receipt`, for its
 member, and `GET /api/admin/payments/:paymentId/receipt`. A payment that is not
 the member's answers 404.
 
+## Moderating what a member published
+
+The chamber moderates four kinds, and the panel draws them as four tabs:
+`products`, `promotions`, `discounts` and `vacancies`. The kind is part of the
+address rather than a filter, so a request cannot reach across tabs: a promotion
+is not found through `products`, and the answer is the same 404 as an item that
+does not exist.
+
+Taking content down never deletes it. The row keeps its record and gains
+`inactiveReason`, which is what the member's own screen reads to explain why the
+item is not public and why they cannot put it back themselves. Restoring clears
+the reason and returns it to the public list. `removedAt` stays untouched: that
+belongs to the member deleting their own work.
+
+Both directions require a reason of 10 to 500 characters on the way down, and
+write one `AuditEntry` (`publication.taken_down`, `publication.restored`,
+`vacancy.taken_down`, `vacancy.restored`) with the state before and after. The
+member is notified through the same service every other decision uses, with the
+title and the reason, and the notification never undoes the moderation: if it
+cannot be stored it is logged and the takedown stands.
+
 ## The members the chamber keeps
 
 `/api/admin/members` is the directory the board reads: only applications that
