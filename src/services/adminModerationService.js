@@ -245,14 +245,12 @@ async function write(spec, store, identity, now) {
 
   // A notice accompanies the decision and never undoes it: the member is told
   // what happened and why, on the same channel as every other decision.
-  await notificationService.notifyMember(
-    before.member?._id ?? before.member,
-    notificationTypeOf(spec.kind, spec.action),
-    {
+  void notificationService
+    .notifyMember(before.member?._id ?? before.member, notificationTypeOf(spec.kind, spec.action), {
       title: before.title,
       reason: spec.reason ?? null,
-    },
-  );
+    })
+    .catch(() => {});
 
   return definition.model === 'publication' ? presentPublication(updated) : presentVacancy(updated);
 }
