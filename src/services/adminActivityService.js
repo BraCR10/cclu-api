@@ -48,7 +48,7 @@ async function readName(body, store, currentId = null) {
   const taken = await store.findByName(name);
 
   if (taken !== null && taken !== undefined && String(taken._id) !== currentId) {
-    refuse(ERROR_CODES.ALREADY_REGISTERED, 'name', 'The catalog already has that activity.');
+    refuse(ERROR_CODES.ACTIVITY_ALREADY_LISTED, 'name', 'The catalog already has that activity.');
   }
 
   return name;
@@ -122,7 +122,7 @@ async function createActivity(body, store = defaultStore) {
     return present(created);
   } catch (error) {
     if (error.code === 11000) {
-      refuse(ERROR_CODES.ALREADY_REGISTERED, 'name', 'The catalog already has that activity.');
+      refuse(ERROR_CODES.ACTIVITY_ALREADY_LISTED, 'name', 'The catalog already has that activity.');
     }
 
     throw error;

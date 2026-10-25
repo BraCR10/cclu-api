@@ -116,7 +116,7 @@ test('a name the catalog already has is refused on its own field, ignoring case'
 
   await assert.rejects(createActivity({ name: 'cafeterías' }, store), (error) => {
     assert.equal(error.field, 'name');
-    assert.equal(error.code, 'already_registered');
+    assert.equal(error.code, 'activity_already_listed');
     return true;
   });
 
