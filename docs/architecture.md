@@ -563,6 +563,28 @@ the moment it lapses, without anyone deleting a publication. The query resolves
 the plan first and asks only for the publications of the members it allows, so a
 business that falls to Gratuita leaves the marketplace that same day.
 
+## Administrators
+
+The panel has no way to create itself, so an administrator arrives through an
+invitation.
+
+- **Inviting writes the account pending.** The name and the address are kept, the
+  password is replaced by 256 random bits nobody knows, and the link carries a
+  token the API stores only as a digest — a leaked database hands nobody a
+  working invitation.
+- **The state is read, not trusted.** An invitation past its day answers as
+  `invitation_expired` without anybody writing that down, on the directory and on
+  the link alike.
+- **Resending restarts the clock** rather than extending it, and there is nothing
+  to resend once the administrator has a password.
+- **Accepting sets the password and opens the panel in the same write** that
+  clears the digest, so an invitation is used once. The password answers to the
+  same three rules as every other.
+- **Nobody inactivates themselves**, and an invitation is not a state the
+  directory can set: it has its own action.
+- **One address, one account.** An address that already opens a member's account
+  cannot be invited into the panel.
+
 ## Time and access
 
 Plans grant access by date, so a mistake here gives somebody a paid plan that

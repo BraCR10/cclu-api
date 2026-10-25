@@ -68,6 +68,14 @@
     {
       "key": "branchId",
       "value": ""
+    },
+    {
+      "key": "adminId",
+      "value": ""
+    },
+    {
+      "key": "adminInvitationToken",
+      "value": ""
     }
   ],
   "item": [
@@ -748,6 +756,117 @@
               "path": ["api", "admin", "me"]
             },
             "description": "Administrator session. Only the name can be changed here."
+          },
+          "response": []
+        },
+        {
+          "name": "List administrators",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/administrators",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "administrators"]
+            },
+            "description": "Administrator session. Each one answers with the state that is true now: an invitation past its day reads as invitation_expired."
+          },
+          "response": []
+        },
+        {
+          "name": "Invite one",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ana Solano\",\n  \"email\": \"ana@camaralaunion.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/administrators",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "administrators"]
+            },
+            "description": "Administrator session. Creates the account pending and mails the link. 409 already_registered when the address already opens an account of either role."
+          },
+          "response": []
+        },
+        {
+          "name": "Resend the invitation",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/administrators/{{adminId}}/invitation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "administrators", "{{adminId}}", "invitation"]
+            },
+            "description": "Administrator session. A new link and a new clock. 400 not_allowed once the administrator has a password."
+          },
+          "response": []
+        },
+        {
+          "name": "Inactivate or reactivate",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"inactive\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/administrators/{{adminId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "administrators", "{{adminId}}", "status"]
+            },
+            "description": "Administrator session. status is active or inactive. 400 not_allowed when an administrator tries it on themselves."
+          },
+          "response": []
+        },
+        {
+          "name": "Open an invitation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin-invitations/{{adminInvitationToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin-invitations", "{{adminInvitationToken}}"]
+            },
+            "description": "No session: the invited person has no account yet. 404 invalid_code when the link was used or has expired."
+          },
+          "response": []
+        },
+        {
+          "name": "Accept an invitation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"Camara2026!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin-invitations/{{adminInvitationToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin-invitations", "{{adminInvitationToken}}"]
+            },
+            "description": "No session. The password answers to the same three rules as every other, and the administrator becomes active in the same write that burns the link."
           },
           "response": []
         }
