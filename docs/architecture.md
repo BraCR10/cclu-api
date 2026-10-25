@@ -347,21 +347,29 @@ first.
 
 ### The administration list
 
-`GET /api/admin/memberships?view=active|expiring&plan=&search=&page=&pageSize=`
-lists paid plans in force, and nothing else. A plan that ran out is back on
-Gratuita, and Gratuita is not listed, so the list carries no state of its own:
-everything in it is active.
+`GET /api/admin/memberships?view=active|expiring|expired&plan=&search=&page=&pageSize=`
+lists the plans the chamber is paid for, in force and after they ran out: the
+same list answers who pays now and who stopped.
 
-- **Two views of the same plans.** `active` is every paid plan in force, by the
-  same rule as access. `expiring` is the part of those that ends within the
-  notice. Both are listed soonest to expire first.
+- **Three views.** `active` is every paid plan in force, by the same rule as
+  access. `expiring` is the part of those that ends within the notice. `expired`
+  is the other side: a membership back on Gratuita that keeps the plan it ran out
+  of. The two live views list soonest to expire first; expired lists the most
+  recent lapse first, because that is the member worth calling back.
+- **A row says which plan and which end.** On the live views that is the plan in
+  force and its expiry; on `expired` it is the plan that ran out and the day it
+  ended, because Gratuita has no end and the member's current plan would say
+  nothing.
+- **The plan filter** names the plan in force on the two live views and the plan
+  that ran out on `expired`, so a filter never silently reads as no filter. Its
+  counts follow the filter and the search.
 - **The search** matches the business name anywhere, or the start of the member
   code with its dashes ignored. It is escaped, so it is read as the characters
   typed. `view` and `plan` outside their lists are refused.
 
-The answer is the page, `counts { active, expiring }` and the notice in force,
-from one aggregation that joins each membership to its member and keeps only
-its name and code.
+The answer is the page, `counts { active, expiring, expired }` and the notice in
+force, from one aggregation that joins each membership to its member and keeps
+only its name and code.
 
 ## Branches and the shop
 

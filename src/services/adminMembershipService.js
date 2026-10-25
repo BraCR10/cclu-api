@@ -11,11 +11,15 @@ const membershipPolicyService = require('./membershipPolicyService');
 
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
 
-// The list shows paid plans in force and nothing else. A plan that ran out is
-// back on Gratuita, which is not listed, so there is no state to show: the
-// chamber sees every active membership, or only those expiring within the
-// notice.
-const MEMBERSHIP_LIST_VIEWS = Object.freeze({ ACTIVE: 'active', EXPIRING: 'expiring' });
+// The list is the chamber's view of who pays and who stopped. A paid plan in
+// force is listed while it holds; one that ran out is listed as expired, with
+// the plan it was on and the day it ended, because that is the member worth
+// calling back.
+const MEMBERSHIP_LIST_VIEWS = Object.freeze({
+  ACTIVE: 'active',
+  EXPIRING: 'expiring',
+  EXPIRED: 'expired',
+});
 
 const PAID_PLAN_KEYS = [PLAN_KEYS.LITE, PLAN_KEYS.PRO, PLAN_KEYS.PREMIUM];
 
@@ -51,17 +55,25 @@ function readListQuery(query) {
 
 // A paid plan is in force while now is before an expiry that can be trusted,
 // the same rule isExpiredPaidPlan states in code. Expiring soon is the part of
-// those that ends within the notice.
+// those that ends within the notice. Expired is the other side: a membership on
+// Gratuita that keeps the plan it ran out of.
+//
+// A plan filter names a different field on each side — the plan in force, or the
+// plan that ran out — so it is applied to both and the union is what the list
+// may draw from.
 function viewFilters(now, noticeDays, freePlanId, planId) {
   const trusted = latestTrustedExpiry(now);
   const noticeEnd = new Date(
     Math.min(now.getTime() + noticeDays * DAY_IN_MILLISECONDS, trusted.getTime()),
   );
-  const paidPlan = planId === null ? { plan: { $ne: freePlanId } } : { plan: planId };
+  const inForce = planId === null ? { plan: { $ne: freePlanId } } : { plan: planId };
+  const lapsed = planId === null ? { 'lapsed.plan': { $ne: null } } : { 'lapsed.plan': planId };
 
   return {
-    active: { ...paidPlan, expiresAt: { $gt: now, $lte: trusted } },
-    expiring: { ...paidPlan, expiresAt: { $gt: now, $lte: noticeEnd } },
+    listed: { $or: [inForce, lapsed] },
+    active: { ...inForce, expiresAt: { $gt: now, $lte: trusted } },
+    expiring: { ...inForce, expiresAt: { $gt: now, $lte: noticeEnd } },
+    expired: lapsed,
   };
 }
 
@@ -83,14 +95,20 @@ function searchFilter(search) {
   return { $or: conditions };
 }
 
-// Soonest to expire first, so the plans to follow up on lead either view.
-const ORDER = { expiresAt: 1, _id: 1 };
+// Soonest to expire first, so the plans to follow up on lead the two live views.
+// An expired one sorts the other way round: the lapse nobody has dealt with yet
+// is the most recent.
+const ORDER = {
+  [MEMBERSHIP_LIST_VIEWS.ACTIVE]: { expiresAt: 1, _id: 1 },
+  [MEMBERSHIP_LIST_VIEWS.EXPIRING]: { expiresAt: 1, _id: 1 },
+  [MEMBERSHIP_LIST_VIEWS.EXPIRED]: { 'lapsed.expiredAt': -1, _id: 1 },
+};
 
 function listPipeline({ filters, view, search, pagination }) {
   const matchSearch = searchFilter(search);
 
   return [
-    { $match: filters.active },
+    { $match: filters.listed },
     {
       $lookup: {
         from: 'members',
@@ -104,11 +122,12 @@ function listPipeline({ filters, view, search, pagination }) {
     ...(matchSearch === null ? [] : [{ $match: matchSearch }]),
     {
       $facet: {
-        active: [{ $count: 'count' }],
+        active: [{ $match: filters.active }, { $count: 'count' }],
         expiring: [{ $match: filters.expiring }, { $count: 'count' }],
+        expired: [{ $match: filters.expired }, { $count: 'count' }],
         items: [
           { $match: filters[view] },
-          { $sort: ORDER },
+          { $sort: ORDER[view] },
           { $skip: pagination.skip },
           { $limit: pagination.pageSize },
         ],
@@ -117,10 +136,14 @@ function listPipeline({ filters, view, search, pagination }) {
   ];
 }
 
-const countOf = (bucket) => bucket[0]?.count ?? 0;
+const countOf = (bucket = []) => bucket[0]?.count ?? 0;
 
-function presentItem(membership, plansById) {
-  const plan = plansById.get(String(membership.plan));
+// An expired row is about the plan that ran out: the member is on Gratuita, and
+// Gratuita never ends. That plan and its last day are what the chamber reads.
+function presentItem(membership, plansById, view) {
+  const lapsed = view === MEMBERSHIP_LIST_VIEWS.EXPIRED ? membership.lapsed : null;
+  const plan = plansById.get(String(lapsed === null ? membership.plan : lapsed.plan));
+  const expiresAt = lapsed === null ? membership.expiresAt : lapsed.expiredAt;
 
   return {
     memberId: String(membership.member._id),
@@ -129,8 +152,8 @@ function presentItem(membership, plansById) {
     plan: plan === undefined ? null : { key: plan.key, name: plan.name },
     frequency: membership.frequency ?? null,
     lastPaymentAt: membership.lastPaymentAt ?? null,
-    expiresAt: membership.expiresAt,
-    validUntil: lastValidDay(membership.expiresAt),
+    expiresAt,
+    validUntil: lastValidDay(expiresAt),
   };
 }
 
@@ -163,11 +186,15 @@ async function listMemberships(query, now, store = defaultListStore) {
 
   return {
     ...paginated(
-      result.items.map((membership) => presentItem(membership, plansById)),
+      result.items.map((membership) => presentItem(membership, plansById, view)),
       countOf(result[view]),
       pagination,
     ),
-    counts: { active: countOf(result.active), expiring: countOf(result.expiring) },
+    counts: {
+      active: countOf(result.active),
+      expiring: countOf(result.expiring),
+      expired: countOf(result.expired),
+    },
     noticeDays,
   };
 }
