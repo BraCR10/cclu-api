@@ -1,3 +1,4 @@
+const { adminInvitation } = require('./adminInvitation');
 const { applicationApproved } = require('./applicationApproved');
 const { applicationChangesRequested } = require('./applicationChangesRequested');
 const { applicationReceived } = require('./applicationReceived');
@@ -13,6 +14,7 @@ const { paymentRejected } = require('./paymentRejected');
 // A new kind of notification is a new file beside this one and a line here.
 // Nothing in the sending component changes.
 const TEMPLATES = {
+  adminInvitation,
   applicationApproved,
   applicationChangesRequested,
   applicationReceived,

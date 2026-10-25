@@ -6,6 +6,7 @@ const fileController = require('../controllers/fileController');
 const adminPaymentController = require('../controllers/adminPaymentController');
 const adminMembershipController = require('../controllers/adminMembershipController');
 const adminSummaryController = require('../controllers/adminSummaryController');
+const adminDirectoryController = require('../controllers/adminDirectoryController');
 const reportController = require('../controllers/reportController');
 const adminSubscriberController = require('../controllers/adminSubscriberController');
 const { authorize } = require('../middlewares/authorize');
@@ -55,5 +56,12 @@ adminRoutes.get('/payments/:paymentId', adminPaymentController.getPayment);
 adminRoutes.get('/payments/:paymentId/receipt', adminPaymentController.getReceipt);
 adminRoutes.post('/payments/:paymentId/approve', adminPaymentController.approvePayment);
 adminRoutes.post('/payments/:paymentId/reject', adminPaymentController.rejectPayment);
+
+// The administrators the chamber keeps: who they are, who is invited, and who
+// has been let go. Every one of them is an administrator already.
+adminRoutes.get('/administrators', adminDirectoryController.getAdmins);
+adminRoutes.post('/administrators', adminDirectoryController.invite);
+adminRoutes.post('/administrators/:adminId/invitation', adminDirectoryController.resend);
+adminRoutes.patch('/administrators/:adminId/status', adminDirectoryController.setStatus);
 
 module.exports = { adminRoutes };
