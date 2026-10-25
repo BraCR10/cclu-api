@@ -48,6 +48,7 @@ test('the summary reads the pending work and the paid memberships of this month'
     oldestPendingPayment: async () => null,
     listExpiring: async () => ({ items: [], total: 0, noticeDays: 7 }),
     countVacancies: async () => 9,
+    countPublications: async () => 24,
   };
 
   const summary = await readSummary(NOW, store);
@@ -56,6 +57,7 @@ test('the summary reads the pending work and the paid memberships of this month'
   assert.equal(summary.applications.pending, 6);
   assert.equal(summary.payments.oldestSubmittedAt, null);
   assert.deepEqual(summary.paidMemberships, { active: 1, newThisMonth: 1 });
+  assert.deepEqual(summary.publications, { active: 24 });
   assert.equal(summary.vacancies.active, 9);
   // October begins at midnight in Costa Rica, six hours after midnight UTC.
   assert.equal(since[0].toISOString(), '2026-10-01T06:00:00.000Z');

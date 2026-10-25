@@ -171,4 +171,12 @@ async function readMarketplaceItem(publicationId, now = new Date(), store = defa
   return present(found);
 }
 
-module.exports = { readMarketplace, readMarketplaceItem, present };
+// The panel's figure asks the marketplace's own question, so what it counts and
+// what a visitor can find can never disagree.
+async function countVisible(now = new Date(), store = defaultStore) {
+  const members = await store.shopWindows(now);
+
+  return store.count({ ...visible(now), member: { $in: members } });
+}
+
+module.exports = { readMarketplace, readMarketplaceItem, countVisible, present };

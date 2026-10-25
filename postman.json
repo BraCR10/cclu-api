@@ -1358,7 +1358,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "admin", "summary"]
             },
-            "description": "Administrator. Members, pending applications and payments, paid memberships by plan, memberships expiring soon and active vacancies, read now."
+            "description": "Administrator. Members, pending applications and payments, paid memberships by plan, memberships expiring soon, the publications the marketplace is showing and the vacancies on the job board, read now. The publications are counted with the marketplace query, so a lapsed plan lowers the figure exactly as it empties the shop window."
           },
           "response": []
         }

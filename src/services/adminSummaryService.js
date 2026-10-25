@@ -6,6 +6,7 @@ const { ACCOUNT_STATUSES } = require('../config/accountStatus');
 const { latestTrustedExpiry, startOfChamberMonth } = require('../config/chamberCalendar');
 const { listMemberships, MEMBERSHIP_LIST_VIEWS } = require('./adminMembershipService');
 const { countBoardVacancies } = require('./jobBoardService');
+const { countVisible: countVisiblePublications } = require('./marketplaceService');
 
 const EXPIRING_SHOWN = '4';
 
@@ -52,6 +53,7 @@ const defaultStore = {
   listExpiring: (now) =>
     listMemberships({ view: MEMBERSHIP_LIST_VIEWS.EXPIRING, pageSize: EXPIRING_SHOWN }, now),
   countVacancies: (now) => countBoardVacancies(now),
+  countPublications: (now) => countVisiblePublications(now),
 };
 
 function membershipsByPlan(plans, paidCounts, listedCount) {
@@ -93,6 +95,7 @@ async function readSummary(now, store = defaultStore) {
     oldestPayment,
     expiring,
     vacancies,
+    publications,
   ] = await Promise.all([
     store.countPaidByPlan(memberIds, paidPlanIds, now, since),
     store.countPendingApplications(),
@@ -101,6 +104,7 @@ async function readSummary(now, store = defaultStore) {
     store.oldestPendingPayment(),
     store.listExpiring(now),
     store.countVacancies(now),
+    store.countPublications(now),
   ]);
 
   return {
@@ -115,6 +119,7 @@ async function readSummary(now, store = defaultStore) {
       newThisMonth: paidCounts.reduce((sum, row) => sum + row.startedThisMonth, 0),
     },
     membershipsByPlan: membershipsByPlan(plans, paidCounts, members),
+    publications: { active: publications },
     vacancies: { active: vacancies },
     expiring: { items: expiring.items, total: expiring.total, noticeDays: expiring.noticeDays },
   };

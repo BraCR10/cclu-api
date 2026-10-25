@@ -116,3 +116,22 @@ test('one publication is read with the same rules as the list', async () => {
   assert.equal(found.id, PUBLICATION_ID);
   assert.equal(lastFilter._id, PUBLICATION_ID);
 });
+
+// The panel's figure is the size of what a visitor can find, asked the same way,
+// so a lapse that empties a shop window empties the figure too.
+test('the panel counts exactly what the marketplace shows', async () => {
+  let counted = null;
+  const store = {
+    shopWindows: async () => ['64b7f0a1c2d3e4f5a6b7c8d9'],
+    count: async (filter) => {
+      counted = filter;
+
+      return 12;
+    },
+  };
+
+  assert.equal(await marketplaceService.countVisible(NOW, store), 12);
+  assert.equal(counted.status, 'active');
+  assert.equal(counted.removedAt, null);
+  assert.deepEqual(counted.member, { $in: ['64b7f0a1c2d3e4f5a6b7c8d9'] });
+});
