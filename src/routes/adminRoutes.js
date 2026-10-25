@@ -1,5 +1,6 @@
 const express = require('express');
 const applicationReviewController = require('../controllers/applicationReviewController');
+const adminActivityController = require('../controllers/adminActivityController');
 const adminProfileController = require('../controllers/adminProfileController');
 const planController = require('../controllers/planController');
 const fileController = require('../controllers/fileController');
@@ -27,6 +28,13 @@ adminRoutes.get('/reports/:type/export', reportController.exportReport);
 adminRoutes.get('/subscribers', adminSubscriberController.getSubscribers);
 adminRoutes.get('/subscribers/export', adminSubscriberController.exportSubscribers);
 adminRoutes.get('/subscribers/districts', adminSubscriberController.getSubscriberDistricts);
+
+// The catalog of economic activities: what a member is, offered to everybody at
+// registration, and the one list the chamber edits by hand.
+adminRoutes.get('/activities', adminActivityController.getActivities);
+adminRoutes.post('/activities', adminActivityController.createActivity);
+adminRoutes.patch('/activities/:activityId', adminActivityController.updateActivity);
+adminRoutes.delete('/activities/:activityId', adminActivityController.removeActivity);
 
 adminRoutes.get('/me', adminProfileController.getOwnProfile);
 adminRoutes.patch('/me', adminProfileController.updateOwnProfile);

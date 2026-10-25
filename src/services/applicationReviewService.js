@@ -300,9 +300,14 @@ async function refuseDecision(memberId, findStatus) {
 // A duplicate name is not a failure: two applicants can name the same activity
 // and the catalog only needs one of them. The unique index is what decides, so
 // the answer is to let it decide.
+//
+// What approval does not do is accept the trade: the application is in order, but
+// the chamber has not said that this is how the activity should be named in the
+// catalog. The entry waits as pending, offered to nobody, until an administrator
+// accepts it from the catalog screen.
 async function addNamedActivity(name, create = (document) => Activity.create(document)) {
   try {
-    await create({ name, status: ACTIVITY_STATUSES.ACTIVE });
+    await create({ name, status: ACTIVITY_STATUSES.PENDING });
   } catch (error) {
     if (error.code !== DUPLICATE_KEY) {
       throw error;

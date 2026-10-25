@@ -555,7 +555,98 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "activities"]
             },
-            "description": "The accepted economic activities the registration form offers. Public. An applicant whose activity is missing writes it out instead, and it joins this list when the chamber approves the registration."
+            "description": "The accepted economic activities the registration form offers. Public, and only the accepted ones: an activity named by an applicant waits as pending until an administrator accepts it from the catalog. An applicant whose activity is missing writes it out instead."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Activities",
+      "item": [
+        {
+          "name": "List the catalog",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/activities?status=pending&search=textil",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "activities"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "textil",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Administrator session. Every entry whatever its state, each with the number of members classified under it, plus the counts per state. status narrows to active, pending or inactive; search matches the name as spelled."
+          },
+          "response": []
+        },
+        {
+          "name": "Add an activity",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Artesanías\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/activities",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "activities"]
+            },
+            "description": "Administrator session. Answers 201. The entry is written active, since the chamber typing it is the chamber accepting it. A name the catalog already has answers 409 on name, comparing without case."
+          },
+          "response": []
+        },
+        {
+          "name": "Rename or accept an activity",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/activities/{{activityId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "activities", "{{activityId}}"]
+            },
+            "description": "Administrator session. Renaming is safe because members point at the identifier rather than the word. Accepting a pending entry and retiring an unwanted one are both this status change, to active or inactive. A request that changes nothing answers 400."
+          },
+          "response": []
+        },
+        {
+          "name": "Remove an unused activity",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/activities/{{activityId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "activities", "{{activityId}}"]
+            },
+            "description": "Administrator session. Answers 204. An activity any member is classified under is refused with not_allowed: retire it instead, since deleting it would leave their record pointing at nothing."
           },
           "response": []
         }
