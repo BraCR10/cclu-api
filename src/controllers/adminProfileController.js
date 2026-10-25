@@ -18,4 +18,13 @@ async function updateOwnProfile(
   response.json(await update(request.identity, request.body));
 }
 
-module.exports = { getOwnProfile, updateOwnProfile };
+async function changePassword(
+  request,
+  response,
+  next,
+  change = adminProfileService.changeOwnPassword,
+) {
+  response.json(await change(request.identity, request.body));
+}
+
+module.exports = { getOwnProfile, updateOwnProfile, changePassword };

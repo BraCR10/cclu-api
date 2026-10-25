@@ -29,6 +29,8 @@ adminRoutes.get('/subscribers/districts', adminSubscriberController.getSubscribe
 
 adminRoutes.get('/me', adminProfileController.getOwnProfile);
 adminRoutes.patch('/me', adminProfileController.updateOwnProfile);
+// The one password an administrator can change without a link: their own.
+adminRoutes.post('/me/password', adminProfileController.changePassword);
 
 adminRoutes.get('/applications/pending', applicationReviewController.getPendingApplications);
 adminRoutes.get('/applications/decided', applicationReviewController.getDecidedApplications);

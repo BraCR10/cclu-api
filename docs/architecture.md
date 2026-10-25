@@ -857,6 +857,24 @@ nothing rechecks it afterwards. `requireActiveAccount` reads the account on each
 request, which costs one indexed lookup and is what makes a suspension take
 effect immediately instead of whenever the token happens to expire.
 
+## An administrator's own account
+
+An administrator reads and edits their own account under `/api/admin/me`. Three
+things are theirs to decide, and only these three.
+
+The name is written on its own, named explicitly rather than taken from the
+body, so a request carrying an address, a role or a password hash is simply
+never read. The address is not editable here: changing it takes a verification
+the member flow owns, and an administrator editing it silently would leave the
+chamber unable to reach them. The password is changed at
+`POST /api/admin/me/password`, which asks for the current one and checks it —
+a session left open on a shared machine must not be able to take the account —
+and then writes the new one through the same rules the invitation and the reset
+link use, recording `passwordChangedAt`.
+
+The account state is read here and written elsewhere: only another administrator
+can inactivate an account, and never their own.
+
 ## Cross origin requests and CSRF
 
 The browser loads the interface from one origin and calls the API on another, so

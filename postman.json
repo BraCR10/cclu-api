@@ -659,6 +659,29 @@
             "description": "Administrator session. Only the name can be changed here."
           },
           "response": []
+        },
+        {
+          "name": "Change own password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"Actual2026!\",\n  \"newPassword\": \"Nueva2026!x\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/me/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "me", "password"]
+            },
+            "description": "Administrator session. The current password is asked for and checked, so a session left open cannot take the account; a wrong one answers 400 on currentPassword. The new password follows the same rules as the invitation and the reset link."
+          },
+          "response": []
         }
       ]
     },
