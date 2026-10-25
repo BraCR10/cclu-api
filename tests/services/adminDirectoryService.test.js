@@ -69,7 +69,7 @@ test('an invitation is created pending and mailed with a link', async () => {
   assert.equal(store.sent.length, 1);
   assert.equal(store.sent[0].templateName, 'adminInvitation');
   assert.equal(store.sent[0].to, 'ana@camaralaunion.com');
-  assert.match(store.sent[0].data.invitationUrl, /\/admin\/invitation\/[0-9a-f]{64}$/);
+  assert.match(store.sent[0].data.invitationUrl, /\/invitation\/[0-9a-f]{64}$/);
   assert.equal(store.sent[0].data.invitedBy, 'Mariana Solís');
 });
 

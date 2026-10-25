@@ -616,6 +616,11 @@ invitation.
   the link alike.
 - **Resending restarts the clock** rather than extending it, and there is nothing
   to resend once the administrator has a password.
+- **The link opens a public page.** `GET /api/admin-invitations/:token` answers
+  the name, the address and the day the invitation stops working, which is what
+  the form needs to show the address fixed and say when it ends. The page lives
+  at `/invitation/:token`, outside `/admin`: the panel's layout turns away
+  anybody without a session, and the person holding the link has none.
 - **Accepting sets the password and opens the panel in the same write** that
   clears the digest, so an invitation is used once. The password answers to the
   same three rules as every other.
