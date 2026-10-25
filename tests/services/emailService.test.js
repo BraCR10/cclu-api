@@ -187,6 +187,11 @@ const TEMPLATE_FIXTURES = {
   paymentApproved: { businessName: 'A', planName: 'Pro Pymex', validUntil: '2026-11-17' },
   paymentRejected: { businessName: 'A', planName: 'Pro Pymex', reason: 'El detalle no coincide.' },
   passwordResetLink: { resetUrl: 'https://cclu.example/password/reset/abc', minutesValid: 30 },
+  adminInvitation: {
+    invitationUrl: 'https://cclu.example/admin/invitation/abc',
+    invitedBy: 'Mariana Solís',
+    daysValid: 7,
+  },
 };
 
 // Driven by the registry rather than a list written beside it, so a template

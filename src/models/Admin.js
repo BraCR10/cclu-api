@@ -34,6 +34,12 @@ const adminSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // The token in the link is stored the way a password is: a leaked database
+    // must not hand anybody a working invitation.
+    invitationTokenHash: {
+      type: String,
+      default: null,
+    },
     // Set by the one path that changes a password. Administrators share the
     // flow with members, so they record the same date.
     passwordChangedAt: {
@@ -43,6 +49,10 @@ const adminSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+// Looked up by this digest when somebody follows their link, so it is indexed
+// and sparse: only an invitation waiting to be accepted carries one.
+adminSchema.index({ invitationTokenHash: 1 }, { sparse: true });
 
 const Admin = mongoose.model('Admin', adminSchema);
 
