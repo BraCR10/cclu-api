@@ -536,6 +536,11 @@ it leads to.
   the hourly run has moved the record yet.
 - **Expiring** is the first four of the memberships list's expiring view, with
   the notice the chamber set; **vacancies** are those on the job board.
+- **Publications** are the ones the marketplace is showing, counted with the
+  marketplace's own query — active, not taken down, inside their validity, and
+  offered by a business that still holds a plan that publishes. A lapse empties
+  the figure the same way it empties the shop window, so the panel and what a
+  visitor finds never disagree.
 
 ## Publications
 
