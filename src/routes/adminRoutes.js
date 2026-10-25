@@ -1,6 +1,7 @@
 const express = require('express');
 const applicationReviewController = require('../controllers/applicationReviewController');
 const adminActivityController = require('../controllers/adminActivityController');
+const adminMemberController = require('../controllers/adminMemberController');
 const adminProfileController = require('../controllers/adminProfileController');
 const planController = require('../controllers/planController');
 const fileController = require('../controllers/fileController');
@@ -35,6 +36,15 @@ adminRoutes.get('/activities', adminActivityController.getActivities);
 adminRoutes.post('/activities', adminActivityController.createActivity);
 adminRoutes.patch('/activities/:activityId', adminActivityController.updateActivity);
 adminRoutes.delete('/activities/:activityId', adminActivityController.removeActivity);
+
+// The people the chamber keeps: who they are, what they hold, and the two
+// states their account can be in. The export comes before the identifier so
+// "export" is never read as one.
+adminRoutes.get('/members', adminMemberController.getMembers);
+adminRoutes.get('/members/export', adminMemberController.exportMembers);
+adminRoutes.get('/members/:memberId', adminMemberController.getMember);
+adminRoutes.patch('/members/:memberId', adminMemberController.updateMember);
+adminRoutes.patch('/members/:memberId/status', adminMemberController.setMemberStatus);
 
 adminRoutes.get('/me', adminProfileController.getOwnProfile);
 adminRoutes.patch('/me', adminProfileController.updateOwnProfile);

@@ -727,6 +727,44 @@ read only through `GET /api/members/me/payments/:paymentId/receipt`, for its
 member, and `GET /api/admin/payments/:paymentId/receipt`. A payment that is not
 the member's answers 404.
 
+## The members the chamber keeps
+
+`/api/admin/members` is the directory the board reads: only applications that
+were decided (`applicationStatus: approved`), because a pending one still belongs
+to the applications screen. Each row carries the plan the member holds, which
+needs one extra read — memberships for the page's identifiers — rather than an
+aggregation over the whole collection.
+
+The search answers to what a person says at the counter: the business, the
+person, the address, the document, and the code printed on the card. Filtering
+by plan resolves the catalog key to the memberships holding it first, so the
+filter never guesses at a field `Member` does not have.
+
+`GET /api/admin/members/:id` answers the record as four tabs read it — identity,
+the plan, the last ten payments, and the last ten publications — in one call,
+because four screens asking four times would show four different moments. The
+password hash is excluded in the query, not filtered afterwards.
+
+Two writes exist, and both are deliberately narrow.
+
+`PATCH /api/admin/members/:id` corrects contact details only: phone, WhatsApp,
+billing address, website and the three social handles. The address, the document
+and the trade are what the application was decided on, and an administrator
+editing them silently would rewrite that decision; they keep their own paths. A
+request that names none of the editable fields answers `nothing_to_change`
+rather than writing nothing and saying it worked.
+
+`PATCH /api/admin/members/:id/status` is the only code in the system that writes
+`accountStatus: suspended`, and a reason of 10 to 500 characters is required
+either way. Suspending stops the sign-in on the next request, because
+`requireActiveAccount` reads the account each time; it never deletes anything,
+which is why there is no delete route here. Both directions write one
+`AuditEntry` (`member.suspended`, `member.reactivated`) with the state before and
+after and the reason.
+
+The export answers every member the filters match, not the page on screen, with
+Spanish headings, the same way the subscriber export does.
+
 ## Pagination
 
 Every list that grows answers one page. The query is `?page=1&pageSize=10`, and

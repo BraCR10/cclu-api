@@ -887,6 +887,139 @@
       ]
     },
     {
+      "name": "Members",
+      "description": "The people the chamber keeps: the directory, one record with its plan and movements, the corrections an administrator may make, and the two states an account can be in.",
+      "item": [
+        {
+          "name": "List members",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/members?search=caf%C3%A9&page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "members"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "café",
+                  "disabled": false
+                },
+                {
+                  "key": "accountStatus",
+                  "value": "active",
+                  "disabled": true
+                },
+                {
+                  "key": "memberType",
+                  "value": "business",
+                  "disabled": true
+                },
+                {
+                  "key": "canton",
+                  "value": "{{cantonId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "plan",
+                  "value": "pro",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Administrator session. Only approved applications are here; a pending one belongs to the applications screen. Each row carries the plan the member holds. search reaches the business, the person, the address, the document and the member code."
+          },
+          "response": []
+        },
+        {
+          "name": "Export the directory",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/members/export?accountStatus=active",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "members", "export"],
+              "query": [
+                {
+                  "key": "accountStatus",
+                  "value": "active",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Administrator session. A CSV of every member the filters match, not only the page on screen. Spanish headings, because a person opens it."
+          },
+          "response": []
+        },
+        {
+          "name": "Read one member",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/members/{{memberId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "members", "{{memberId}}"]
+            },
+            "description": "Administrator session. The record as the panel reads it: identity and contact, the plan held, the last payments and what the member published. The password hash is never part of the answer."
+          },
+          "response": []
+        },
+        {
+          "name": "Correct contact details",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"7777 7777\",\n  \"whatsappNumber\": \"7777 7777\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/members/{{memberId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "members", "{{memberId}}"]
+            },
+            "description": "Administrator session. Only phone, WhatsApp, billing address, website and the three social handles are read. The address, the document and the trade are not: those are what the application was decided on. A request that changes nothing answers 400."
+          },
+          "response": []
+        },
+        {
+          "name": "Suspend or reactivate",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"suspended\",\n  \"reason\": \"Dejó de pagar dos cuotas seguidas.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/members/{{memberId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "members", "{{memberId}}", "status"]
+            },
+            "description": "Administrator session. A reason of 10 to 500 characters is required either way. Suspending stops the sign-in immediately while keeping the record; reactivating returns it. Each writes one audit entry."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Directory",
       "item": [
         {
@@ -1739,7 +1872,12 @@
               "raw": "{{baseUrl}}/api/members/me/publications?type=product",
               "host": ["{{baseUrl}}"],
               "path": ["api", "members", "me", "publications"],
-              "query": [{ "key": "type", "value": "product" }]
+              "query": [
+                {
+                  "key": "type",
+                  "value": "product"
+                }
+              ]
             },
             "description": "Member session. Answers on any plan, with canPublish saying whether this plan lets them publish now. type is one of product, service, promotion, discount."
           },
@@ -1843,9 +1981,18 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "marketplace"],
               "query": [
-                { "key": "type", "value": "product" },
-                { "key": "search", "value": "caf" },
-                { "key": "page", "value": "1" }
+                {
+                  "key": "type",
+                  "value": "product"
+                },
+                {
+                  "key": "search",
+                  "value": "caf"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
               ]
             },
             "description": "No session. Active publications inside their validity, offered by businesses that hold a paid plan. The search is read as text, never as a pattern."
