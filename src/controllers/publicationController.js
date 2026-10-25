@@ -2,6 +2,7 @@ const publicationService = require('../services/publicationService');
 
 const {
   listOwnPublications,
+  readOwnPublication,
   createPublication,
   updatePublication,
   setPublicationStatus,
@@ -10,6 +11,10 @@ const {
 
 async function getOwnPublications(request, response, next, list = listOwnPublications) {
   response.json(await list(request.identity.id, request.query));
+}
+
+async function getOwnPublication(request, response, next, read = readOwnPublication) {
+  response.json(await read(request.identity.id, request.params.publicationId));
 }
 
 async function createOwnPublication(request, response, next, create = createPublication) {
@@ -31,6 +36,7 @@ async function deleteOwnPublication_(request, response, next, remove = deleteOwn
 
 module.exports = {
   getOwnPublications,
+  getOwnPublication,
   createOwnPublication,
   updateOwnPublication,
   setOwnPublicationStatus,

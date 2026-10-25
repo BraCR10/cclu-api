@@ -39,7 +39,7 @@ const publicationSchema = new mongoose.Schema(
     publishedAt: { type: Date, required: true },
     removedAt: { type: Date, default: null },
   },
-  { versionKey: false },
+  { timestamps: true, versionKey: false },
 );
 
 // The marketplace lists by type and category, newest first, and the member's own

@@ -416,6 +416,36 @@ telephone and hours, the shop's week and categories, and the paid plan while it
 holds. A branch's municipal permit never leaves, and a member whose record
 predates branches shows the place on its registration.
 
+## The catalog of activities
+
+A member is classified by the economic activity the municipality licenses them
+for, and that list is the chamber's, not the applicant's. `Activity` holds three
+states, and each one answers a different question.
+
+| State      | Means                                          | Offered at registration |
+| ---------- | ---------------------------------------------- | ----------------------- |
+| `active`   | Accepted, and how this trade is named          | Yes                     |
+| `pending`  | Named by an applicant, not yet accepted        | No                      |
+| `inactive` | Retired; the members under it keep their trade | No                      |
+
+Approving an application does not accept the trade it named. The applicant
+wrote a name the chamber has never seen, and the application being in order says
+nothing about whether that is how the catalog should spell it — so the entry
+waits as `pending`, invisible to the form, and an administrator accepts or
+renames it from `/api/admin/activities`. The old behaviour wrote it as `active`,
+which meant the catalog grew a row for every free-text application and nobody
+ever chose it again on purpose.
+
+Accepting, retiring and reactivating are one write: `PATCH` with `status`.
+Renaming is safe because members hold the identifier rather than the word.
+Deleting is refused while any member is classified under the activity
+(`not_allowed`) — their record would point at nothing — so retiring is the way
+to take one out of circulation.
+
+The public `GET /api/activities` returns only `active` entries; the panel's
+`GET /api/admin/activities` returns all of them, each with the number of members
+carrying it, which is what decides whether it may be deleted at all.
+
 ## Notifications
 
 A notification is what the bell in the panel shows: something happened that the
@@ -532,6 +562,28 @@ That last rule is the one worth keeping: a lapsed plan stops being a shop window
 the moment it lapses, without anyone deleting a publication. The query resolves
 the plan first and asks only for the publications of the members it allows, so a
 business that falls to Gratuita leaves the marketplace that same day.
+
+## Administrators
+
+The panel has no way to create itself, so an administrator arrives through an
+invitation.
+
+- **Inviting writes the account pending.** The name and the address are kept, the
+  password is replaced by 256 random bits nobody knows, and the link carries a
+  token the API stores only as a digest — a leaked database hands nobody a
+  working invitation.
+- **The state is read, not trusted.** An invitation past its day answers as
+  `invitation_expired` without anybody writing that down, on the directory and on
+  the link alike.
+- **Resending restarts the clock** rather than extending it, and there is nothing
+  to resend once the administrator has a password.
+- **Accepting sets the password and opens the panel in the same write** that
+  clears the digest, so an invitation is used once. The password answers to the
+  same three rules as every other.
+- **Nobody inactivates themselves**, and an invitation is not a state the
+  directory can set: it has its own action.
+- **One address, one account.** An address that already opens a member's account
+  cannot be invited into the panel.
 
 ## Time and access
 

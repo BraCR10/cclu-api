@@ -68,6 +68,14 @@
     {
       "key": "branchId",
       "value": ""
+    },
+    {
+      "key": "adminId",
+      "value": ""
+    },
+    {
+      "key": "adminInvitationToken",
+      "value": ""
     }
   ],
   "item": [
@@ -547,7 +555,98 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "activities"]
             },
-            "description": "The accepted economic activities the registration form offers. Public. An applicant whose activity is missing writes it out instead, and it joins this list when the chamber approves the registration."
+            "description": "The accepted economic activities the registration form offers. Public, and only the accepted ones: an activity named by an applicant waits as pending until an administrator accepts it from the catalog. An applicant whose activity is missing writes it out instead."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Activities",
+      "item": [
+        {
+          "name": "List the catalog",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/activities?status=pending&search=textil",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "activities"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "textil",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Administrator session. Every entry whatever its state, each with the number of members classified under it, plus the counts per state. status narrows to active, pending or inactive; search matches the name as spelled."
+          },
+          "response": []
+        },
+        {
+          "name": "Add an activity",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Artesanías\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/activities",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "activities"]
+            },
+            "description": "Administrator session. Answers 201. The entry is written active, since the chamber typing it is the chamber accepting it. A name the catalog already has answers 409 on name, comparing without case."
+          },
+          "response": []
+        },
+        {
+          "name": "Rename or accept an activity",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/activities/{{activityId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "activities", "{{activityId}}"]
+            },
+            "description": "Administrator session. Renaming is safe because members point at the identifier rather than the word. Accepting a pending entry and retiring an unwanted one are both this status change, to active or inactive. A request that changes nothing answers 400."
+          },
+          "response": []
+        },
+        {
+          "name": "Remove an unused activity",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/activities/{{activityId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "activities", "{{activityId}}"]
+            },
+            "description": "Administrator session. Answers 204. An activity any member is classified under is refused with not_allowed: retire it instead, since deleting it would leave their record pointing at nothing."
           },
           "response": []
         }
@@ -661,7 +760,21 @@
           "response": []
         },
         {
-          "name": "Change own password",
+          "name": "List administrators",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/administrators",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "administrators"]
+            },
+            "description": "Administrator session. Each one answers with the state that is true now: an invitation past its day reads as invitation_expired."
+          },
+          "response": []
+        },
+        {
+          "name": "Invite one",
           "request": {
             "method": "POST",
             "header": [
@@ -672,14 +785,88 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"currentPassword\": \"Actual2026!\",\n  \"newPassword\": \"Nueva2026!x\"\n}"
+              "raw": "{\n  \"name\": \"Ana Solano\",\n  \"email\": \"ana@camaralaunion.com\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/admin/me/password",
+              "raw": "{{baseUrl}}/api/admin/administrators",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "me", "password"]
+              "path": ["api", "admin", "administrators"]
             },
-            "description": "Administrator session. The current password is asked for and checked, so a session left open cannot take the account; a wrong one answers 400 on currentPassword. The new password follows the same rules as the invitation and the reset link."
+            "description": "Administrator session. Creates the account pending and mails the link. 409 already_registered when the address already opens an account of either role."
+          },
+          "response": []
+        },
+        {
+          "name": "Resend the invitation",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/administrators/{{adminId}}/invitation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "administrators", "{{adminId}}", "invitation"]
+            },
+            "description": "Administrator session. A new link and a new clock. 400 not_allowed once the administrator has a password."
+          },
+          "response": []
+        },
+        {
+          "name": "Inactivate or reactivate",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"inactive\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/administrators/{{adminId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "administrators", "{{adminId}}", "status"]
+            },
+            "description": "Administrator session. status is active or inactive. 400 not_allowed when an administrator tries it on themselves."
+          },
+          "response": []
+        },
+        {
+          "name": "Open an invitation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin-invitations/{{adminInvitationToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin-invitations", "{{adminInvitationToken}}"]
+            },
+            "description": "No session: the invited person has no account yet. 404 invalid_code when the link was used or has expired."
+          },
+          "response": []
+        },
+        {
+          "name": "Accept an invitation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"Camara2026!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin-invitations/{{adminInvitationToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin-invitations", "{{adminInvitationToken}}"]
+            },
+            "description": "No session. The password answers to the same three rules as every other, and the administrator becomes active in the same write that burns the link."
           },
           "response": []
         }
