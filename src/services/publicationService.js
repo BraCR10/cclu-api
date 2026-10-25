@@ -45,6 +45,9 @@ function present(pub) {
     status: pub.status,
     inactiveReason: pub.inactiveReason ?? null,
     publishedAt: pub.publishedAt,
+    // What the member's table sorts and dates a row by: the last time it was
+    // touched, not the day it went up.
+    updatedAt: pub.updatedAt ?? pub.publishedAt,
   };
 }
 
@@ -55,8 +58,10 @@ function toDay(value) {
 function readPrice(body) {
   const value = body.price;
 
+  // The prototype leaves it optional: a shop that has not priced something yet
+  // says "Consultar precio" rather than being kept out of the marketplace.
   if (value === undefined || value === null || value === '') {
-    refuse(ERROR_CODES.REQUIRED, 'price', 'The field price is required.');
+    return null;
   }
 
   const price = typeof value === 'number' ? value : Number(value);
@@ -112,7 +117,7 @@ async function readFields(body, type) {
 
   if (PRICED.includes(type)) {
     fields.price = readPrice(body);
-    fields.imageUrl = readText(body, 'imageUrl', { required: true });
+    fields.imageUrl = readText(body, 'imageUrl', { required: false });
   }
 
   if (type === PUBLICATION_TYPES.DISCOUNT) {
@@ -196,6 +201,22 @@ async function createPublication(memberId, body, now, store = defaultStore) {
   return present((await store.find(memberId, created._id)) ?? created);
 }
 
+// The edit screen opens on what is stored, so a refused field has something to
+// point at. It reads the member's own publication only.
+async function readOwnPublication(memberId, publicationId, store = defaultStore) {
+  if (typeof publicationId !== 'string' || !PATTERNS.objectId.test(publicationId)) {
+    throw notFound();
+  }
+
+  const found = await store.find(memberId, publicationId);
+
+  if (found === null || found === undefined) {
+    throw notFound();
+  }
+
+  return present(found);
+}
+
 // An edit keeps the type: a product does not become a promotion, because the two
 // ask for different things and what was written would be half lost.
 async function updatePublication(memberId, publicationId, body, store = defaultStore) {
@@ -262,6 +283,7 @@ async function deleteOwnPublication(memberId, publicationId, now, store = defaul
 
 module.exports = {
   listOwnPublications,
+  readOwnPublication,
   createPublication,
   updatePublication,
   setPublicationStatus,

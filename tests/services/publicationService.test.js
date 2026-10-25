@@ -67,27 +67,33 @@ function makeStore(rows = [stored()], plan = { entitlements: { publishInMarketpl
   };
 }
 
-test('a product asks for its price and a picture', async () => {
+// The prototype asks for both as optional: a shop that has not priced or
+// photographed something yet still gets into the marketplace.
+test('a product goes up without a price or a picture', async () => {
+  const store = makeStore();
+
+  const created = await publicationService.createPublication(
+    MEMBER_ID,
+    { type: 'product', title: 'Café', description: 'Molido' },
+    NOW,
+    store,
+  );
+
+  assert.equal(created.price, null);
+  assert.equal(created.imageUrl, null);
+});
+
+test('a price that is not a number is refused on the field', async () => {
   const store = makeStore();
 
   await assert.rejects(
     publicationService.createPublication(
       MEMBER_ID,
-      { type: 'product', title: 'Café', description: 'Molido' },
+      { type: 'product', title: 'Café', description: 'Molido', price: 'cinco mil' },
       NOW,
       store,
     ),
-    (error) => error.code === 'required' && error.field === 'price',
-  );
-
-  await assert.rejects(
-    publicationService.createPublication(
-      MEMBER_ID,
-      { type: 'product', title: 'Café', description: 'Molido', price: 5500 },
-      NOW,
-      store,
-    ),
-    (error) => error.code === 'required' && error.field === 'imageUrl',
+    (error) => error.code === 'invalid_format' && error.field === 'price',
   );
 });
 
@@ -282,6 +288,24 @@ test('a publication of somebody else is not found', async () => {
       },
       store,
     ),
+    (error) => error.statusCode === 404,
+  );
+});
+
+test('the member reads one of their own publications to edit it', async () => {
+  const store = makeStore();
+
+  const found = await publicationService.readOwnPublication(MEMBER_ID, PUBLICATION_ID, store);
+
+  assert.equal(found.id, PUBLICATION_ID);
+  assert.equal(found.title, 'Café molido 500 g');
+});
+
+test('a publication of somebody else is not read either', async () => {
+  const store = makeStore();
+
+  await assert.rejects(
+    publicationService.readOwnPublication(MEMBER_ID, '64b7f0a1c2d3e4f5a6b7c8ff', store),
     (error) => error.statusCode === 404,
   );
 });
