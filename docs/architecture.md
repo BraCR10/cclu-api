@@ -416,6 +416,36 @@ telephone and hours, the shop's week and categories, and the paid plan while it
 holds. A branch's municipal permit never leaves, and a member whose record
 predates branches shows the place on its registration.
 
+## The catalog of activities
+
+A member is classified by the economic activity the municipality licenses them
+for, and that list is the chamber's, not the applicant's. `Activity` holds three
+states, and each one answers a different question.
+
+| State      | Means                                          | Offered at registration |
+| ---------- | ---------------------------------------------- | ----------------------- |
+| `active`   | Accepted, and how this trade is named          | Yes                     |
+| `pending`  | Named by an applicant, not yet accepted        | No                      |
+| `inactive` | Retired; the members under it keep their trade | No                      |
+
+Approving an application does not accept the trade it named. The applicant
+wrote a name the chamber has never seen, and the application being in order says
+nothing about whether that is how the catalog should spell it — so the entry
+waits as `pending`, invisible to the form, and an administrator accepts or
+renames it from `/api/admin/activities`. The old behaviour wrote it as `active`,
+which meant the catalog grew a row for every free-text application and nobody
+ever chose it again on purpose.
+
+Accepting, retiring and reactivating are one write: `PATCH` with `status`.
+Renaming is safe because members hold the identifier rather than the word.
+Deleting is refused while any member is classified under the activity
+(`not_allowed`) — their record would point at nothing — so retiring is the way
+to take one out of circulation.
+
+The public `GET /api/activities` returns only `active` entries; the panel's
+`GET /api/admin/activities` returns all of them, each with the number of members
+carrying it, which is what decides whether it may be deleted at all.
+
 ## Notifications
 
 A notification is what the bell in the panel shows: something happened that the
