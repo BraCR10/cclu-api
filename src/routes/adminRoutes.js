@@ -43,6 +43,9 @@ adminRoutes.post('/me/password', adminProfileController.changePassword);
 
 adminRoutes.get('/applications/pending', applicationReviewController.getPendingApplications);
 adminRoutes.get('/applications/decided', applicationReviewController.getDecidedApplications);
+// Declared after the two lists, so "pending" and "decided" are never read as an
+// identifier.
+adminRoutes.get('/applications/:memberId', applicationReviewController.getApplication);
 adminRoutes.post('/applications/:memberId/approve', applicationReviewController.approveApplication);
 adminRoutes.post('/applications/:memberId/reject', applicationReviewController.rejectApplication);
 // The middle answer between approving and rejecting: the applicant keeps their

@@ -377,7 +377,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "admin", "applications", "pending"]
             },
-            "description": "What waits for a decision, oldest first, so whoever has waited longest is seen first. Needs an administrator session; the password hash is never part of the answer."
+            "description": "What waits for a decision, oldest first, so whoever has waited longest is seen first. Needs an administrator session; the password hash is never part of the answer. A search finds one by business or person name, the registering address, the document, or the code an approved one has."
           },
           "response": []
         },
@@ -392,6 +392,20 @@
               "path": ["api", "admin", "applications", "decided"]
             },
             "description": "Approved, rejected and asked-for-changes applications, most recent first. Asking for changes is an answer too: the chamber has looked at the application and the next move is the applicant's."
+          },
+          "response": []
+        },
+        {
+          "name": "Read one application",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/applications/{{memberId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "applications", "{{memberId}}"]
+            },
+            "description": "Administrator session. The application whole, decision included: the reason, the fields asked to be corrected, the code and the reviewer. Panels open decided applications from here as well as pending ones."
           },
           "response": []
         },

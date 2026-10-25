@@ -1,5 +1,14 @@
 const applicationReviewService = require('../services/applicationReviewService');
 
+async function getApplication(
+  request,
+  response,
+  next,
+  readApplication = applicationReviewService.readApplication,
+) {
+  response.json(await readApplication(request.params.memberId));
+}
+
 async function getPendingApplications(
   request,
   response,
@@ -48,6 +57,7 @@ async function requestChangesApplication(
 module.exports = {
   getPendingApplications,
   getDecidedApplications,
+  getApplication,
   approveApplication,
   rejectApplication,
   requestChangesApplication,

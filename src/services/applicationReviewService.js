@@ -6,6 +6,7 @@ const emailService = require('./emailService');
 const { grantFreeMembership } = require('./membershipService');
 const { ApplicationError, ERROR_CODES } = require('../config/errorCodes');
 const { readPagination, paginated } = require('../config/pagination');
+const { readSearch, escapeForRegex } = require('../config/listSearch');
 
 const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
 const MAXIMUM_REASON_LENGTH = 500;
@@ -57,6 +58,17 @@ const APPLICATION_FIELDS = [
 
 const DECISION_FIELDS =
   'applicationStatus statusReason changesRequestedFields memberCode reviewedAt email businessName activity activityOther';
+
+// Everything a reviewer reads on the detail screen: the application itself plus
+// the decision already taken, if there is one, so a decided application can be
+// opened from the list and explained.
+const APPLICATION_DETAIL_FIELDS = [
+  APPLICATION_FIELDS,
+  'statusReason',
+  'changesRequestedFields',
+  'memberCode',
+  'reviewedAt',
+].join(' ');
 
 // What a decision left behind. The reason and the reviewer are carried because
 // an administrator asked a week later has nowhere else to look.
@@ -192,8 +204,10 @@ const PENDING = { applicationStatus: APPLICATION_STATUSES.PENDING_REVIEW };
 
 async function listPendingApplications(query) {
   const pagination = readPagination(query);
+  const filter = { ...PENDING, ...applicationSearch(query) };
+
   const [items, total] = await Promise.all([
-    Member.find(PENDING)
+    Member.find(filter)
       .select(APPLICATION_FIELDS)
       .populate('canton', 'name province')
       .populate('activity', 'name')
@@ -201,7 +215,7 @@ async function listPendingApplications(query) {
       .skip(pagination.skip)
       .limit(pagination.pageSize)
       .lean(),
-    Member.countDocuments(PENDING),
+    Member.countDocuments(filter),
   ]);
 
   return paginated(items, total, pagination);
@@ -211,10 +225,35 @@ async function listPendingApplications(query) {
 // one just made.
 const DECIDED = { applicationStatus: { $in: REVIEWED_STATUSES } };
 
+// A reviewer looking for one application types a business or a person, so the
+// search answers to the names an applicant gave, the address they registered
+// with, the document, and the code an approved one now has.
+function applicationSearch(query) {
+  const search = readSearch(query);
+
+  if (search === null) {
+    return {};
+  }
+
+  const pattern = new RegExp(escapeForRegex(search), 'i');
+
+  return {
+    $or: [
+      { businessName: pattern },
+      { name: pattern },
+      { email: pattern },
+      { identificationNumber: pattern },
+      { memberCode: pattern },
+    ],
+  };
+}
+
 async function listDecidedApplications(query) {
   const pagination = readPagination(query);
+  const filter = { ...DECIDED, ...applicationSearch(query) };
+
   const [items, total] = await Promise.all([
-    Member.find(DECIDED)
+    Member.find(filter)
       .select(DECIDED_FIELDS)
       .populate('reviewedBy', 'email')
       .populate('activity', 'name')
@@ -222,10 +261,36 @@ async function listDecidedApplications(query) {
       .skip(pagination.skip)
       .limit(pagination.pageSize)
       .lean(),
-    Member.countDocuments(DECIDED),
+    Member.countDocuments(filter),
   ]);
 
   return paginated(items, total, pagination);
+}
+
+function defaultFindApplication(memberId) {
+  return Member.findById(memberId)
+    .select(APPLICATION_DETAIL_FIELDS)
+    .populate('canton', 'name province')
+    .populate('activity', 'name')
+    .populate('reviewedBy', 'email')
+    .lean();
+}
+
+// One application, as the list already showed it, but whole: the detail screen
+// opens decided ones too, which is where the reason and the reviewer live.
+async function readApplication(memberId, find = defaultFindApplication) {
+  const id = readMemberId(memberId);
+  const application = await find(id);
+
+  if (application === null || application === undefined) {
+    throw new ApplicationReviewError(
+      ERROR_CODES.UNKNOWN_REFERENCE,
+      'That application does not exist.',
+      { statusCode: 404 },
+    );
+  }
+
+  return application;
 }
 
 function updateMatchingApplication(filter, changes) {
@@ -493,6 +558,8 @@ async function requestChangesApplication(
 module.exports = {
   listPendingApplications,
   listDecidedApplications,
+  readApplication,
+  applicationSearch,
   approveApplication,
   approveMatchingApplication,
   rejectApplication,

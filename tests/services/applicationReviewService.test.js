@@ -5,6 +5,8 @@ const {
   approveMatchingApplication,
   rejectApplication,
   requestChangesApplication,
+  readApplication,
+  applicationSearch,
   MAXIMUM_CODE_ATTEMPTS,
 } = require('../../src/services/applicationReviewService');
 const { isMemberCodeValid } = require('../../src/services/memberCodeService');
@@ -13,6 +15,57 @@ const { APPLICATION_STATUSES } = require('../../src/models/Member');
 const MEMBER_ID = '65f0c3a1b2c3d4e5f6a7b8c9';
 const REVIEWER_ID = '65f0c3a1b2c3d4e5f6a7b8ca';
 const DUPLICATE_KEY = 11000;
+
+// What a reviewer types to find one application: a business, a person, the
+// address or document they registered with, or the code an approved one has.
+test('a search matches the names an applicant gave, not only the business', () => {
+  const filter = applicationSearch({ search: 'Café' });
+  const fields = filter.$or.map((clause) => Object.keys(clause)[0]);
+
+  assert.deepEqual(fields, ['businessName', 'name', 'email', 'identificationNumber', 'memberCode']);
+  assert.equal(filter.$or[0].businessName.test('Café La Unión'), true);
+  assert.equal(filter.$or[1].name.test('café'), true);
+});
+
+// A dot would otherwise be a pattern, and a pattern can be made slow.
+test('a search is matched as typed, so a dot is a dot', () => {
+  const filter = applicationSearch({ search: 'ana.rojas' });
+
+  assert.equal(filter.$or[0].businessName.test('ana.rojas'), true);
+  assert.equal(filter.$or[0].businessName.test('anaXrojas'), false);
+});
+
+test('no search means no narrowing at all', () => {
+  assert.deepEqual(applicationSearch({}), {});
+});
+
+test('one application is answered whole, decision included', async () => {
+  const application = { _id: MEMBER_ID, businessName: 'Café La Unión', statusReason: null };
+
+  const answer = await readApplication(MEMBER_ID, async () => application);
+
+  assert.deepEqual(answer, application);
+});
+
+test('an application that does not exist answers 404 rather than an empty body', async () => {
+  await assert.rejects(
+    readApplication(MEMBER_ID, async () => null),
+    (error) => {
+      assert.equal(error.statusCode, 404);
+      return true;
+    },
+  );
+});
+
+test('an identifier that is not one is refused before the collection is read', async () => {
+  await assert.rejects(
+    readApplication('no-es-un-id', async () => assert.fail('the collection was read')),
+    (error) => {
+      assert.equal(error.code, 'invalid_format');
+      return true;
+    },
+  );
+});
 const TOKEN = 'a'.repeat(64);
 
 function recordingDecide(result = { applicationStatus: APPLICATION_STATUSES.APPROVED }) {
