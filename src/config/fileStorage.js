@@ -12,7 +12,7 @@ const { createLocalStore, readLocalDirectory } = require('./localFileStorage');
 // move to another host by changing these values, without touching a service.
 // Without them the disk answers instead, which is what a development machine
 // has; a deployment that stores files sets all six, and production refuses to
-// start without them.
+// start without them (config/environment).
 const REQUIRED_ENVIRONMENT_VARIABLES = [
   'S3_ENDPOINT',
   'S3_REGION',
@@ -186,16 +186,6 @@ function objectStore(visibility) {
   return configuredObjectStores.get(visibility);
 }
 
-// The disk is for a development machine. A production server writing receipts
-// to its own disk loses them on the next deploy, so it refuses to start instead.
-function assertProductionStorage(environment = process.env) {
-  if (environment.NODE_ENV === 'production' && !hasObjectStoreCredentials(environment)) {
-    throw new FileStorageConfigurationError(
-      `Production stores files in the buckets. Set ${REQUIRED_ENVIRONMENT_VARIABLES.join(', ')}.`,
-    );
-  }
-}
-
 module.exports = {
   REQUIRED_ENVIRONMENT_VARIABLES,
   FILE_VISIBILITY,
@@ -210,5 +200,4 @@ module.exports = {
   hasObjectStoreCredentials,
   createObjectStore,
   objectStore,
-  assertProductionStorage,
 };

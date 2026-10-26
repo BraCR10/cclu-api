@@ -2,23 +2,14 @@ require('dotenv').config();
 
 const app = require('./app');
 const connectDatabase = require('./config/database');
-const { assertProductionStorage } = require('./config/fileStorage');
+const { findEnvironmentProblems } = require('./config/environment');
 const { startMembershipExpiryJob } = require('./jobs/membershipExpiryJob');
 
-const REQUIRED_ENV = ['MONGODB_URI', 'JWT_SECRET', 'JWT_EXPIRES_IN', 'WEB_ORIGIN', 'COOKIE_SECURE'];
+const environmentProblems = findEnvironmentProblems();
 
-const missingEnv = REQUIRED_ENV.filter((name) => !process.env[name]);
-
-if (missingEnv.length > 0) {
-  console.error(`Missing environment variables: ${missingEnv.join(', ')}`);
+if (environmentProblems.length > 0) {
+  environmentProblems.forEach((problem) => console.error(problem));
   console.error('Copy .env.example to .env and fill in the values.');
-  process.exit(1);
-}
-
-try {
-  assertProductionStorage();
-} catch (error) {
-  console.error(error.message);
   process.exit(1);
 }
 
