@@ -14,8 +14,8 @@ function findFreePlan() {
   return Plan.findOne({ key: PLAN_KEYS.FREE }).select('_id').lean();
 }
 
-// Written only when missing, so approving twice, seeding again or two requests
-// racing each other leave the one membership that is already there.
+// Written only when missing, so approving twice or two requests racing each
+// other leave the one membership that is already there.
 async function grantFreeMembership(memberId, startedAt = new Date(), findPlan = findFreePlan) {
   const freePlan = await findPlan();
 

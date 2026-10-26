@@ -7,7 +7,7 @@ const { readPagination, paginated } = require('../config/pagination');
 const { escapeForRegex, readSearch } = require('../config/listSearch');
 const { lastValidDay, latestTrustedExpiry } = require('../config/chamberCalendar');
 const { formatMemberCode } = require('./memberCodeService');
-const membershipPolicyService = require('./membershipPolicyService');
+const settingsService = require('./settingsService');
 
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
 
@@ -159,7 +159,7 @@ function presentItem(membership, plansById, view) {
 
 const defaultListStore = {
   findPlans: () => Plan.find().select('key name').lean(),
-  readNoticeDays: () => membershipPolicyService.readNoticeDays(),
+  readNoticeDays: () => settingsService.readNoticeDays(),
   aggregate: (pipeline) => Membership.aggregate(pipeline),
 };
 

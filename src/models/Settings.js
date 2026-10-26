@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 
-const MEMBERSHIP_POLICY_KEY = 'membership';
+// The chamber's settings are one document, the way a CMS keeps its globals:
+// each setting is a typed, validated field, and changing several at once is a
+// single atomic write. settingsService is the only writer and keeps it to one.
 
 // At most 27 days, one less than the shortest month. The renewal window opens
 // this many days before an expiry, and a renewal adds a month; were the notice
@@ -8,18 +10,11 @@ const MEMBERSHIP_POLICY_KEY = 'membership';
 // is approved, and one term could be paid for twice.
 const NOTICE_DAYS = Object.freeze({ DEFAULT: 7, MINIMUM: 1, MAXIMUM: 27 });
 
-// The rules about memberships the chamber sets from the panel, kept as one
-// document. How many days before an expiry the member is reminded, and the
-// panel lists the plan as expiring soon, is one value so the two never
-// disagree.
-const membershipPolicySchema = new mongoose.Schema(
+const settingsSchema = new mongoose.Schema(
   {
-    key: {
-      type: String,
-      required: true,
-      unique: true,
-      enum: [MEMBERSHIP_POLICY_KEY],
-    },
+    // How many days before an expiry the member is reminded, the renewal window
+    // opens and the panel lists the plan as expiring soon. One value, so the
+    // three never disagree.
     expiryNoticeDays: {
       type: Number,
       required: true,
@@ -28,9 +23,9 @@ const membershipPolicySchema = new mongoose.Schema(
       validate: { validator: Number.isInteger, message: 'The notice is whole days.' },
     },
   },
-  { timestamps: true },
+  { timestamps: true, collection: 'settings' },
 );
 
-const MembershipPolicy = mongoose.model('MembershipPolicy', membershipPolicySchema);
+const Settings = mongoose.model('Settings', settingsSchema);
 
-module.exports = { MembershipPolicy, MEMBERSHIP_POLICY_KEY, NOTICE_DAYS };
+module.exports = { Settings, NOTICE_DAYS };

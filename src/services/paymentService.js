@@ -13,7 +13,7 @@ const { readPagination, paginated } = require('../config/pagination');
 const clock = require('../config/clock');
 const fileStorageService = require('./fileStorageService');
 const emailService = require('./emailService');
-const membershipPolicyService = require('./membershipPolicyService');
+const settingsService = require('./settingsService');
 const { normalizeMemberCode } = require('./memberCodeService');
 const { RENEWAL_FREQUENCY, renewalWindow } = require('./renewalPolicy');
 const notificationService = require('./notificationService');
@@ -136,7 +136,7 @@ const defaultPaymentStore = {
     Member.findById(memberId).select('businessName email memberCode').lean(),
   findMembership: (memberId) =>
     Membership.findOne({ member: memberId }).populate('plan', 'key name').lean(),
-  readNoticeDays: () => membershipPolicyService.readNoticeDays(),
+  readNoticeDays: () => settingsService.readNoticeDays(),
   findPendingPayment: (memberId) =>
     Payment.findOne({ member: memberId, status: PAYMENT_STATUSES.PENDING_REVIEW })
       .select('_id')

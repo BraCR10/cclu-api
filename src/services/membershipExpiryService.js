@@ -8,7 +8,7 @@ const { AuditEntry, AUDIT_ACTIONS, SYSTEM_ACTOR } = require('../models/AuditEntr
 const clock = require('../config/clock');
 const { isValidInstant, lastValidDay, latestTrustedExpiry } = require('../config/chamberCalendar');
 const emailService = require('./emailService');
-const membershipPolicyService = require('./membershipPolicyService');
+const settingsService = require('./settingsService');
 const notificationService = require('./notificationService');
 const { NOTIFICATION_TYPES } = require('../models/Notification');
 
@@ -42,7 +42,7 @@ const defaultExpiryStore = {
     notificationService.notifyMember(memberId, type, params),
   notifyAdmins: (type, params) => notificationService.notifyAdmins(type, params),
   findFreePlan: () => Plan.findOne({ key: PLAN_KEYS.FREE }).select('key').lean(),
-  readNoticeDays: () => membershipPolicyService.readNoticeDays(),
+  readNoticeDays: () => settingsService.readNoticeDays(),
 
   // Every paid plan access is already refused for: past its expiry, or with an
   // expiry that cannot be trusted. The same cases isExpiredPaidPlan counts.

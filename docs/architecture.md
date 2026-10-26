@@ -37,7 +37,7 @@ Four folders sit beside the layers rather than inside the chain.
 | `middlewares` | Request pipeline: session, roles, origin check, rate limits, errors                      | `app.js`, routes, `authController` |
 | `config`      | Fixed values and environment reading: roles, statuses, rules, error codes, mail, storage | any layer                          |
 | `emails`      | The templates for each outgoing mail and the layout they share                           | `emailService` only                |
-| `jobs`        | Work the API starts on a timer, such as the hourly membership run                        | `server.js` and `scripts/` only    |
+| `jobs`        | Work the API starts on a timer, such as the hourly membership run                        | `server.js` only                   |
 
 `src/app.js` wires middlewares and routers together, and `src/server.js` checks
 the environment, connects to the database, starts listening and starts the jobs.
@@ -252,8 +252,8 @@ Each fee is updated only if it still holds the amount the administrator saw.
 If another administrator saved first, the request answers 409
 `changed_meanwhile` for that fee and the whole transaction is undone.
 
-The seed writes a fee only when it creates the plan, so seeding again never
-undoes what the chamber set.
+The seed runs only as part of `reset-database`, on an empty database, so it
+never meets a fee the chamber set.
 
 ### The audit log
 
@@ -273,11 +273,11 @@ A change nobody made by hand, such as a plan running out overnight, is recorded
 with the system as its actor: `{ role: 'system', name: 'system' }` and no
 account identifier. Only that role may leave the identifier out.
 
-| Action                      | Written by                                  | Subject            |
-| --------------------------- | ------------------------------------------- | ------------------ |
-| `plan.fee_changed`          | An administrator changing a fee             | `Plan`             |
-| `membership.lapsed`         | The hourly membership run                   | `Membership`       |
-| `membership.notice_changed` | An administrator changing the expiry notice | `MembershipPolicy` |
+| Action                      | Written by                                  | Subject      |
+| --------------------------- | ------------------------------------------- | ------------ |
+| `plan.fee_changed`          | An administrator changing a fee             | `Plan`       |
+| `membership.lapsed`         | The hourly membership run                   | `Membership` |
+| `membership.notice_changed` | An administrator changing the expiry notice | `Settings`   |
 
 Entries are only ever inserted. The model refuses every update and delete. In
 production, the database user should only be granted `find` and `insert` on
@@ -293,13 +293,12 @@ document per member under a unique index. What happened before lives in the
 audit log.
 
 - **Approval grants Gratuita.** The grant only writes when the membership is
-  missing, so approving twice, seeding again or two requests racing each other
+  missing, so approving twice or two requests racing each other
   leave the one membership that is there. A grant that fails is logged and does
   not fail the approval, which is already written and still mails the code.
 - **Reading grants it too.** `GET /api/members/me/membership` creates Gratuita
   for a member approved before memberships existed, or whose grant was cut
-  short. `npm run grant-free-memberships` does the same for every approved
-  member at once.
+  short.
 - **The answer is the effective plan**, worked out against the clock as the next
   section describes, with `expiresAt` and `validUntil`, when the plan ends, and
   `lapsed`, the paid plan that ran out, until the next one is approved. It also
@@ -309,7 +308,7 @@ audit log.
 ### The hourly run
 
 `src/jobs/membershipExpiryJob.js` runs inside the API every hour, and once at
-start. `npm run run-membership-expiry` runs it by hand.
+start.
 
 1. **Paid plans access is refused for move to Gratuita.** That is a plan past
    its expiry, and one whose expiry cannot be trusted. The update is
@@ -336,8 +335,9 @@ the data, the audit entry and the mails wait.
 
 How many days before an expiry the member is reminded, and the panel counts the
 plan as expiring soon, is one value, so the two never disagree. It lives in the
-single `MembershipPolicy` document, from 1 to 30 days, and the seed creates it
-at seven without overwriting a value the chamber set.
+`settings` collection, a single document, kept to one by `settingsService`, where
+each of the chamber's settings is a typed field. It runs from 1 to 27 days and
+`reset-database` creates it at seven.
 
 `GET /api/admin/plans/policy` reads it and `PATCH /api/admin/plans/policy`
 changes it with `{ "expiryNoticeDays": 10 }`. Like a fee, the change is written

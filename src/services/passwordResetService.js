@@ -55,7 +55,6 @@ function resetUrlFor(token, origin = process.env.WEB_ORIGIN) {
 //
 // Nothing is sent in that case and nothing different is answered: a reply that
 // changed shape would tell a stranger which addresses are interesting.
-// scripts/audit-shared-emails.js reports them so they can be repaired.
 async function findAccountByEmail(email, accounts = ACCOUNTS) {
   const address = normalizeEmail(email);
 

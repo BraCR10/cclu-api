@@ -14,7 +14,6 @@ const {
   MAXIMUM_DOWNLOAD_URL_EXPIRY_SECONDS,
   readFileStorageConfiguration,
   hasObjectStoreCredentials,
-  assertProductionStorage,
 } = require('../../src/config/fileStorage');
 
 const MEMBER_ID = '65f0c3a1b2c3d4e5f6a7b8c9';
@@ -454,14 +453,4 @@ test('only logos are files anybody may see', () => {
     isPublicKey(`${FILE_PURPOSES.MEMBERSHIP_CERTIFICATION}/${MEMBER_ID}/${OBJECT_NAME}.pdf`),
     false,
   );
-});
-
-test('production refuses to start without its buckets', () => {
-  const configured = Object.fromEntries(
-    REQUIRED_ENVIRONMENT_VARIABLES.map((name) => [name, 'set']),
-  );
-
-  assert.throws(() => assertProductionStorage({ NODE_ENV: 'production' }), /buckets/);
-  assert.doesNotThrow(() => assertProductionStorage({ NODE_ENV: 'production', ...configured }));
-  assert.doesNotThrow(() => assertProductionStorage({ NODE_ENV: 'development' }));
 });

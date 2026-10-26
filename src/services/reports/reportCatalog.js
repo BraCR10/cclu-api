@@ -13,7 +13,7 @@ const { PLAN_KEYS } = require('../../models/Plan');
 const { ACCOUNT_STATUSES } = require('../../config/accountStatus');
 const { formatMemberCode } = require('../memberCodeService');
 const { isExpiredPaidPlan } = require('../entitlementService');
-const { readNoticeDays } = require('../membershipPolicyService');
+const { readNoticeDays } = require('../settingsService');
 const { findPublishingMembers } = require('../jobBoardService');
 const {
   formatDay,
