@@ -32,7 +32,11 @@ function effectiveAdminState(admin, now = new Date()) {
     return ADMIN_ACCOUNT_STATUSES.INVITATION_EXPIRED;
   }
 
-  return admin.accountStatus ?? ADMIN_ACCOUNT_STATUSES.INACTIVE;
+  // Administrators once shared the member values, so an account written then
+  // can still say "suspended". Anything the panel cannot show is not usable.
+  return Object.values(ADMIN_ACCOUNT_STATUSES).includes(admin.accountStatus)
+    ? admin.accountStatus
+    : ADMIN_ACCOUNT_STATUSES.INACTIVE;
 }
 
 // The only state that opens the panel.
