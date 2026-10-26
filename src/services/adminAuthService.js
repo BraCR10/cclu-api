@@ -81,4 +81,8 @@ async function authenticateAdmin(
   };
 }
 
-module.exports = { authenticateAdmin, readCredentials, OUTCOMES };
+function recordSignIn(adminId, now = new Date()) {
+  return Admin.updateOne({ _id: adminId }, { $set: { lastSignInAt: now } });
+}
+
+module.exports = { authenticateAdmin, readCredentials, recordSignIn, OUTCOMES };

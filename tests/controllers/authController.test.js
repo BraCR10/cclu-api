@@ -41,6 +41,7 @@ function requestWith(body) {
 
 test('signInAdmin answers 204 and puts the session in a cookie, never in the body', async () => {
   const response = responseSpy();
+  const signedIn = [];
 
   await authController.signInAdmin(
     requestWith({ email: 'a@b.cr', password: 'x' }),
@@ -53,8 +54,10 @@ test('signInAdmin answers 204 and puts the session in a cookie, never in the bod
         role: ROLES.ADMIN,
       },
     }),
+    async (adminId) => signedIn.push(adminId),
   );
 
+  assert.deepEqual(signedIn, ['65f0c3a1b2c3d4e5f6a7b8c9']);
   assert.equal(response.sent.status, 204);
   assert.equal(response.sent.body, undefined);
   assert.equal(response.sent.cookies.length, 1);
@@ -178,6 +181,7 @@ test('a session asked to outlive the browser is given a clock, and one that is n
         outcome: 'authenticated',
         identity: { id: '65f0c3a1b2c3d4e5f6a7b8c9', role: ROLES.ADMIN },
       }),
+      async () => {},
     );
 
   await signIn({ email: 'a@b.cr', password: 'x', rememberSession: true }, remembered);

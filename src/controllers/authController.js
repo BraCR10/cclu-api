@@ -60,6 +60,7 @@ async function signInAdmin(
   response,
   next,
   authenticateAdmin = adminAuthService.authenticateAdmin,
+  recordSignIn = adminAuthService.recordSignIn,
 ) {
   const result = await authenticateAdmin(request.body);
 
@@ -72,6 +73,7 @@ async function signInAdmin(
     throw refusedForState(result.outcome);
   }
 
+  await recordSignIn(result.identity.id);
   establishSession(request, response, result.identity);
 }
 

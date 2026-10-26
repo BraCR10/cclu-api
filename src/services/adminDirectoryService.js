@@ -41,6 +41,7 @@ function present(admin, now = new Date()) {
     status: effectiveAdminState(admin, now),
     invitationExpiresAt: admin.invitationExpiresAt ?? null,
     createdAt: admin.createdAt ?? null,
+    lastSignInAt: admin.lastSignInAt ?? null,
   };
 }
 
@@ -56,14 +57,16 @@ async function readEmail(body) {
 
 const defaultStore = {
   list: () =>
-    Admin.find({}).select('name email accountStatus invitationExpiresAt createdAt').lean(),
+    Admin.find({})
+      .select('name email accountStatus invitationExpiresAt createdAt lastSignInAt')
+      .lean(),
   findById: (adminId) =>
     Admin.findById(adminId).select('name email accountStatus invitationExpiresAt').lean(),
   findByEmail: (email) => Admin.findOne({ email }).select('_id').lean(),
   create: async (fields) => (await Admin.create(fields)).toObject(),
   update: (adminId, changes) =>
     Admin.findByIdAndUpdate(adminId, { $set: changes }, { returnDocument: 'after' })
-      .select('name email accountStatus invitationExpiresAt createdAt')
+      .select('name email accountStatus invitationExpiresAt createdAt lastSignInAt')
       .lean(),
   heldByOtherRole: (email) => emailHeldByAnotherRole(email, ROLES.ADMIN),
   send: (templateName, to, data) => emailService.sendEmail(templateName, to, data),

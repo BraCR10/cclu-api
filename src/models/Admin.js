@@ -34,6 +34,10 @@ const adminSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    lastSignInAt: {
+      type: Date,
+      default: null,
+    },
     // The token in the link is stored the way a password is: a leaked database
     // must not hand anybody a working invitation.
     invitationTokenHash: {
