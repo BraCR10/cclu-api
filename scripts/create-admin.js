@@ -3,68 +3,68 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const connectDatabase = require('../src/config/database');
 const { Admin } = require('../src/models/Admin');
-const { hashPassword } = require('../src/services/passwordService');
-const { readPassword } = require('../src/config/memberRules');
-const { emailHeldByAnotherRole } = require('../src/services/accountService');
-const { ROLES } = require('../src/config/roles');
+const { ADMIN_ACCOUNT_STATUSES, effectiveAdminState } = require('../src/config/accountStatus');
+const { inviteAdmin, resendInvitation } = require('../src/services/adminDirectoryService');
 
-// The panel has no way to sign up, so there has to be a way in before anyone is
-// in. This is it.
+// The panel has no way to sign up, so the first administrator is invited from
+// here. The person chooses their own password from the link in the mail, the
+// same way an administrator invited from the panel does.
 
-function readEmail() {
-  const email = process.argv[2];
+const USAGE = 'Usage: npm run create-admin -- <email> "<name>"';
 
-  if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-    throw new Error('Usage: ADMIN_PASSWORD=<password> npm run create-admin -- <email> [name]');
+function readArguments() {
+  const [email, name] = process.argv.slice(2);
+
+  if (typeof email !== 'string' || typeof name !== 'string' || name.trim() === '') {
+    throw new Error(USAGE);
   }
 
-  return email.trim().toLowerCase();
+  return { email: email.trim().toLowerCase(), name: name.trim() };
 }
 
-// Optional, because an address is enough to sign in with. Without one every
-// screen greets the person by their address, which reads like a mistake.
-function readName() {
-  const name = process.argv[3];
-
-  return typeof name === 'string' && name.trim() !== '' ? name.trim() : undefined;
+// Without the site's address the mail would carry no link, and the account
+// would wait for an invitation nobody can accept.
+function requireWebOrigin() {
+  if (typeof process.env.WEB_ORIGIN !== 'string' || process.env.WEB_ORIGIN.trim() === '') {
+    throw new Error('Set WEB_ORIGIN so the invitation can link to the site.');
+  }
 }
 
+function isAwaitingInvitation(admin) {
+  const state = effectiveAdminState(admin);
+
+  return (
+    state === ADMIN_ACCOUNT_STATUSES.INVITATION_PENDING ||
+    state === ADMIN_ACCOUNT_STATUSES.INVITATION_EXPIRED
+  );
+}
+
+// Running it again for an invitation that never arrived sends a new link,
+// because no administrator exists yet to resend it from the panel.
 async function createAdmin() {
-  const email = readEmail();
-  // Read from the environment and never printed. Anything shown lands in
-  // scrollback and in whatever collects this process's output.
-  const password = readPassword({ ADMIN_PASSWORD: process.env.ADMIN_PASSWORD }, 'ADMIN_PASSWORD');
+  const { email, name } = readArguments();
 
+  requireWebOrigin();
   await connectDatabase();
 
-  // The index on this collection cannot see the members, so the other half of
-  // the rule is asked here. Named plainly, unlike the public form: an operator
-  // running this already knows who is in the chamber.
-  if (await emailHeldByAnotherRole(email, ROLES.ADMIN)) {
-    throw new Error(
-      'That address already belongs to a member. One address cannot hold both accounts.',
-    );
+  const existing = await Admin.findOne({ email })
+    .select('accountStatus invitationExpiresAt')
+    .lean();
+
+  if (existing !== null && isAwaitingInvitation(existing)) {
+    await resendInvitation(undefined, existing._id);
+    console.log(`Invitation sent again to ${email}`);
+    return;
   }
 
-  // The unique index is what actually prevents a duplicate; this only turns a
-  // race into a message an operator can read.
-  const admin = await Admin.create({
-    name: readName(),
-    email,
-    passwordHash: await hashPassword(password),
-  });
-
-  console.log(`Administrator created: ${email} (${admin._id})`);
+  await inviteAdmin(undefined, { email, name });
+  console.log(`Invitation sent to ${email}`);
 }
 
 createAdmin()
   .then(() => mongoose.disconnect())
   .catch(async (error) => {
-    const alreadyExists = error.code === 11000;
-
-    console.error(
-      alreadyExists ? 'An administrator already exists for that address.' : error.message,
-    );
+    console.error(error.message);
     await mongoose.disconnect();
     process.exit(1);
   });

@@ -1,18 +1,18 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { readNoticeDays, changeNoticeDays } = require('../../src/services/membershipPolicyService');
+const { readNoticeDays, changeNoticeDays } = require('../../src/services/settingsService');
 
 const ADMIN = { id: '64b7f0a1c2d3e4f5a6b7c8d9', role: 'admin' };
 
 function store(stored, applied = []) {
   return {
-    findPolicy: async () => (stored === null ? null : { expiryNoticeDays: stored }),
+    findSettings: async () => (stored === null ? null : { expiryNoticeDays: stored }),
     findAdmin: async () => ({ _id: ADMIN.id, name: 'Laura' }),
     applyChange: async (previous, next, actor) => applied.push({ previous, next, actor }),
   };
 }
 
-test('a policy never seeded reads as seven days', async () => {
+test('settings never seeded read as seven days', async () => {
   assert.equal(await readNoticeDays(store(null)), 7);
 });
 

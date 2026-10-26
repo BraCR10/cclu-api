@@ -1,15 +1,10 @@
 const mongoose = require('mongoose');
-const {
-  MembershipPolicy,
-  MEMBERSHIP_POLICY_KEY,
-  NOTICE_DAYS,
-} = require('../models/MembershipPolicy');
+const { Settings, NOTICE_DAYS } = require('../models/Settings');
 const { Admin } = require('../models/Admin');
 const { AuditEntry, AUDIT_ACTIONS } = require('../models/AuditEntry');
 const { ValidationError, refuse } = require('../config/memberRules');
 const { ApplicationError, ERROR_CODES } = require('../config/errorCodes');
 
-const DUPLICATE_KEY = 11000;
 const FIELD = 'expiryNoticeDays';
 
 function present(noticeDays) {
@@ -20,36 +15,36 @@ function present(noticeDays) {
   };
 }
 
-const defaultPolicyStore = {
-  findPolicy: () => MembershipPolicy.findOne({ key: MEMBERSHIP_POLICY_KEY }).lean(),
+function changedMeanwhile() {
+  return new ApplicationError(
+    ERROR_CODES.CHANGED_MEANWHILE,
+    'Another administrator changed this value first.',
+    { statusCode: 409, field: FIELD },
+  );
+}
+
+const defaultSettingsStore = {
+  findSettings: () => Settings.findOne().lean(),
   findAdmin: (id) => Admin.findById(id).select('name email').lean(),
 
   // The value and its history entry are written together or not at all. The
   // filter carries the value this administrator saw, so a change saved by
-  // someone else in between is not overwritten. A policy never seeded is
-  // created by the same write.
+  // someone else in between is not overwritten. Settings are created here only
+  // when the database was never reset, which is what seeds them.
   applyChange: (previous, next, actor) =>
     mongoose.connection.transaction(async (session) => {
-      let policy;
+      const current = await Settings.findOne().session(session);
+      const settings =
+        current === null
+          ? (await Settings.create([{ [FIELD]: next }], { session }))[0]
+          : await Settings.findOneAndUpdate(
+              { _id: current._id, [FIELD]: previous },
+              { $set: { [FIELD]: next } },
+              { returnDocument: 'after', runValidators: true, session },
+            );
 
-      try {
-        policy = await MembershipPolicy.findOneAndUpdate(
-          { key: MEMBERSHIP_POLICY_KEY, [FIELD]: previous },
-          { $set: { [FIELD]: next } },
-          { upsert: true, returnDocument: 'after', runValidators: true, session },
-        );
-      } catch (error) {
-        // The upsert found no document holding the value seen, and the unique
-        // key refused a second one: someone else changed it first.
-        if (error.code === DUPLICATE_KEY) {
-          throw new ApplicationError(
-            ERROR_CODES.CHANGED_MEANWHILE,
-            'Another administrator changed this value first.',
-            { statusCode: 409, field: FIELD },
-          );
-        }
-
-        throw error;
+      if (settings === null) {
+        throw changedMeanwhile();
       }
 
       await AuditEntry.insertMany(
@@ -57,7 +52,7 @@ const defaultPolicyStore = {
           {
             action: AUDIT_ACTIONS.MEMBERSHIP_NOTICE_CHANGED,
             actor,
-            subject: { type: 'MembershipPolicy', id: policy._id, label: 'Aviso de vencimiento' },
+            subject: { type: 'Settings', id: settings._id, label: 'Aviso de vencimiento' },
             changes: [{ field: FIELD, before: previous, after: next }],
           },
         ],
@@ -66,15 +61,15 @@ const defaultPolicyStore = {
     }),
 };
 
-// The notice in force. A policy that was never seeded reads as the default, so
+// The notice in force. Settings that were never seeded read as the default, so
 // reminders and the panel keep working before anyone sets it.
-async function readNoticeDays(store = defaultPolicyStore) {
-  const policy = await store.findPolicy();
+async function readNoticeDays(store = defaultSettingsStore) {
+  const settings = await store.findSettings();
 
-  return Number.isInteger(policy?.[FIELD]) ? policy[FIELD] : NOTICE_DAYS.DEFAULT;
+  return Number.isInteger(settings?.[FIELD]) ? settings[FIELD] : NOTICE_DAYS.DEFAULT;
 }
 
-async function readPolicy(store = defaultPolicyStore) {
+async function readPolicy(store = defaultSettingsStore) {
   return present(await readNoticeDays(store));
 }
 
@@ -100,7 +95,7 @@ function readRequestedDays(body) {
   return value;
 }
 
-async function changeNoticeDays(identity, body, store = defaultPolicyStore) {
+async function changeNoticeDays(identity, body, store = defaultSettingsStore) {
   const next = readRequestedDays(body);
   const previous = await readNoticeDays(store);
 

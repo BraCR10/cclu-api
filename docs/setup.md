@@ -52,11 +52,12 @@ tells you which.
 
 **Optional at startup.**
 
-| Variable                  | Purpose                                                                       | Example |
-| ------------------------- | ----------------------------------------------------------------------------- | ------- |
-| `PORT`                    | Port for the API. Defaults to 4000 if unset                                   | `4000`  |
-| `TRUST_PROXY`             | `true` only when the API answers through a reverse proxy                      | `false` |
-| `REMEMBERED_SESSION_DAYS` | How long a session lasts when somebody asks to stay signed in. Defaults to 30 | `30`    |
+| Variable                  | Purpose                                                                                         | Example       |
+| ------------------------- | ----------------------------------------------------------------------------------------------- | ------------- |
+| `NODE_ENV`                | `production` on any deployed server, which then also requires buckets, mail and a secure cookie | `development` |
+| `PORT`                    | Port for the API. Defaults to 4000 if unset                                                     | `4000`        |
+| `TRUST_PROXY`             | `true` only when the API answers through a reverse proxy                                        | `false`       |
+| `REMEMBERED_SESSION_DAYS` | How long a session lasts when somebody asks to stay signed in. Defaults to 30                   | `30`          |
 
 **Read when the first mail is sent.** The API starts without them. Until they
 are set, approving or rejecting an application still succeeds but its mail is
@@ -159,59 +160,24 @@ An empty database has nothing to choose from and nobody to sign in as. Run
 these two once, after `.env` is filled in:
 
 ```bash
-npm run seed-catalogs
-ADMIN_PASSWORD='<password>' npm run create-admin -- <email> [name]
+npm run reset-database
+npm run create-admin -- <email> "<name>"
 ```
 
-`seed-catalogs` loads the cantons, the activities and the four plans from
-`scripts/data/` into the database, and creates the membership policy with a
-seven-day expiry notice. The registration form offers only what this
-loads, and approving an application needs the plans, so both fail until it has
-run. It upserts each entry by its name or key, so running it again updates the
-same entries rather than duplicating them. A plan's fee is written only when the
-plan is created, so seeding again never undoes a fee the chamber changed from
-the panel, and the notice is written only when the policy is created. The
-activities it ships with are a starting set: the official one is
-the municipality's patent roll.
+`reset-database` deletes everything in the database named by `MONGODB_URI`,
+rebuilds the indexes and loads the cantons, the activities and the four plans
+from `scripts/data/`, plus the chamber settings with a seven-day expiry
+notice. It prints the database and host first and asks you to type the
+database name; `--confirm <name>` answers that without the prompt. Files already uploaded to
+storage are not removed. The activities it ships with are a starting set: the
+official one is the municipality's patent roll.
 
-`create-admin` creates the first administrator, since the panel has no way to
-sign up. The password is read from `ADMIN_PASSWORD` rather than from the
-command line so it is never printed, and it follows the same rules as a member
-password: at least 8 characters, with a letter, a number and a symbol. The name
-is optional. It refuses an address that already belongs to a member or to
-another administrator.
-
-If the database already holds members approved before memberships existed,
-give each of them Gratuita once. It only creates what is missing, so it is safe
-to run again:
-
-```bash
-npm run grant-free-memberships
-```
-
-### Demo data
-
-Development and staging can hold a set of demo businesses, so the directory,
-the public pages and the panel lists have something to show:
-
-```bash
-npm run seed-demo
-npm run seed-demo -- --remove
-```
-
-It loads the businesses in `scripts/data/demo-members.json`: seven approved
-ones with their branches, shop, hours and a membership on each plan, one of them
-about to expire, a few vacancies, two applications pending review and a few
-subscribers to the promotions, one of them unsubscribed. It needs
-`seed-catalogs` to have run. Running it again updates the same businesses
-rather than duplicating them.
-
-Every demo account uses an address under `demo.camaralaunion.invalid`, a domain
-that can never receive mail, and `--remove` deletes those accounts with their
-branches, vacancies, memberships and notifications, and the demo subscribers,
-and nothing else. Production is opened
-with the demo data removed. A demo account can only be signed into when
-`DEMO_MEMBER_PASSWORD` is set while seeding; otherwise its password is random.
+`create-admin` invites an administrator, since the panel has no way to sign up.
+It mails a link to `/invitation/<token>` where the person chooses their own
+password, so it needs the mail variables and `WEB_ORIGIN`. The link is valid for
+seven days. Running it again for an invitation that was not accepted sends a
+new link. It refuses an address that already belongs to a member or to an
+active administrator.
 
 Then start it:
 
@@ -220,13 +186,15 @@ npm start
 ```
 
 Once connected, the API runs the membership job at start and every hour after:
-it moves expired paid plans to Gratuita and sends the reminders within the expiry notice. To
-run it now instead of waiting, use `npm run run-membership-expiry`. Access never
+it moves expired paid plans to Gratuita and sends the reminders within the expiry notice. Access never
 waits for it; see [Time and access](architecture.md#time-and-access).
 
-The API refuses to start if a startup variable is missing and tells you which
-one it needs. That is intentional: a server running without a database is
-harder to diagnose than one that never started.
+The API refuses to start if a startup variable is missing and lists every one
+it needs at once. That is intentional: a server running without a database is
+harder to diagnose than one that never started. `NODE_ENV` must be
+`development`, `test` or `production` (unset reads as `development`), and with
+`production` it also needs the six `S3_*` variables, the five mail variables and
+`COOKIE_SECURE=true`. The check lives in `src/config/environment.js`.
 
 ## Verify
 
