@@ -123,6 +123,16 @@ test('an invitation past its day reads as expired', async () => {
   assert.equal(items[0].status, 'invitation_expired');
 });
 
+test('the directory says when each administrator last signed in', async () => {
+  const signedIn = new Date('2026-10-24T14:00:00Z');
+  const store = makeStore([admin({ lastSignInAt: signedIn }), admin({ _id: 'never' })]);
+
+  const { items } = await adminDirectoryService.listAdmins(NOW, store);
+
+  assert.equal(items[0].lastSignInAt, signedIn);
+  assert.equal(items[1].lastSignInAt, null);
+});
+
 test('resending starts the clock again and mails a new link', async () => {
   const store = makeStore([
     ACTOR,
